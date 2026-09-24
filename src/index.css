@@ -4,6 +4,19 @@
 @theme {
   --color-primary: #2A5D56;
   --color-secondary: #f4f6f1;
+  --color-tertiary: #FFFFFF;
+  --color-textWhite: #FFFFFF;
+  --color-textBlack: #000000;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+.dark {
+  --color-primary: #2A5D56;
+  --color-secondary: #1A1921;
+  --color-tertiary: #131217;
+  --color-textBlack: #FFFFFF;
+  --color-textWhite: #000000;
 }
 
 * {

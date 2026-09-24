@@ -8,6 +8,13 @@ export type OverviewCardsProps = {
   icon2: IconType;
 };
 
+export type StatusType = "successful" | "pending" | "failed"
+
+export type StatusCardsProps = {
+  type: StatusType;
+  text?: string;
+};
+
 export type Theme = "light" | "dark";
 
 export interface TableColumnProps<T = unknown> {
@@ -100,4 +107,9 @@ export interface UserProps {
 export interface BankProps {
   name: string;
   code: string;
+}
+
+export interface PageHeaderProps {
+  heading?: string;
+  value?: string;
 }

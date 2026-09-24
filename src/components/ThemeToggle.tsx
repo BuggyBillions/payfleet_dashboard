@@ -9,7 +9,7 @@ export default function ThemeToggle() {
     <button
       onClick={toggleTheme}
       title={`${theme === "light" ? "Switch to dark mode" : theme === "dark" ? "Switch to light mode" : "Switch mode"}`}
-      className="rounded-lg p-2 hover:bg-secondary cursor-pointer"
+      className="rounded-lg p-2 text-textBlack hover:bg-secondary cursor-pointer"
     >
       {theme === "dark" ? <CiSun size={20} /> : <PiMoonLight size={20} />}
     </button>

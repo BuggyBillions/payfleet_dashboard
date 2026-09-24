@@ -10,45 +10,17 @@ import {
   formatShortDate,
 } from "../../helpers/formatterUtility";
 import { useUser } from "../../hooks/useUser";
-import { getDemoEmployees } from "../../services/demoEmployeeService";
 import {
   getDemoPayments,
   type DemoPayment,
 } from "../../services/demoPaymentService";
-
-const statusBadge = (status: DemoPayment["status"]) => {
-  const styles = {
-    successful: "bg-green-50 text-green-600 border-green-500/30",
-    pending: "bg-amber-50 text-amber-600 border-amber-500/30",
-    failed: "bg-red-50 text-red-600 border-red-500/30",
-  };
-
-  return (
-    <span
-      className={`inline-flex items-center px-2 py-1 rounded-full border text-[10px] font-medium capitalize ${styles[status]}`}
-    >
-      {status}
-    </span>
-  );
-};
+import StatusCard from "../../components/cards/StatusCard";
+import PageHeader from "../../components/navs/PageHeader";
 
 const Overview: React.FC = () => {
   const { user } = useUser();
-
-  const employees = getDemoEmployees();
   const payments = getDemoPayments();
 
-  const totalEmployees = employees.length;
-  const estimatedSalary = employees
-    .filter((emp) => emp.is_payroll)
-    .reduce((sum, emp) => sum + emp.estimate_pay, 0);
-  const completedPayments = payments.filter(
-    (p) => p.status === "successful",
-  );
-  const totalSalaryPaid = completedPayments.reduce(
-    (sum, p) => sum + p.amount,
-    0,
-  );
   const recentTransactions = payments.slice(0, 5);
 
   const columns: TableColumnProps<DemoPayment>[] = [
@@ -70,7 +42,7 @@ const Overview: React.FC = () => {
     },
     {
       label: "Status",
-      render: (item) => statusBadge(item.status),
+      render: (item) => <StatusCard type={item.status} />,
     },
     {
       label: "Date",
@@ -79,52 +51,46 @@ const Overview: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col">
-          <h2 className="text-lg font-semibold">
-            Welcome <span className="capitalize">{user?.role}</span>
-          </h2>
-          <p className="text-sm text-gray-500">
-            Here is your business breakdown overview
-          </p>
-        </div>
-      </div>
+    <div className="flex flex-col">
+      <PageHeader
+        heading={`Welcome, ${user?.first_name}`}
+        value="Here is your business breakdown"
+      />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6 mb-4">
         <OverviewCards
           icon={LuUsersRound}
           title="Total Employees"
-          value={totalEmployees}
+          value={0}
           icon2={HiOutlineArrowTrendingUp}
         />
 
         <OverviewCards
           icon={TbReceiptDollar}
           title="Total Salary Paid"
-          value={formatterUtility(totalSalaryPaid)}
+          value={formatterUtility(0)}
           icon2={HiOutlineArrowTrendingUp}
         />
 
         <OverviewCards
           icon={HiOutlineArrowTrendingUp}
           title="Completed Payments"
-          value={completedPayments.length}
+          value={0}
           icon2={HiOutlineArrowTrendingUp}
         />
 
         <OverviewCards
           icon={LuUsersRound}
           title="Estimated Salary"
-          value={formatterUtility(estimatedSalary)}
+          value={formatterUtility(0)}
           icon2={HiOutlineArrowTrendingUp}
         />
       </div>
 
-      <div className="bg-white rounded-xl p-4">
+      <div className="bg-tertiary rounded-xl p-4">
         <div className="flex flex-col mb-4">
-          <h3 className="font-semibold">Recent Transactions</h3>
-          <p className="text-xs text-gray-500">
+          <h3 className="font-semibold text-textBlack">Recent Transactions</h3>
+          <p className="text-xs text-gray-500 dark:text-textBlack/75">
             Your most recent payroll activity
           </p>
         </div>
