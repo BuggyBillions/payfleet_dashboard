@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from "react";
 import ReusableTable from "../../utility/ReusableTable";
 import type { TableColumnProps } from "../../lib/interfaces";
-import { TbReceiptDollar, TbArrowUpRight } from "react-icons/tb";
 import {
   formatterUtility,
   formatShortDate,
