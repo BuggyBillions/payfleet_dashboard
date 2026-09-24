@@ -9,12 +9,7 @@ import {
   type DemoEmployee,
   type EmployeeFormValues,
 } from "../../services/demoEmployeeService";
-
-interface EditEmployeeModalProps {
-  employee: DemoEmployee;
-  onClose: () => void;
-  onSaved: (updated: DemoEmployee) => void;
-}
+import type { EditEmployeeModalProps } from "../../lib/interfaces";
 
 const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({
   employee,

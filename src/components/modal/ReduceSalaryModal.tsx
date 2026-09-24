@@ -10,17 +10,7 @@ import {
   updateDemoEmployee,
   type DemoEmployee,
 } from "../../services/demoEmployeeService";
-
-interface ReduceSalaryModalProps {
-  employee: DemoEmployee;
-  onClose: () => void;
-  onSaved: (updated: DemoEmployee) => void;
-}
-
-interface ReductionValues {
-  amount: string | number;
-  reason: string;
-}
+import type { ReduceSalaryModalProps, ReductionValues } from "../../lib/interfaces";
 
 const inputClass = (error?: string) =>
   `w-full text-black border ${

@@ -11,21 +11,8 @@ import {
   FloatingPortal,
 } from "@floating-ui/react";
 
-interface ActionCellProps {
-  rowId: number;
-  onEdit?: (id: number) => void;
-  onDelete?: (id: number) => void;
-  onView?: (id: number) => void;
-  toggleAction?: () => void;
-  canView?: boolean;
-  otherActions?: OtherActionProps[];
-}
-
-export interface OtherActionProps {
-  name: string;
-  icon?: React.ReactNode;
-  action: () => void;
-}
+import type { ActionCellProps, OtherActionProps } from "../../lib/interfaces";
+export type { OtherActionProps };
 
 const ActionCell: React.FC<ActionCellProps> = ({
   rowId,
@@ -101,33 +88,33 @@ const ActionCell: React.FC<ActionCellProps> = ({
           <div
             ref={setFloatingRef}
             style={{ ...floatingStyles, zIndex: 9999 }}
-            className="flex flex-col bg-white rounded-lg shadow-xl border border-gray-100 min-w-28 text-[10px]"
+            className="flex flex-col bg-white dark:bg-tertiary text-textBlack rounded-lg shadow-xl border border-primary/10 min-w-32 text-xs overflow-hidden"
           >
             {(canView || onView) && (
               <button
-                className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-b-tableBorder"
+                className="flex items-center gap-2 px-3 py-2 hover:bg-secondary cursor-pointer border-b border-primary/10 text-xs"
                 onClick={() => {
                   onView?.(rowId);
                   setOpen(false);
                 }}
               >
-                <FaEye /> View
+                <FaEye className="text-textBlack/70" /> View
               </button>
             )}
             {onEdit && (
               <button
-                className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                className="flex items-center gap-2 px-3 py-2 hover:bg-secondary cursor-pointer border-b border-primary/10 text-xs"
                 onClick={() => {
                   onEdit(rowId);
                   setOpen(false);
                 }}
               >
-                <FiEdit /> Edit
+                <FiEdit className="text-textBlack/70" /> Edit
               </button>
             )}
             {onDelete && (
               <button
-                className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 cursor-pointer text-red-600 border-t border-gray-50"
+                className="flex items-center gap-2 px-3 py-2 hover:bg-secondary cursor-pointer text-red-600 border-b border-primary/10 text-xs"
                 onClick={() => {
                   onDelete(rowId);
                   setOpen(false);
@@ -139,8 +126,11 @@ const ActionCell: React.FC<ActionCellProps> = ({
             {otherActions.map((action, index) => (
               <button
                 key={index}
-                onClick={action.action}
-                className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 cursor-pointer border-t border-gray-50 text-xs"
+                onClick={() => {
+                  action.action();
+                  setOpen(false);
+                }}
+                className="flex items-center gap-2 px-3 py-2 hover:bg-secondary cursor-pointer border-b border-primary/10 last:border-b-0 text-xs"
               >
                 {action.icon && (
                   <span className="text-inherit">{action.icon}</span>

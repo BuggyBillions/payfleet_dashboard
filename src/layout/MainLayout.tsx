@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Variants } from "framer-motion";
 import { useLocation } from "react-router-dom";
@@ -7,11 +7,7 @@ import { HiBars3 } from "react-icons/hi2";
 import { FaXmark } from "react-icons/fa6";
 import Sidebar from "../components/navs/Sidebar";
 import FloatingContactWidget from "../components/ui/FloatingContactWidget";
-
-type LayoutProps = {
-  children: React.ReactNode;
-  pageName: string;
-};
+import type { LayoutProps } from "../lib/interfaces";
 
 const MainLayout = ({
   children,

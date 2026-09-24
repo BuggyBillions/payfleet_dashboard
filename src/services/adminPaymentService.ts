@@ -1,35 +1,10 @@
-import type { StatusType } from "../lib/interfaces";
+import type {
+  PaymentCategory,
+  ExtendedPaymentStatus,
+  CompanyPaymentItem,
+} from "../lib/interfaces";
 
-export type PaymentCategory = "Salary" | "Bonus" | "Allowance" | "Reimbursement" | "Commission";
-
-export type ExtendedPaymentStatus = StatusType | "processing" | "cancelled";
-
-export interface CompanyPaymentItem {
-  id: number;
-  reference: string;
-  batchId: string;
-  companyId: number;
-  companyName: string;
-  companyEmail: string;
-  employeeName: string;
-  employeeEmail: string;
-  employeeRole: string;
-  department: string;
-  bankName: string;
-  accountNumber: string;
-  accountName: string;
-  amount: number;
-  fee: number;
-  netAmount: number;
-  paymentType: PaymentCategory;
-  status: ExtendedPaymentStatus;
-  date: string;
-  narration: string;
-  approvedBy?: string;
-  approvedAt?: string;
-  rejectionReason?: string;
-  gatewayRef?: string;
-}
+export type { PaymentCategory, ExtendedPaymentStatus, CompanyPaymentItem };
 
 const SEED_COMPANY_PAYMENTS: CompanyPaymentItem[] = [
   {

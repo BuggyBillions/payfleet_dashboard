@@ -1,13 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import type { SearchResult } from '../../lib/interfaces';
+import type { SearchResultsPopupProps } from '../../lib/interfaces';
 import { IoSearchOutline } from 'react-icons/io5';
-
-interface SearchResultsPopupProps {
-  results: SearchResult[];
-  isLoading: boolean;
-  searchQuery: string;
-}
 
 const SearchResultsPopup: React.FC<SearchResultsPopupProps> = ({ results, isLoading, searchQuery }) => {
   return (

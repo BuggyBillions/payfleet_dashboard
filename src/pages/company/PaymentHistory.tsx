@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import ReusableTable from "../../utility/ReusableTable";
+import OverviewCards from "../../components/cards/OverviewCards";
 import type { TableColumnProps } from "../../lib/interfaces";
 import { LuHistory } from "react-icons/lu";
 import { FaMoneyBillWave } from "react-icons/fa6";
@@ -91,21 +92,16 @@ const PaymentHistory: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
-        <div className="flex items-center gap-3 p-3 mt-3 rounded-lg bg-secondary border border-primary/10 text-tableData">
-          <FaMoneyBillWave size={18} className="text-tableHeading shrink-0" />
-          <div className="flex flex-col gap-0.5 text-start">
-            <p className="text-[10px] text-tableHeading">Total Paid</p>
-            <p className="text-xl font-semibold">{formatterUtility(totalPaid)}</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 p-3 mt-3 rounded-lg bg-secondary border border-primary/10 text-tableData">
-          <LuHistory size={18} className="text-tableHeading shrink-0" />
-          <div className="flex flex-col gap-0.5 text-start">
-            <p className="text-[10px] text-tableHeading">Payments</p>
-            <p className="text-xl font-semibold">{totalItems}</p>
-          </div>
-        </div>
+        <OverviewCards
+          title="Total Paid"
+          value={formatterUtility(totalPaid)}
+          icon={FaMoneyBillWave}
+        />
+        <OverviewCards
+          title="Payments"
+          value={totalItems}
+          icon={LuHistory}
+        />
       </div>
 
       <div className="bg-white rounded-xl p-4">

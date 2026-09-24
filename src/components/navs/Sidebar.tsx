@@ -39,6 +39,14 @@ const Sidebar = ({
     );
   }, [effectiveRole]);
 
+  // Dynamic settings path matching role context
+  const settingsPath = useMemo(() => {
+    if (effectiveRole === "admin" || effectiveRole === "superadmin") return "/admin/dashboard/settings";
+    if (effectiveRole === "finance" || effectiveRole === "financial") return "/financial/dashboard/settings";
+    if (effectiveRole === "support") return "/support/dashboard/settings";
+    return "/dashboard/settings";
+  }, [effectiveRole]);
+
   // Auto-expand accordion when viewing a child route
   useEffect(() => {
     filteredLinks.forEach((item) => {
@@ -163,7 +171,7 @@ const Sidebar = ({
       <ul className="px-3 pt-3 border-t border-primary/10 flex flex-col gap-1 justify-end shrink-0 mt-auto">
         <li>
           <NavLink
-            to="/dashboard/settings"
+            to={settingsPath}
             className={({ isActive }) =>
               `flex items-center gap-2.5 text-gray-700 transition-all duration-200 px-4 py-2.5 rounded-lg cursor-pointer text-xs font-medium hover:bg-primary/10 hover:text-primary ${
                 isActive

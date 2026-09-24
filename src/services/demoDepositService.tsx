@@ -1,11 +1,5 @@
-export interface DemoDeposit {
-  id: number;
-  reference: string;
-  amount: number;
-  method: string;
-  status: "successful" | "pending" | "failed";
-  date: string;
-}
+import type { DemoDeposit } from "../lib/interfaces";
+export type { DemoDeposit };
 
 const seedDeposits: DemoDeposit[] = [
   {

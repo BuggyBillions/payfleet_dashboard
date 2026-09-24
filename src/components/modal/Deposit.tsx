@@ -16,15 +16,7 @@ import { BsArrowLeftRight } from "react-icons/bs";
 import { RiSmartphoneLine } from "react-icons/ri";
 import { motion, AnimatePresence } from "framer-motion";
 import FormattedInput from "../ui/FormattedInput";
-
-interface DepositModalProps {
-     onClose: () => void;
-     onDepositSuccess?: (deposit: DemoDeposit) => void;
-     defaultAmount?: number;
-}
-
-type PaymentMethod = "zap" | "card" | "transfer" | "bank" | "ussd" | "opay";
-type ModalView = "amount" | "transfer_details" | "waiting_confirmation" | "success";
+import type { DepositModalProps, PaymentMethod, ModalView } from "../../lib/interfaces";
 
 const Deposit: React.FC<DepositModalProps> = ({
      onClose,

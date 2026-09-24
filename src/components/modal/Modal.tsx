@@ -1,13 +1,5 @@
-// components/Modal.jsx
-import React from "react";
 import ReactDOM from "react-dom";
-
-interface modalProps {
-  children: React.ReactNode;
-  onClose: () => void;
-  showClose?: boolean;
-  customMode?: boolean;
-}
+import type { modalProps } from "../../lib/interfaces";
 
 const Modal = ({ children, onClose, showClose=true, customMode=false }: modalProps) => {
   const modalRoot = document.getElementById("modal-root");

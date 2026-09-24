@@ -1,9 +1,7 @@
 import React from "react";
 import OverviewCards from "../../components/cards/OverviewCards";
-import { TbReceiptDollar } from "react-icons/tb";
-import { HiHome, HiOutlineArrowTrendingUp } from "react-icons/hi2";
-import { LuUsersRound } from "react-icons/lu";
-import { formatterUtility } from "../../helpers/formatterUtility";
+import { HiOutlineBuildingOffice2 } from "react-icons/hi2";
+import { LuShieldAlert, LuShieldCheck, LuClock } from "react-icons/lu";
 import { useUser } from "../../hooks/useUser";
 import PageHeader from "../../components/navs/PageHeader";
 
@@ -11,39 +9,35 @@ const SupportOverview: React.FC = () => {
   const { user } = useUser();
 
   return (
-    <div className="">
+    <div className="flex flex-col gap-6">
       <PageHeader
-        heading={`Welcome, ${user?.first_name}`}
-        value="Here is your business breakdown"
+        heading={`Welcome, ${user?.first_name || "Support"}`}
+        value="Customer support desk and business verification summary"
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <OverviewCards
-          icon={TbReceiptDollar}
-          title="Total Sales"
-          value={formatterUtility(0)}
-          icon2={HiOutlineArrowTrendingUp}
+          icon={LuShieldAlert}
+          title="Pending KYC Approvals"
+          value={3}
         />
 
         <OverviewCards
-          icon={TbReceiptDollar}
-          title="Active Sales"
-          value={0}
-          icon2={HiOutlineArrowTrendingUp}
+          icon={LuClock}
+          title="Under Review"
+          value={2}
         />
 
         <OverviewCards
-          icon={HiHome}
-          title="Properties"
-          value={0}
-          icon2={HiOutlineArrowTrendingUp}
+          icon={LuShieldCheck}
+          title="Verified Companies"
+          value={45}
         />
 
         <OverviewCards
-          icon={LuUsersRound}
-          title="No of Employee"
-          value={0}
-          icon2={HiOutlineArrowTrendingUp}
+          icon={HiOutlineBuildingOffice2}
+          title="Total Businesses"
+          value={50}
         />
       </div>
     </div>

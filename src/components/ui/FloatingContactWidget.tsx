@@ -12,12 +12,7 @@ import {
 import { BsChatDotsFill } from "react-icons/bs";
 import { RiCustomerService2Fill } from "react-icons/ri";
 
-interface Message {
-  id: number;
-  sender: "user" | "support";
-  text: string;
-  time: string;
-}
+import type { FloatingWidgetMessage as Message } from "../../lib/interfaces";
 
 const INITIAL_MESSAGES: Message[] = [
   {

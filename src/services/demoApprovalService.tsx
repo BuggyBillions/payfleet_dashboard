@@ -1,12 +1,5 @@
-export interface DemoApproval {
-  id: number;
-  reference: string;
-  company: string;
-  amount: number;
-  type: "deposit" | "payment";
-  date: string;
-  status: "pending" | "approved" | "declined";
-}
+import type { DemoApproval } from "../lib/interfaces";
+export type { DemoApproval };
 
 const seedApprovals: DemoApproval[] = [
   {

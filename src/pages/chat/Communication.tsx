@@ -15,39 +15,8 @@ import {
 } from "react-icons/lu";
 import { IoMdClose } from "react-icons/io";
 import { BsEnvelope } from "react-icons/bs";
-
-export interface ChatUser {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  avatar?: string;
-  online: boolean;
-}
-
-export interface ChatMessage {
-  id: number;
-  senderId: number;
-  senderName: string;
-  text: string;
-  timestamp: string;
-  isMe: boolean;
-  status?: "sent" | "delivered" | "read";
-}
-
-export interface Conversation {
-  id: string;
-  name: string;
-  type: "chat";
-  lastMessage: string;
-  lastMessageTime: string;
-  unread: number;
-  online?: boolean;
-  avatar?: string;
-  role?: string;
-  membersCount?: number;
-  messages: ChatMessage[];
-}
+import type { ChatUser, ChatMessage, Conversation } from "../../lib/interfaces";
+export type { ChatUser, ChatMessage, Conversation };
 
 const MOCK_USERS: ChatUser[] = [
   { id: 101, name: "Sarah Jenkins", email: "sarah.j@payfleet.io", role: "Super Admin", online: true },

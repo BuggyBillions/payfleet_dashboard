@@ -17,15 +17,15 @@ import PaymentHistory from "./pages/company/PaymentHistory";
 import Settings from "./pages/company/Settings";
 import SuperAdminOverview from "./pages/superadmin/Overview";
 import FinancialOverview from "./pages/financial/Overview";
-import FinancialPayment from "./pages/financial/Payment";
 import SupportOverview from "./pages/support/Overview";
-import Payment from "./pages/financial/Payment";
 import ManageCompany from "./pages/superadmin/ManageCompany";
 import ManageStaff from "./pages/superadmin/ManageStaff";
 import ManageDeposit from "./pages/superadmin/ManageDeposit";
 import SuperAdminManagePayments from "./pages/superadmin/ManagePayments";
 import FinancialManageDeposit from "./pages/financial/ManageDeposit";
+import SupportManageCompany from "./pages/support/ManageCompany";
 import Communication from "./pages/chat/Communication";
+import Tier from "./pages/company/Tier";
 
 function App() {
   return (
@@ -59,7 +59,12 @@ function App() {
         <Route
           index
           path="/dashboard/deposits"
-          element={<MainLayout pageName="Deposits" children={<Deposits />} />}
+          element={<MainLayout pageName="All Deposits" children={<Deposits defaultFilter="all" />} />}
+        />
+        <Route
+          index
+          path="/dashboard/deposits/pending"
+          element={<MainLayout pageName="Pending Deposits" children={<Deposits defaultFilter="pending" />} />}
         />
         <Route
           index
@@ -78,6 +83,16 @@ function App() {
             <MainLayout
               pageName="Payment History"
               children={<PaymentHistory />}
+            />
+          }
+        />
+        <Route
+          index
+          path="/dashboard/tier"
+          element={
+            <MainLayout
+              pageName="Tier Management"
+              children={<Tier />}
             />
           }
         />
@@ -106,7 +121,12 @@ function App() {
         <Route
           index
           path="/admin/dashboard/deposit"
-          element={<MainLayout pageName="Manage Deposits" children={<ManageDeposit />} />}
+          element={<MainLayout pageName="All Deposits" children={<ManageDeposit defaultFilter="all" />} />}
+        />
+        <Route
+          index
+          path="/admin/dashboard/deposit/pending"
+          element={<MainLayout pageName="Pending Deposits" children={<ManageDeposit defaultFilter="pending" />} />}
         />
         <Route
           index
@@ -120,22 +140,23 @@ function App() {
         />
         <Route
           index
+          path="/admin/dashboard/settings"
+          element={<MainLayout pageName="Settings" children={<Settings />} />}
+        />
+        <Route
+          index
           path="/financial/dashboard/overview"
           element={<MainLayout pageName="Dashboard" children={<FinancialOverview />} />}
         />
         <Route
-          path="/financial/dashboard/payment"
-          element={<MainLayout pageName="Approve Payments" children={<FinancialPayment />} />}
-        />
-           <Route
           index
-          path="/financial/dashboard/approve"
-          element={<MainLayout pageName="Dashboard" children={<Payment />} />}
+          path="/financial/dashboard/deposit"
+          element={<MainLayout pageName="All Deposits" children={<FinancialManageDeposit defaultFilter="all" />} />}
         />
         <Route
           index
-          path="/financial/dashboard/deposit"
-          element={<MainLayout pageName="Manage Deposits" children={<FinancialManageDeposit />} />}
+          path="/financial/dashboard/deposit/pending"
+          element={<MainLayout pageName="Pending Deposits" children={<FinancialManageDeposit defaultFilter="pending" />} />}
         />
         <Route
           index
@@ -144,8 +165,23 @@ function App() {
         />
         <Route
           index
+          path="/financial/dashboard/settings"
+          element={<MainLayout pageName="Settings" children={<Settings />} />}
+        />
+        <Route
+          index
           path="/support/dashboard/overview"
           element={<MainLayout pageName="Dashboard" children={<SupportOverview />} />}
+        />
+        <Route
+          index
+          path="/support/dashboard/company"
+          element={<MainLayout pageName="Manage Company" children={<SupportManageCompany />} />}
+        />
+        <Route
+          index
+          path="/support/dashboard/settings"
+          element={<MainLayout pageName="Settings" children={<Settings />} />}
         />
         <Route
           index

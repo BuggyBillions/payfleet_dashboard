@@ -1,5 +1,4 @@
-import React from 'react'
-import type { StaffProps } from '../../../lib/interfaces';
+import type { EditStaffModalProps } from '../../../lib/interfaces';
 import Modal from '../Modal';
 import { useFormik } from 'formik';
 import * as Yup from "yup";
@@ -11,13 +10,6 @@ const TEAM_ROLES = [
      "Finance",
      "Support",
 ];
-
-interface EditStaffModalProps {
-     onClose: () => void;
-     selectedStaff?: StaffProps | null;
-     isEdit: boolean;
-     onSuccess?: (staff: Partial<StaffProps>) => void;
-}
 
 const EditStaffModal: React.FC<EditStaffModalProps> = ({
      onClose,

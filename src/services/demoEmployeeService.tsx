@@ -1,26 +1,11 @@
 import * as Yup from "yup";
-
-export interface DemoEmployee {
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone_number: string;
-  address: string;
-  job_title: string;
-  employment_type: string;
-  bank_name: string;
-  account_number: string;
-  estimate_pay: number;
-  status: "Active" | "Inactive";
-  is_payroll: boolean;
-  addedAt: string;
-}
-
-export type DemoEmployeeInput = Omit<
+import type {
   DemoEmployee,
-  "id" | "status" | "is_payroll" | "addedAt"
->;
+  DemoEmployeeInput,
+  EmployeeFormValues,
+} from "../lib/interfaces";
+
+export type { DemoEmployee, DemoEmployeeInput, EmployeeFormValues };
 
 export const EMPLOYMENT_TYPES = [
   "full-time",
@@ -28,19 +13,6 @@ export const EMPLOYMENT_TYPES = [
   "contract",
   "internship",
 ];
-
-export interface EmployeeFormValues {
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone_number: string;
-  address: string;
-  job_title: string;
-  employment_type: string;
-  bank_name: string;
-  account_number: string;
-  estimate_pay: number | string;
-}
 
 export const employeeValidationSchema = Yup.object({
   first_name: Yup.string().required("First name is required"),

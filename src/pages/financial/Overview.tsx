@@ -1,5 +1,6 @@
 import React from "react";
 import ReusableTable from "../../utility/ReusableTable";
+import OverviewCards from "../../components/cards/OverviewCards";
 import type { TableColumnProps } from "../../lib/interfaces";
 import { TbChecklist, TbClockHour4, TbCash } from "react-icons/tb";
 import { FaMoneyBillWave } from "react-icons/fa6";
@@ -15,46 +16,26 @@ import { getDemoPayments } from "../../services/demoPaymentService";
 
 const statusBadge = (status: DemoApproval["status"]) => {
   const styles = {
-    pending: "bg-amber-50 text-amber-600 border-amber-500/30",
-    approved: "bg-green-50 text-green-600 border-green-500/30",
-    declined: "bg-red-50 text-red-600 border-red-500/30",
+    pending: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    approved: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
+    declined: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
   };
 
   return (
     <span
-      className={`inline-flex items-center px-2 py-1 rounded-full border text-[10px] font-medium capitalize ${styles[status]}`}
+      className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-medium capitalize ${styles[status]}`}
     >
       {status}
     </span>
   );
 };
 
-type CardProps = {
-  icon: React.ComponentType<{ size?: number; className?: string }>;
-  title: string;
-  value: string | number;
-};
-
-const Card: React.FC<CardProps> = ({ icon: Icon, title, value }) => (
-  <div className="flex items-center gap-3 p-3 mt-3 rounded-lg bg-secondary border border-primary/10 text-tableData">
-    <Icon size={18} className="text-tableHeading shrink-0" />
-    <div className="flex flex-col gap-0.5 text-start">
-      <p className="text-[10px] text-tableHeading">{title}</p>
-      <p className="text-xl font-semibold">{value}</p>
-    </div>
-  </div>
-);
-
 const FinancialOverview: React.FC = () => {
   const approvals = getDemoApprovals();
   const payments = getDemoPayments();
 
-  const pendingCount = approvals.filter(
-    (r) => r.status === "pending",
-  ).length;
-  const approvedCount = approvals.filter(
-    (r) => r.status === "approved",
-  ).length;
+  const pendingCount = approvals.filter((r) => r.status === "pending").length;
+  const approvedCount = approvals.filter((r) => r.status === "approved").length;
   const approvedDepositAmount = approvals
     .filter((r) => r.type === "deposit" && r.status === "approved")
     .reduce((sum, r) => sum + r.amount, 0);
@@ -68,14 +49,21 @@ const FinancialOverview: React.FC = () => {
     {
       label: "Reference",
       render: (item) => (
-        <span className="font-semibold uppercase">{item.reference}</span>
+        <span className="font-semibold uppercase text-textBlack font-mono text-xs">
+          {item.reference}
+        </span>
       ),
     },
-    { label: "Company", key: "company" },
+    {
+      label: "Company",
+      render: (item) => (
+        <span className="font-medium text-textBlack text-xs">{item.company}</span>
+      ),
+    },
     {
       label: "Type",
       render: (item) => (
-        <span className="inline-flex items-center px-2 py-1 rounded-full bg-[#2A5D56]/10 text-[#2A5D56] text-[10px] font-medium capitalize">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-medium capitalize">
           {item.type}
         </span>
       ),
@@ -83,7 +71,7 @@ const FinancialOverview: React.FC = () => {
     {
       label: "Amount",
       render: (item) => (
-        <span className="font-semibold text-primary">
+        <span className="font-bold text-primary text-xs">
           {formatterUtility(item.amount)}
         </span>
       ),
@@ -94,42 +82,48 @@ const FinancialOverview: React.FC = () => {
     },
     {
       label: "Date",
-      render: (item) => <span>{formatShortDate(item.date)}</span>,
+      render: (item) => (
+        <span className="text-textBlack/60 text-xs">{formatShortDate(item.date)}</span>
+      ),
     },
   ];
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col">
-        <h2 className="text-lg font-semibold">Financial Overview</h2>
-        <p className="text-sm text-gray-500">
-          Track company deposits, approvals and payouts
+        <h2 className="text-lg font-semibold text-textBlack">Financial Overview</h2>
+        <p className="text-xs text-textBlack/60">
+          Track company deposits, approvals, and payroll payouts
         </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6">
-        <Card
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <OverviewCards
           icon={TbClockHour4}
           title="Pending Approvals"
           value={pendingCount}
         />
-        <Card icon={TbChecklist} title="Approved Requests" value={approvedCount} />
-        <Card
+        <OverviewCards
+          icon={TbChecklist}
+          title="Approved Requests"
+          value={approvedCount}
+        />
+        <OverviewCards
           icon={TbCash}
           title="Approved Deposits"
           value={formatterUtility(approvedDepositAmount)}
         />
-        <Card
+        <OverviewCards
           icon={FaMoneyBillWave}
-          title="Paid Out"
+          title="Total Paid Out"
           value={formatterUtility(paidOut)}
         />
       </div>
 
-      <div className="bg-white rounded-xl p-4">
-        <div className="flex flex-col mb-4">
-          <h3 className="font-semibold">Recent Transactions</h3>
-          <p className="text-xs text-gray-500">
+      <div className="bg-tertiary rounded-xl p-5 border border-primary/10 space-y-3">
+        <div className="flex flex-col">
+          <h3 className="font-semibold text-base text-textBlack">Recent Transactions</h3>
+          <p className="text-xs text-textBlack/60">
             Latest approval and deposit activity
           </p>
         </div>
@@ -144,6 +138,7 @@ const FinancialOverview: React.FC = () => {
           itemsPerPage={5}
           setCurrentPage={() => {}}
           setItemsPerPage={() => {}}
+          hasSerialNo={true}
         />
       </div>
     </div>

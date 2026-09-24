@@ -1,15 +1,11 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import api, { setupInterceptors } from "../helpers/api";
 import axios from "axios";
-import type { UserProps } from "../lib/interfaces";
+import type { UserProps, UserProviderProps } from "../lib/interfaces";
 import { UserContext } from "./UserContext";
 
-interface userProviderProps {
-  children: React.ReactNode;
-}
-
-export const UserProvider = ({ children }: userProviderProps) => {
+export const UserProvider = ({ children }: UserProviderProps) => {
   const [user, setUser] = useState<UserProps | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);

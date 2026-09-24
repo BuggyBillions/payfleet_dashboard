@@ -1,14 +1,5 @@
-import type { StatusType } from "../lib/interfaces";
-
-export interface DemoPayment {
-  id: number;
-  reference: string;
-  employee_name: string;
-  amount: number;
-  method: string;
-  status: StatusType;
-  date: string;
-}
+import type { DemoPayment } from "../lib/interfaces";
+export type { DemoPayment };
 
 const seedPayments: DemoPayment[] = [
   {

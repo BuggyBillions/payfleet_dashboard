@@ -1,24 +1,25 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import ReusableTable from "../../utility/ReusableTable";
-import type { TableColumnProps } from "../../lib/interfaces";
+import type { TableColumnProps, DepositsProps, DemoDeposit } from "../../lib/interfaces";
 import {
   formatterUtility,
   formatShortDate,
 } from "../../helpers/formatterUtility";
-import {
-  getDemoDeposits,
-  type DemoDeposit,
-} from "../../services/demoDepositService";
+import { getDemoDeposits } from "../../services/demoDepositService";
 import ActionButton from "../../components/ui/ActionButton";
+import OverviewCards from "../../components/cards/OverviewCards";
 import { FaPlus } from "react-icons/fa6";
 import { FiSearch } from "react-icons/fi";
+import { LuWallet, LuClock, LuCheck } from "react-icons/lu";
 import Deposit from "../../components/modal/Deposit";
+
+export type { DepositsProps };
 
 const statusBadge = (status: DemoDeposit["status"]) => {
   const styles = {
-    successful: "bg-green-50 text-green-700 border-green-500/30",
-    pending: "bg-amber-50 text-amber-700 border-amber-500/30",
-    failed: "bg-red-50 text-red-700 border-red-500/30",
+    successful: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
+    pending: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    failed: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
   };
 
   return (
@@ -30,13 +31,18 @@ const statusBadge = (status: DemoDeposit["status"]) => {
   );
 };
 
-const Deposits: React.FC = () => {
+const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
   const [deposits, setDeposits] = useState<DemoDeposit[]>(() => getDemoDeposits());
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>(defaultFilter);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [initiate, setInitiate] = useState(false);
+
+  useEffect(() => {
+    setStatusFilter(defaultFilter);
+    setCurrentPage(1);
+  }, [defaultFilter]);
 
   // Compute live statistics and available wallet balance
   const totalBalance = useMemo(() => {
@@ -87,7 +93,7 @@ const Deposits: React.FC = () => {
     {
       label: "Reference",
       render: (item) => (
-        <span className="font-semibold uppercase tracking-wider text-xs text-gray-800">
+        <span className="font-semibold uppercase tracking-wider text-xs text-textBlack">
           {item.reference}
         </span>
       ),
@@ -106,9 +112,8 @@ const Deposits: React.FC = () => {
     },
     {
       label: "Date & Time",
-
       render: (item) => (
-        <span className="text-gray-500 text-xs">
+        <span className="text-textBlack/60 text-xs">
           {formatShortDate(item.date)}
         </span>
       ),
@@ -120,9 +125,13 @@ const Deposits: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col">
-          <h2 className="text-lg font-semibold text-gray-900">Deposits & Wallet</h2>
-          <p className="text-sm text-gray-500">
-            Fund your business account and manage all incoming deposit transactions.
+          <h2 className="text-lg font-semibold text-textBlack">
+            {defaultFilter === "pending" ? "Pending Deposits" : "Deposits & Wallet"}
+          </h2>
+          <p className="text-xs text-textBlack/60">
+            {defaultFilter === "pending"
+              ? "Monitor and track incoming deposits awaiting bank confirmation."
+              : "Fund your business account and manage all incoming deposit transactions."}
           </p>
         </div>
         <div>
@@ -136,46 +145,31 @@ const Deposits: React.FC = () => {
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Available Balance */}
-        <div className="flex items-center justify-between p-4 rounded-xl bg-secondary border border-primary/10">
-          <div className="flex flex-col gap-1">
-            <p className="text-xs text-tableHeading font-medium">Available Account Balance</p>
-            <p className="text-2xl font-bold text-gray-900">{formatterUtility(totalBalance)}</p>
-            <span className="text-[11px] text-green-600 font-medium flex items-center gap-1 mt-1">
-              Ready for Payroll Payouts
-            </span>
-          </div>
-        </div>
-
-        {/* Pending Settlements */}
-        <div className="flex items-center justify-between p-4 rounded-xl bg-secondary border border-primary/10">
-          <div className="flex flex-col gap-1">
-            <p className="text-xs text-tableHeading font-medium">Pending Deposits</p>
-            <p className="text-2xl font-bold">{formatterUtility(pendingAmount)}</p>
-            <span className="text-[11px] text-amber-600 font-medium flex items-center gap-1 mt-1">
-              Awaiting Bank Confirmation
-            </span>
-          </div>
-        </div>
-
-        {/* Successful Deposits Count */}
-        <div className="flex items-center justify-between p-4 rounded-xl bg-secondary border border-primary/10">
-          <div className="flex flex-col gap-1">
-            <p className="text-xs text-tableHeading font-medium">Successful Transactions</p>
-            <p className="text-2xl font-bold text-gray-900">{successfulCount}</p>
-            <span className="text-[11px] text-gray-500 font-medium mt-1">
-              Total lifetime deposits
-            </span>
-          </div>
-        </div>
+        <OverviewCards
+          title="Available Account Balance"
+          value={formatterUtility(totalBalance)}
+          icon={LuWallet}
+        />
+        <OverviewCards
+          title="Pending Deposits"
+          value={formatterUtility(pendingAmount)}
+          icon={LuClock}
+        />
+        <OverviewCards
+          title="Successful Transactions"
+          value={successfulCount.toString()}
+          icon={LuCheck}
+        />
       </div>
 
       {/* Deposit History Table Section */}
-      <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-2xs space-y-4">
+      <div className="bg-tertiary rounded-xl p-5 border border-primary/10 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
           <div className="flex flex-col">
-            <h3 className="font-semibold text-base text-gray-900">Deposit History</h3>
-            <p className="text-xs text-gray-500">
+            <h3 className="font-semibold text-base text-textBlack">
+              {defaultFilter === "pending" ? "Pending Deposit Transactions" : "Deposit History"}
+            </h3>
+            <p className="text-xs text-textBlack/60">
               Complete audit log of all account funding and virtual bank transfers
             </p>
           </div>
@@ -188,7 +182,7 @@ const Deposits: React.FC = () => {
                 setStatusFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="h-10 px-3 text-xs rounded-lg border border-primary/10 bg-secondary outline-none text-gray-700"
+              className="h-10 px-3 text-xs rounded-lg border border-primary/10 bg-secondary outline-none text-textBlack"
             >
               <option value="all">All Statuses</option>
               <option value="successful">Successful</option>
@@ -198,7 +192,7 @@ const Deposits: React.FC = () => {
 
             {/* Search Input */}
             <div className="relative">
-              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-textBlack/40 text-sm" />
               <input
                 type="text"
                 value={searchTerm}
@@ -207,7 +201,7 @@ const Deposits: React.FC = () => {
                   setCurrentPage(1);
                 }}
                 placeholder="Search reference or channel..."
-                className="h-10 pl-9 pr-3 rounded-lg border border-primary/10 bg-secondary text-xs outline-none w-56 md:w-64"
+                className="h-10 pl-9 pr-3 rounded-lg border border-primary/10 bg-secondary text-xs text-textBlack placeholder:text-textBlack/40 outline-none w-56 md:w-64"
               />
             </div>
           </div>

@@ -4,6 +4,7 @@ import ActionCell from "../../components/ui/ActionCell";
 import Modal from "../../components/modal/Modal";
 import ConfirmDialog from "../../components/modal/ConfirmDialog";
 import ActionButton from "../../components/ui/ActionButton";
+import OverviewCards from "../../components/cards/OverviewCards";
 import { toast } from "sonner";
 import { formatShortDate, formatterUtility } from "../../helpers/formatterUtility";
 import type { TableColumnProps } from "../../lib/interfaces";
@@ -26,7 +27,7 @@ import {
   LuRotateCcw,
   LuCalendar,
 } from "react-icons/lu";
-import { FaMoneyBillWave } from "react-icons/fa6";
+import { TbReceiptDollar } from "react-icons/tb";
 import { IoMdClose } from "react-icons/io";
 
 const statusBadge = (status: ExtendedPaymentStatus) => {
@@ -711,58 +712,27 @@ const SuperAdminManagePayments: React.FC = () => {
       </div>
 
       {/* KPI Metric Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Disbursed */}
-        <div className="p-4 rounded-xl bg-secondary border border-primary/10 flex items-center gap-3.5 shadow-sm">
-
-          <div className="flex flex-col">
-            <span className="text-xs text-textBlack/50 font-medium">Total Disbursed (Paid Out)</span>
-            <span className="text-xl font-bold text-textBlack">
-              {formatterUtility(stats.totalDisbursed)}
-            </span>
-            <div className="flex items-center gap-1 text-[11px] text-primary/80 font-medium mt-0.5">
-              <span>{stats.successfulCount} transactions cleared</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Successful Payouts */}
-        <div className="p-4 rounded-xl bg-secondary border border-emerald-500/20 flex items-center gap-3.5 shadow-sm">
-
-          <div className="flex flex-col">
-            <span className="text-xs text-textBlack/50 font-medium">Successful Payouts</span>
-            <span className="text-xl font-bold text-emerald-700">
-              {stats.successfulCount} Completed
-            </span>
-            <span className="text-[11px] text-textBlack/50 mt-0.5">Direct bank credit confirmed</span>
-          </div>
-        </div>
-
-        {/* Pending Clearance */}
-        <div className="p-4 rounded-xl bg-secondary border flex items-center gap-3.5 shadow-sm">
-          <div className="flex flex-col">
-            <span className="text-xs text-textBlack/50 font-medium">Awaiting Clearance</span>
-            <span className="text-xl font-bold text-amber-700">
-              {stats.pendingCount} Pending
-            </span>
-            <span className="text-[11px] text-amber-600 font-medium mt-0.5">
-              {formatterUtility(stats.pendingAmount)} in queue
-            </span>
-          </div>
-        </div>
-
-        {/* Failed / Flags */}
-        <div className="p-4 rounded-xl bg-secondary border border-rose-500/20 flex items-center gap-3.5 shadow-sm">
-          <div className="flex flex-col">
-            <span className="text-xs text-textBlack/50 font-medium">Failed / Cancelled</span>
-            <span className="text-xl font-bold text-rose-700">
-              {stats.failedCount} Flagged
-            </span>
-            <span className="text-[11px] text-rose-500 font-medium mt-0.5">
-              {formatterUtility(stats.failedAmount)} returned
-            </span>
-          </div>
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6">
+        <OverviewCards
+          title="Total Disbursed"
+          value={formatterUtility(stats.totalDisbursed)}
+          icon={TbReceiptDollar}
+        />
+        <OverviewCards
+          title="Successful Payouts"
+          value={stats.successfulCount}
+          icon={TbReceiptDollar}
+        />
+        <OverviewCards
+          title="Pending Clearance"
+          value={stats.pendingCount}
+          icon={LuClock}
+        />
+        <OverviewCards
+          title="Failed / Cancelled"
+          value={stats.failedCount}
+          icon={LuShieldAlert}
+        />
       </div>
 
       {/* Toolbar: Search & Filter Trigger */}

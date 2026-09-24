@@ -1,16 +1,5 @@
-import api from "../helpers/api"
-
-interface LoginValues {
-    email: string;
-    password: string;
-}
-
-interface RegisterValues {
-    name: string;
-    email: string;
-    password: string;
-    phone: string;
-}
+import api from "../helpers/api";
+import type { LoginValues, RegisterValues } from "../lib/interfaces";
 
 export const registerService = async (values: RegisterValues) => {
     const response = await api.post(`/api/auth/register`, values);

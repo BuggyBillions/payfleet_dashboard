@@ -1,10 +1,6 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import type { Theme } from "../lib/interfaces";
+import { useEffect, useMemo, useState } from "react";
+import type { Theme, ThemeProviderProps } from "../lib/interfaces";
 import { ThemeContext } from "../context/ThemeContext";
-
-type ThemeProviderProps = {
-  children: ReactNode;
-};
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(() => {
