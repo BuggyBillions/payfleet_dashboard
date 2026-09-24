@@ -106,6 +106,7 @@ const Deposits: React.FC = () => {
     },
     {
       label: "Date & Time",
+
       render: (item) => (
         <span className="text-gray-500 text-xs">
           {formatShortDate(item.date)}

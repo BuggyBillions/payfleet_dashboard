@@ -9,7 +9,7 @@ import { formatterUtility } from "../../helpers/formatterUtility";
 import { LuUsersRound } from "react-icons/lu";
 import { HiOutlineArrowTrendingUp, HiOutlineArrowTrendingDown } from "react-icons/hi2";
 import { TbReceiptDollar } from "react-icons/tb";
-import { FiEdit } from "react-icons/fi";
+import ActionCell from "../../components/ui/ActionCell";
 import { FaMoneyBillWave } from "react-icons/fa6";
 import {
   getDemoEmployees,
@@ -95,28 +95,17 @@ const Employees: React.FC = () => {
     {
       label: "Action",
       render: (item) => (
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            title="Edit employee"
-            onClick={() => setEditing(item)}
-            className="w-6 h-6 flex items-center justify-center rounded-md border border-primary/15 text-primary hover:bg-primary/10 transition cursor-pointer"
-          >
-            <FiEdit size={11} />
-          </button>
-          <button
-            type="button"
-            title={item.is_payroll ? "Remove from payroll" : "Add to payroll"}
-            onClick={() => handleTogglePayroll(item)}
-            className={`w-6 h-6 flex items-center justify-center rounded-md border transition cursor-pointer ${
-              item.is_payroll
-                ? "border-green-500/40 bg-green-50 text-green-600"
-                : "border-black/10 text-gray-400 hover:text-gray-600 hover:bg-secondary"
-            }`}
-          >
-            <FaMoneyBillWave size={11} />
-          </button>
-        </div>
+        <ActionCell
+          rowId={item.id}
+          onEdit={() => setEditing(item)}
+          otherActions={[
+            {
+              name: item.is_payroll ? "Remove from payroll" : "Add to payroll",
+              icon: <FaMoneyBillWave size={12} />,
+              action: () => handleTogglePayroll(item),
+            },
+          ]}
+        />
       ),
     },
   ];
