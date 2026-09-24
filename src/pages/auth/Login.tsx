@@ -19,7 +19,7 @@ const Login: React.FC = () => {
     email: string;
     password: string;
   } | null>(null);
-  const { login } = useUser();
+  const { login, refreshUser } = useUser();
 
   const validationSchema = Yup.object({
     email: Yup.string()
@@ -37,6 +37,9 @@ const Login: React.FC = () => {
   ) => {
     login(token, user, user.role);
     toast.success(message);
+
+    // Pull full details (incl. company id) from /me
+    refreshUser(token).catch(() => undefined);
 
     const finalRoute =
       user.role === "admin" ? "/admin/dashboard/overview" : "/dashboard/overview";

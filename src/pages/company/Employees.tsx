@@ -14,15 +14,14 @@ import ActionCell from "../../components/ui/ActionCell";
 import type { TableColumnProps, Employee, EmployeeListResponse } from "../../lib/interfaces";
 import { formatterUtility } from "../../helpers/formatterUtility";
 import { getErrorMessage } from "../../helpers/api";
-import {
-  getEmployees,
-  deleteEmployee,
-  EMPLOYMENT_TYPES,
-} from "../../services/employeeService";
+import { useUser } from "../../hooks/useUser";
+import { getEmployees, deleteEmployee, EMPLOYMENT_TYPES } from "../../services/employeeService";
 
 const Employees: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useUser();
+  const companyId = user?.company_details?.id;
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -45,6 +44,7 @@ const Employees: React.FC = () => {
   } = useQuery<EmployeeListResponse>({
     queryKey: [
       "employees",
+      companyId,
       debouncedSearch,
       employmentFilter,
       currentPage,
@@ -52,32 +52,42 @@ const Employees: React.FC = () => {
     ],
     queryFn: () =>
       getEmployees({
+        company_id: companyId,
         search: debouncedSearch,
         employment_type:
           employmentFilter === "all" ? undefined : employmentFilter,
         page: currentPage,
         per_page: itemsPerPage,
       }),
+    enabled: Boolean(companyId),
     placeholderData: (prev) => prev,
   });
 
   const { data: statsData } = useQuery<EmployeeListResponse>({
-    queryKey: ["employees", "stats", debouncedSearch, employmentFilter],
+    queryKey: [
+      "employees",
+      "stats",
+      companyId,
+      debouncedSearch,
+      employmentFilter,
+    ],
     queryFn: () =>
       getEmployees({
+        company_id: companyId,
         search: debouncedSearch,
         employment_type:
           employmentFilter === "all" ? undefined : employmentFilter,
         per_page: 500,
       }),
+    enabled: Boolean(companyId),
   });
 
   const employees = data?.items ?? [];
   const totalItems = data?.totalItems ?? employees.length;
 
   const statsEmployees = statsData?.items ?? [];
-  const activeCount = statsEmployees.filter(
-    (emp) => String(emp.status ?? "").toLowerCase() === "active",
+  const onPayrollCount = statsEmployees.filter(
+    (emp) => String(emp.paying) === "1",
   ).length;
   const totalPayroll = statsEmployees.reduce(
     (sum, emp) => sum + (Number(emp.estimate_pay) || 0),
@@ -131,7 +141,7 @@ const Employees: React.FC = () => {
       label: "Pay",
       render: (item) => (
         <span className="font-semibold text-primary">
-          {formatterUtility(item.estimate_pay)}
+          {formatterUtility(Number(item.estimate_pay))}
         </span>
       ),
     },
@@ -175,8 +185,8 @@ const Employees: React.FC = () => {
         <OverviewCards
           icon={LuUsersRound}
           icon2={HiOutlineArrowTrendingUp}
-          title="Active Employees"
-          value={activeCount}
+          title="On Payroll"
+          value={onPayrollCount}
         />
         <OverviewCards
           icon={TbReceiptDollar}

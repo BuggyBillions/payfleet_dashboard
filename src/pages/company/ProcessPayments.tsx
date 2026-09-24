@@ -9,10 +9,13 @@ import { FaMoneyBillWave } from "react-icons/fa6";
 import { FiMinusCircle } from "react-icons/fi";
 import ActionCell from "../../components/ui/ActionCell";
 import ReduceSalaryModal from "../../components/modal/ReduceSalaryModal";
+import { useUser } from "../../hooks/useUser";
 import { getEmployees } from "../../services/employeeService";
 
 const ProcessPayments: React.FC = () => {
   const queryClient = useQueryClient();
+  const { user } = useUser();
+  const companyId = user?.company_details?.id;
   const [reduceModalEmployee, setReduceModalEmployee] =
     useState<Employee | null>(null);
   const [search, setSearch] = useState("");
@@ -29,13 +32,22 @@ const ProcessPayments: React.FC = () => {
   }, [search]);
 
   const { data, isLoading, isError, error } = useQuery<EmployeeListResponse>({
-    queryKey: ["employees", "process-payments", debouncedSearch, currentPage, itemsPerPage],
+    queryKey: [
+      "employees",
+      "process-payments",
+      companyId,
+      debouncedSearch,
+      currentPage,
+      itemsPerPage,
+    ],
     queryFn: () =>
       getEmployees({
+        company_id: companyId,
         search: debouncedSearch,
         page: currentPage,
         per_page: itemsPerPage,
       }),
+    enabled: Boolean(companyId),
     placeholderData: (prev) => prev,
   });
 
@@ -54,7 +66,7 @@ const ProcessPayments: React.FC = () => {
 
   const handlePay = (emp: Employee) => {
     toast.success(
-      `Payment of ${formatterUtility(emp.estimate_pay)} for ${emp.first_name} ${emp.last_name} initiated `,
+      `Payment of ${formatterUtility(Number(emp.estimate_pay))} for ${emp.first_name} ${emp.last_name} initiated `,
     );
   };
 
@@ -94,7 +106,7 @@ const ProcessPayments: React.FC = () => {
       label: "Pay",
       render: (item) => (
         <span className="font-semibold text-primary">
-          {formatterUtility(item.estimate_pay)}
+          {formatterUtility(Number(item.estimate_pay))}
         </span>
       ),
     },

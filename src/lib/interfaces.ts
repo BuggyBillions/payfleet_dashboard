@@ -188,6 +188,18 @@ export interface NavItem {
 // 3. AUTHENTICATION & USER TYPES
 // ==========================================
 
+export interface CompanyDetailsProps {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string;
+  logo?: string | null;
+  about?: string;
+  address?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface UserProps {
   id: number;
   username: string;
@@ -198,6 +210,7 @@ export interface UserProps {
   is_admin: number;
   role: string;
   enabled: number;
+  company_details?: CompanyDetailsProps;
   created_at: string;
   updated_at: string;
 }
@@ -314,6 +327,21 @@ export interface ResolvedAccount {
   bank_code?: string;
 }
 
+export interface EmployeeCompanyProps {
+  id: number;
+  name: string;
+  email?: string;
+  phone?: string;
+  logo?: string | null;
+  about?: string;
+  address?: string;
+  user_id?: number;
+  balance?: string | number;
+  tier?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Employee {
   id: number | string;
   company_id?: number | string;
@@ -328,8 +356,10 @@ export interface Employee {
   bank_code?: string;
   account_name: string;
   account_number: string;
-  estimate_pay: number;
-  status?: string;
+  estimate_pay: number | string;
+  paying?: string | number;
+  deduction_amount?: number | string | null;
+  company?: EmployeeCompanyProps;
   created_at?: string;
   updated_at?: string;
 }
@@ -522,6 +552,7 @@ export interface DepositModalProps {
   onClose: () => void;
   onDepositSuccess?: (deposit: DemoDeposit) => void;
   defaultAmount?: number;
+  companyId?: number | string;
 }
 
 // ==========================================

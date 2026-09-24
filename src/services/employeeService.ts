@@ -45,6 +45,7 @@ export const employeeValidationSchema = Yup.object({
 });
 
 export interface GetEmployeesParams {
+  company_id?: number | string;
   search?: string;
   employment_type?: string;
   page?: number;
@@ -56,6 +57,7 @@ export const getEmployees = async (
 ): Promise<EmployeeListResponse> => {
   const res = await api.get("/my-employees", {
     params: {
+      company_id: params.company_id || undefined,
       search: params.search?.trim() || undefined,
       employment_type: params.employment_type || undefined,
       page: params.page ?? 1,
