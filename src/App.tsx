@@ -21,6 +21,7 @@ import FinancialPayment from "./pages/financial/Payment";
 import SupportOverview from "./pages/support/Overview";
 import Payment from "./pages/financial/Payment";
 import ManageCompany from "./pages/superadmin/ManageCompany";
+import ManageStaff from "./pages/superadmin/ManageStaff";
 
 function App() {
   return (
@@ -35,20 +36,24 @@ function App() {
           element={<MainLayout pageName="Dashboard" children={<Overview />} />}
         />
         <Route
+          index
           path="/dashboard/employees"
           element={<MainLayout pageName="Employees" children={<Employees />} />}
         />
         <Route
+          index
           path="/dashboard/employees/add"
           element={
             <MainLayout pageName="Add Employee" children={<AddEmployee />} />
           }
         />
         <Route
+          index
           path="/dashboard/deposits"
           element={<MainLayout pageName="Deposits" children={<Deposits />} />}
         />
         <Route
+          index
           path="/dashboard/payments/process"
           element={
             <MainLayout
@@ -58,6 +63,7 @@ function App() {
           }
         />
         <Route
+          index
           path="/dashboard/payments/history"
           element={
             <MainLayout
@@ -67,6 +73,7 @@ function App() {
           }
         />
         <Route
+          index
           path="/dashboard/settings"
           element={
             <MainLayout pageName="Settings" children={<Settings />} />
@@ -77,11 +84,16 @@ function App() {
           path="/admin/dashboard/overview"
           element={<MainLayout pageName="Dashboard" children={<SuperAdminOverview />} />}
         />
-          <Route
-            index
-            path="/admin/dashboard/company"
-            element={<MainLayout pageName="Manage Company" children={<ManageCompany />} />}
-          />
+        <Route
+          index
+          path="/admin/dashboard/company"
+          element={<MainLayout pageName="Manage Company" children={<ManageCompany />} />}
+        />
+        <Route
+          index
+          path="/admin/dashboard/staff"
+          element={<MainLayout pageName="Manage Staff" children={<ManageStaff />} />}
+        />
         <Route
           index
           path="/financial/dashboard/overview"
