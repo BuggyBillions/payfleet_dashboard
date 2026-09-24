@@ -10,9 +10,9 @@ import StepThree from "./registersteps/StepThree";
 import StepFour from "./registersteps/StepFour";
 import { assets } from "../../assets/assets";
 import { useMutation } from "@tanstack/react-query";
+import { ForgotPasswordSchema } from "../../lib/validationSchemas";
 import type { AxiosError } from "axios";
-import type { ApiErrorResponse } from "../../lib/interfaces";
-import type { Forgotpassword } from "../../lib/formTypes";
+import type { ApiErrorResponse, ForgotPasswordFormValues } from "../../lib/interfaces";
 
 const lineVariants = {
   hidden: { opacity: 0, y: 10 },
@@ -87,7 +87,7 @@ const Forgotpassword: React.FC = () => {
     },
   });
 
-  const formik = useFormik<Forgotpassword>({
+  const formik = useFormik<ForgotPasswordFormValues>({
     initialValues: {
       name: "",
       email: "",
@@ -97,7 +97,7 @@ const Forgotpassword: React.FC = () => {
       phone: "",
       password: "",
     },
-    validationSchema: Forgotpassword,
+    validationSchema: ForgotPasswordSchema,
     onSubmit: async (values) => {
       const formData = new FormData();
       formData.append("name", values.name);

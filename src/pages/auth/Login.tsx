@@ -5,11 +5,16 @@ import { FaEye } from "react-icons/fa6";
 import { assets } from "../../assets/assets";
 import * as Yup from "yup";
 import { toast } from "sonner";
-import api, { getErrorMessage } from "../../helpers/api";
+import { getErrorMessage } from "../../helpers/api";
 import { useFormik } from "formik";
 import { useUser } from "../../hooks/useUser";
+import { loginService, sendEmailVerificationCodeService } from "../../services/authService";
+import { useMutation } from "@tanstack/react-query";
+import type { LoginValues } from "../../lib/interfaces";
+import { savePendingVerification } from "../../helpers/pendingVerification";
 
 const Login: React.FC = () => {
+  const navigate = useNavigate();
   const [passwordVisibility, setPasswordVisibility] = useState(false);
   const { login } = useUser();
 
@@ -22,6 +27,38 @@ const Login: React.FC = () => {
       .required("Password is required"),
   });
 
+  const sendCodeMutation = useMutation({
+    mutationFn: sendEmailVerificationCodeService,
+    onSuccess: async (data, variables) => {
+      toast.success(data?.message || "Verification code sent successfully.");
+      await savePendingVerification(variables.email);
+      navigate("/verify-email");
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || getErrorMessage(error, "Failed to send verification code."));
+    },
+  });
+
+  const loginMutation = useMutation({
+    mutationFn: (values: LoginValues) => loginService(values),
+    onSuccess: (response) => {
+      toast.success(response?.message || "Login successfully");
+      if (response?.token && response?.user) {
+        login(response.token, response.user, response.user.role || "company");
+        navigate("/dashboard/overview");
+      }
+    },
+    onError: (err: any) => {
+      console.error("error logging in", err);
+      let errMessage = err.response?.data?.message || err.message;
+      console.error("errMessage", errMessage);
+      toast.error(errMessage || "Error occurred while logging in.");
+      if (errMessage && errMessage.toLowerCase().includes("verify")) {
+        sendCodeMutation.mutate({ email: formik.values.email });
+      }
+    },
+  })
+
   const formik = useFormik({
     initialValues: {
       email: "",
@@ -30,30 +67,10 @@ const Login: React.FC = () => {
     validationSchema,
     onSubmit: async (values) => {
       console.log(values);
-      try {
-        const response = await api.post("/login", values);
-        console.log(response);
-        if (response.status === 200 || response.status === 201) {
-          console.log();
-          const { user, token } = response.data.data;
-          login(
-            token,
-            user,
-            user.role,
-          );
-          toast.success("login sussessful");
-
-          const finalRoute = user.role === "admin" ? "/admin/dashboard/overview" : "/dashboard/overview"
-          navigate(finalRoute);
-        }
-      } catch (error) {
-        console.error(error);
-        toast.error(getErrorMessage(error));
-      }
+      loginMutation.mutateAsync(values)
     },
   });
 
-  const navigate = useNavigate();
 
   return (
     <div className="w-screen h-screen flex md:flex-row flex-col items-start bg-primary">

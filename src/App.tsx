@@ -28,6 +28,7 @@ import FinancialManageDeposit from "./pages/financial/ManageDeposit";
 import SupportManageCompany from "./pages/support/ManageCompany";
 import Communication from "./pages/chat/Communication";
 import Tier from "./pages/company/Tier";
+import Verifyemail from "./pages/auth/Verifyemail";
 
 
 function App() {
@@ -37,6 +38,7 @@ function App() {
       <Routes>
         <Route index path="/" element={<Login />} />
         <Route path="/getstarted" element={<Register />} />
+        <Route path="/verify-email" element={<Verifyemail />} />
         <Route path="/forgotpassword" element={<Forgotpassword />} />wh
         <Route path="*" element={<NotFound />} />
         <Route
