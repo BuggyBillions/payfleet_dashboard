@@ -36,9 +36,9 @@ export const UserProvider = ({ children }: userProviderProps) => {
       });
       const { data } = response.data;
       setUser(data);
-      setRole(data?.role ?? data?.crm_role);
+      setRole(data?.role);
       localStorage.setItem("user", JSON.stringify(data));
-      localStorage.setItem("role", data?.role || data?.crm_role);
+      localStorage.setItem("role", data?.role);
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 401) {
         logout();
@@ -60,6 +60,7 @@ export const UserProvider = ({ children }: userProviderProps) => {
         const parsedUser = JSON.parse(storedUser);
         setToken(storedToken);
         setUser(parsedUser);
+        setRole(parsedUser?.role);
         await refreshUser(storedToken);
         setIsAuthenticated(true);
       } catch {

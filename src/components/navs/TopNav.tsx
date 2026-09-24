@@ -6,8 +6,8 @@ import { assets } from "../../assets/assets";
 const TopNav: React.FC = () => {
   
   return (
-    <div className="w-full py-2 flex gap-3 items-center justify-between">
-      <img src={assets.logo} alt="Payfleet Logo" className="w-10" />
+    <div className="w-full py-3 flex gap-3 items-center justify-between">
+      <img src={assets.logo} alt="Payfleet Logo" className="w-18" />
       <div className="flex gap-6 items-center">
 
         <Link to="">
