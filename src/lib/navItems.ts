@@ -10,7 +10,7 @@ export interface NavChild {
 
 export interface NavItem {
   name: string;
-  icon?: IconType;
+  icon: IconType;
   path?: string;
   role: string[];
   children?: NavChild[];
@@ -27,7 +27,7 @@ export const navItems: NavItem[] = [
     name: "Dashboard",
     icon: RxDashboard,
     path: "/admin/dashboard/overview",
-    role: ["admin"],
+    role: [""],
   },
   {
     name: "Dashboard",
@@ -44,7 +44,7 @@ export const navItems: NavItem[] = [
   {
     name: "Employees",
     icon: LuUsersRound,
-    role: [""],
+    role: ["company"],
     children: [
       { name: "Add Employee", path: "/dashboard/employees/add" },
       { name: "View Employees", path: "/dashboard/employees" },
@@ -54,18 +54,18 @@ export const navItems: NavItem[] = [
     name: "Deposits",
     icon: LuArrowDownToLine,
     path: "/dashboard/deposits",
-    role: [""],
+    role: ["company"],
   },
   {
     name: "Process Payments",
     icon: FaMoneyBillWave,
     path: "/dashboard/payments/process",
-    role: [""],
+    role: ["company"],
   },
   {
     name: "Payment History",
     icon: LuHistory,
     path: "/dashboard/payments/history",
-    role: [""],
+    role: ["company"],
   },
 ];

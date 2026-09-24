@@ -66,8 +66,8 @@ const ReusableTable = <T extends { id?: number | string }>({
                 />
               );
             },
-className:
-                "p-3 text-center border-x border-black/5 first:border-s-0 last:border-e-0",
+            className:
+                "p-3 text-center border-x border-textBlack/5 first:border-s-0 last:border-e-0",
             tableHeadingClassName: "text-center!",
           },
         ]
@@ -83,7 +83,7 @@ className:
               return serial.toString().padStart(3, "0");
             },
             className:
-              "px-3 py-2 text-[10px] text-start whitespace-nowrap font-medium",
+              "px-3 py-2 text-[10px] text-textBlack text-start whitespace-nowrap font-medium",
           },
         ]
       : []),
@@ -92,15 +92,15 @@ className:
   ];
 
   return (
-    <div className="space-y-5 pb-10">
-      <div className="overflow-x-auto no-scrollbar w-full lg:p-0 pe-4">
-        <table className="w-full min-w-250 bg-[#FAFAFA] mb-2">
+    <div className="">
+      <div className="overflow-x-auto no-scrollbar w-full lg:p-0 pe-4 rounded-lg">
+        <table className="w-full min-w-250 bg-secondary">
           <thead>
-            <tr className="bg-[#F0F2EE] h-11 rounded-xl">
+            <tr className="bg-secondary h-11 rounded-xl">
               {columnsWithSN.map((col, idx) => (
                 <th
                   key={col.key ?? idx}
-                  className={`px-3 py-1 text-[10px] font-medium text-tableHeading text-start border-x border-black/5 first:border-s-0 last:border-e-0 whitespace-nowrap ${col.tableHeadingClassName}`}
+                  className={`px-3 py-1 text-[10px] font-medium text-textBlack text-start border-x border-textBlack/5 first:border-s-0 last:border-e-0 whitespace-nowrap ${col.tableHeadingClassName}`}
                 >
                   {col.label}
                 </th>
@@ -110,7 +110,7 @@ className:
 
           <tbody>
             {isLoading ? (
-              <tr className="h-12 border-y border-black/5">
+              <tr className="h-12 border-y border-textBlack/5">
                 <td colSpan={columnsWithSN.length}>
                   <div className="flex items-center justify-center gap-2 text-xs">
                     <LuLoaderCircle className="animate-spin" />
@@ -119,7 +119,7 @@ className:
                 </td>
               </tr>
             ) : error ? (
-              <tr className="h-12 border-y border-black/5">
+              <tr className="h-12 border-y border-textBlack/5">
                 <td
                   colSpan={columnsWithSN.length}
                   className="px-3 py-1 text-[10px] text-center"
@@ -132,7 +132,7 @@ className:
                 </td>
               </tr>
             ) : data.length === 0 ? (
-              <tr className="h-11 border-y border-black/5">
+              <tr className="h-11 border-y border-textBlack/5">
                 <td
                   colSpan={columnsWithSN.length}
                   className="px-3 py-1 text-[10px] text-center"
@@ -144,14 +144,14 @@ className:
               data.map((item, index) => (
                 <tr
                   key={(getRowId ? getRowId(item, index) : item.id) || index}
-                  className={`h-11 border-b border-black/5`}
+                  className={`h-11 border-b border-textBlack/5`}
                 >
                   {columnsWithSN.map((col, idx) => (
                     <td
                       key={col.key ?? idx}
                       className={
                         col.className ||
-                        "px-3 py-1 text-[10px] whitespace-nowrap text-tableData font-medium border-x border-black/5 first:border-s-0 last:border-e-0"
+                        "px-3 py-1 text-[10px] whitespace-nowrap text-textBlack font-medium border-x border-textBlack/5 first:border-s-0 last:border-e-0"
                       }
                     >
                       {col.render

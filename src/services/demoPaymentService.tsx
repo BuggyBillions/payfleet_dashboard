@@ -1,10 +1,12 @@
+import type { StatusType } from "../lib/interfaces";
+
 export interface DemoPayment {
   id: number;
   reference: string;
   employee_name: string;
   amount: number;
   method: string;
-  status: "successful" | "pending" | "failed";
+  status: StatusType;
   date: string;
 }
 

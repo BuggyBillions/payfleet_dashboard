@@ -8,6 +8,15 @@ export type OverviewCardsProps = {
   icon2: IconType;
 };
 
+export type StatusType = "successful" | "pending" | "failed"
+
+export type StatusCardsProps = {
+  type: StatusType;
+  text?: string;
+};
+
+export type Theme = "light" | "dark";
+
 export interface TableColumnProps<T = unknown> {
   label: string | React.ReactNode;
   key?: string;
@@ -69,10 +78,16 @@ export interface SearchableInputProps<T> {
   fetchOnEmpty?: boolean;
 }
 
-export interface SearchResult {
-  title: string;
-  url: string;
-  snippet: string;
+export interface ActionButtonProps {
+  text: string;
+  loadingText?: string;
+  icon?: React.ReactNode;
+  loading?: boolean;
+  action?: () => void;
+  onClick?: () => void;
+  disabled?: boolean;
+  buttonStyle?: string;
+  overideBg?: boolean;
 }
 
 export interface UserProps {
@@ -92,4 +107,20 @@ export interface UserProps {
 export interface BankProps {
   name: string;
   code: string;
+}
+
+export interface CompanyProps {
+  id?: number
+  companyName: string
+  email: string
+  phoneNumber: string
+  staff: number
+  tier: string
+  status: string
+}
+
+
+export interface PageHeaderProps {
+  heading?: string;
+  value?: string;
 }
