@@ -5,13 +5,20 @@ import { formatterUtility } from "../../helpers/formatterUtility";
 import { toast } from "sonner";
 import { IoSearchOutline } from "react-icons/io5";
 import { FaMoneyBillWave } from "react-icons/fa6";
+import { FiMinusCircle } from "react-icons/fi";
+import ActionCell from "../../components/ui/ActionCell";
+import ReduceSalaryModal from "../../components/modal/ReduceSalaryModal";
 import {
   getDemoEmployees,
   type DemoEmployee,
 } from "../../services/demoEmployeeService";
 
 const ProcessPayments: React.FC = () => {
-  const [employees] = useState<DemoEmployee[]>(() => getDemoEmployees());
+  const [employees, setEmployees] = useState<DemoEmployee[]>(() =>
+    getDemoEmployees(),
+  );
+  const [reduceModalEmployee, setReduceModalEmployee] =
+    useState<DemoEmployee | null>(null);
   const [search, setSearch] = useState("");
   const [selectedRowIds, setSelectedRowIds] = useState<
     Array<number | string>
@@ -64,6 +71,13 @@ const ProcessPayments: React.FC = () => {
     setSelectedRowIds([]);
   };
 
+  const handleDeductSaved = (updated: DemoEmployee) => {
+    setEmployees((prev) =>
+      prev.map((e) => (e.id === updated.id ? updated : e)),
+    );
+    setReduceModalEmployee(null);
+  };
+
   const columns: TableColumnProps<DemoEmployee>[] = [
     {
       label: "Full Name",
@@ -97,14 +111,21 @@ const ProcessPayments: React.FC = () => {
     {
       label: "Action",
       render: (item) => (
-        <button
-          type="button"
-          onClick={() => handlePay(item)}
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[10px] font-medium action-btn text-white cursor-pointer"
-        >
-          <FaMoneyBillWave size={11} />
-          Pay
-        </button>
+        <ActionCell
+          rowId={item.id}
+          otherActions={[
+            {
+              name: "Reduce Salary",
+              icon: <FiMinusCircle size={12} />,
+              action: () => setReduceModalEmployee(item),
+            },
+            {
+              name: "Pay",
+              icon: <FaMoneyBillWave size={12} />,
+              action: () => handlePay(item),
+            },
+          ]}
+        />
       ),
     },
   ];
@@ -165,6 +186,14 @@ const ProcessPayments: React.FC = () => {
           onToggleAllRows={handleToggleAll}
         />
       </div>
+
+      {reduceModalEmployee && (
+        <ReduceSalaryModal
+          employee={reduceModalEmployee}
+          onClose={() => setReduceModalEmployee(null)}
+          onSaved={handleDeductSaved}
+        />
+      )}
     </div>
   );
 };
