@@ -18,6 +18,7 @@ import Settings from "./pages/company/Settings";
 import SuperAdminOverview from "./pages/superadmin/Overview";
 import FinancialOverview from "./pages/financial/Overview";
 import SupportOverview from "./pages/support/Overview";
+import ManageCompany from "./pages/superadmin/ManageCompany";
 
 function App() {
   return (
@@ -74,6 +75,11 @@ function App() {
           path="/admin/dashboard/overview"
           element={<MainLayout pageName="Dashboard" children={<SuperAdminOverview />} />}
         />
+          <Route
+            index
+            path="/admin/dashboard/company"
+            element={<MainLayout pageName="Manage Company" children={<ManageCompany />} />}
+          />
         <Route
           index
           path="/financial/dashboard/overview"

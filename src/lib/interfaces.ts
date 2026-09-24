@@ -101,3 +101,13 @@ export interface BankProps {
   name: string;
   code: string;
 }
+
+export interface CompanyProps {
+  id?: number
+  companyName: string
+  email: string
+  phoneNumber: string
+  staff: number
+  tier: string
+  status: string
+}

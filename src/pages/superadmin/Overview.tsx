@@ -16,7 +16,7 @@ const SuperAdminOverview: React.FC = () => {
           <h2 className="text-lg font-semibold">
             Welcome <span className="capitalize">{user?.role}</span>
           </h2>
-          <p className="text-sm text-gray-500">Here is your business breakdown overview</p>
+          <p className="text-sm text-gray-500">Here is how the system is performing</p>
         </div>
       </div>
 
