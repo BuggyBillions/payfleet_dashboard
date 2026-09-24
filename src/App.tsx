@@ -17,7 +17,9 @@ import PaymentHistory from "./pages/company/PaymentHistory";
 import Settings from "./pages/company/Settings";
 import SuperAdminOverview from "./pages/superadmin/Overview";
 import FinancialOverview from "./pages/financial/Overview";
+import FinancialPayment from "./pages/financial/Payment";
 import SupportOverview from "./pages/support/Overview";
+import Payment from "./pages/financial/Payment";
 
 function App() {
   return (
@@ -41,7 +43,7 @@ function App() {
             <MainLayout pageName="Add Employee" children={<AddEmployee />} />
           }
         />
-<Route
+        <Route
           path="/dashboard/deposits"
           element={<MainLayout pageName="Deposits" children={<Deposits />} />}
         />
@@ -78,6 +80,15 @@ function App() {
           index
           path="/financial/dashboard/overview"
           element={<MainLayout pageName="Dashboard" children={<FinancialOverview />} />}
+        />
+        <Route
+          path="/financial/dashboard/payment"
+          element={<MainLayout pageName="Approve Payments" children={<FinancialPayment />} />}
+        />
+           <Route
+          index
+          path="/financial/dashboard/approve"
+          element={<MainLayout pageName="Dashboard" children={<Payment />} />}
         />
         <Route
           index
