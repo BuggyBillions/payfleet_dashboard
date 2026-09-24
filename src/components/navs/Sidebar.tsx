@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { FiLogOut } from "react-icons/fi";
 import { MdSettings } from "react-icons/md";
-import { navItems } from "../../lib/navItems";
+import { HiChevronDown } from "react-icons/hi2";
+import { navItems, type NavItem } from "../../lib/navItems";
 import Modal from "../modal/Modal";
 import { useUser } from "../../hooks/useUser";
 
@@ -21,6 +22,81 @@ const Sidebar = ({
       .map((r) => r.toLowerCase())
       .includes(role?.toLowerCase() ?? ""),
   );
+
+  const toggleMenu = (name: string) => {
+    setOpenMenu((prev) => (prev === name ? null : name));
+  };
+
+  const linkClass = ({ isActive }: { isActive: boolean }) =>
+    `flex items-center gap-2 text-black transition-all duration-300 border-0 hover:bg-white hover:font-semibold hover:text-primary hover:shadow-md px-4 py-2.5 rounded-md cursor-pointer text-[11px] ${
+      isActive
+        ? "bg-white text-primary font-semibold shadow-md border border-primary/5"
+        : ""
+    }`;
+
+  const renderItem = (item: NavItem, index: number) => {
+    if (item.children) {
+      const isOpen = openMenu === item.name;
+
+      return (
+        <li key={index} className="flex flex-col">
+          <button
+            onClick={() => toggleMenu(item.name)}
+            className="flex w-full items-center justify-between gap-2 text-black transition-all duration-300 border-0 hover:bg-white hover:font-semibold hover:text-primary hover:shadow-md px-4 py-2.5 rounded-md cursor-pointer text-[11px]"
+          >
+            <span className="flex items-center gap-2">
+              {item.icon && (
+                <span>
+                  <item.icon size={13} />
+                </span>
+              )}
+              <span>{item.name}</span>
+            </span>
+            <HiChevronDown
+              size={13}
+              className={`transition-transform duration-300 ${
+                isOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+
+          {isOpen && (
+            <ul className="mt-1 ms-4 flex flex-col gap-1 border-s border-primary/10 ps-3">
+              {item.children.map((child, childIndex) => (
+                <li key={childIndex}>
+                  <NavLink
+                    to={child.path}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2 text-black transition-all duration-300 border-0 hover:bg-white hover:font-semibold hover:text-primary hover:shadow-md px-4 py-2 rounded-md cursor-pointer text-[11px] ${
+                        isActive
+                          ? "bg-white text-primary font-semibold shadow-md border border-primary/5"
+                          : ""
+                      }`
+                    }
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <span>{child.name}</span>
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          )}
+        </li>
+      );
+    }
+
+    return (
+      <NavLink
+        key={index}
+        to={item.path!}
+        className={linkClass}
+        onClick={() => setIsOpen(false)}
+      >
+        <span>{item.icon && <item.icon size={13} />}</span>
+        <span>{item.name}</span>
+      </NavLink>
+    );
+  };
 
   return (
     <div className="bg-white lg:w-full md:w-3/5 w-4/5 h-full px-2 py-4 md:pt-0 pt-8 flex flex-col">
