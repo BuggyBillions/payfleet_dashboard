@@ -109,6 +109,17 @@ export interface BankProps {
   code: string;
 }
 
+export interface CompanyProps {
+  id?: number
+  companyName: string
+  email: string
+  phoneNumber: string
+  staff: number
+  tier: string
+  status: string
+}
+
+
 export interface PageHeaderProps {
   heading?: string;
   value?: string;
