@@ -15,9 +15,8 @@ const Sidebar = ({
 }) => {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [showLogOutModal, setShowLogOutModal] = useState<boolean>(false);
-  const { role, user, logout } = useUser();
-  console.log(role)
-  console.log(user)
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const { role, logout } = useUser();
 
   const filteredLinks = navItems.filter((navItem) =>
     navItem.role
@@ -30,9 +29,9 @@ const Sidebar = ({
   };
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-2 text-black transition-all duration-300 border-0 hover:bg-white hover:font-semibold hover:text-primary hover:shadow-md px-4 py-2.5 rounded-md cursor-pointer text-[11px] ${
+    `flex items-center gap-2 text-black transition-all duration-300 border-0 hover:bg-primary hover:font-semibold hover:text-white hover:shadow-md px-4 py-2.5 rounded-md cursor-pointer text-[11px] ${
       isActive
-        ? "bg-white text-primary font-semibold shadow-md border border-primary/5"
+        ? "bg-primary text-white font-semibold shadow-md border border-primary/5"
         : ""
     }`;
 
@@ -44,7 +43,7 @@ const Sidebar = ({
         <li key={index} className="flex flex-col">
           <button
             onClick={() => toggleMenu(item.name)}
-            className="flex w-full items-center justify-between gap-2 text-black transition-all duration-300 border-0 hover:bg-white hover:font-semibold hover:text-primary hover:shadow-md px-4 py-2.5 rounded-md cursor-pointer text-[11px]"
+            className="flex w-full items-center justify-between gap-2 text-black transition-all duration-300 border-0 hover:bg-primary hover:font-semibold hover:text-white hover:shadow-md px-4 py-2.5 rounded-md cursor-pointer text-[11px]"
           >
             <span className="flex items-center gap-2">
               {item.icon && (
@@ -68,13 +67,7 @@ const Sidebar = ({
                 <li key={childIndex}>
                   <NavLink
                     to={child.path}
-                    className={({ isActive }) =>
-                      `flex items-center gap-2 text-black transition-all duration-300 border-0 hover:bg-white hover:font-semibold hover:text-primary hover:shadow-md px-4 py-2 rounded-md cursor-pointer text-[11px] ${
-                        isActive
-                          ? "bg-white text-primary font-semibold shadow-md border border-primary/5"
-                          : ""
-                      }`
-                    }
+                    className={linkClass}
                     onClick={() => setIsOpen(false)}
                   >
                     <span>{child.name}</span>
@@ -126,6 +119,7 @@ const Sidebar = ({
             </NavLink>
           );
         })}
+        {filteredLinks.map((item, index) => renderItem(item, index))}
       </ul>
 
       <ul className="px-2 pt-2 border-t border-primary/10 flex flex-col gap-1 justify-end mt-auto">

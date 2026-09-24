@@ -16,6 +16,7 @@ const TABS: { key: SettingsTab; label: string }[] = [
 ];
 
 interface Tier {
+  id: string;
   name: string;
   employees: string;
   price: string;
@@ -23,9 +24,9 @@ interface Tier {
 }
 
 const tiers: Tier[] = [
-  { name: "Tier 1", employees: "Up to 10 staff", price: "₦0 / month", current: true },
-  { name: "Tier 2", employees: "Up to 50 staff", price: "₦50,000 / month", current: false },
-  { name: "Tier 3", employees: "Unlimited staff", price: "₦150,000 / month", current: false },
+  { id: "1", name: "Tier 1", employees: "Up to 10 staff", price: "₦0 / month", current: true },
+  { id: "2", name: "Tier 2", employees: "Up to 50 staff", price: "₦50,000 / month", current: false },
+  { id: "3", name: "Tier 3", employees: "Unlimited staff", price: "₦150,000 / month", current: false },
 ];
 
 const inputClass =

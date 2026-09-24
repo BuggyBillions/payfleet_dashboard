@@ -1,7 +1,8 @@
 import { RxDashboard } from "react-icons/rx";
 import { LuUsersRound, LuArrowDownToLine, LuHistory } from "react-icons/lu";
-import { FaMoneyBillWave } from "react-icons/fa6";
+import { FaMoneyBillWave, FaUsers } from "react-icons/fa6";
 import type { IconType } from "react-icons/lib";
+import { LiaUsersCogSolid } from "react-icons/lia";
 
 export interface NavChild {
   name: string;
@@ -27,7 +28,7 @@ export const navItems: NavItem[] = [
     name: "Dashboard",
     icon: RxDashboard,
     path: "/admin/dashboard/overview",
-    role: [""],
+    role: ["admin"],
   },
   {
     name: "Dashboard",
@@ -68,4 +69,18 @@ export const navItems: NavItem[] = [
     path: "/dashboard/payments/history",
     role: ["company"],
   },
+  {
+    name: "Manage Company",
+    icon: FaUsers,
+    role: [""],
+    children: [
+      { name: "View Companies", path: "/admin/dashboard/company" },
+    ],
+  },
+  {
+    name: "Manage Staff",
+    icon: LiaUsersCogSolid,
+    path: "/admin/dashboard/staff",
+    role: [""]
+  }
 ];

@@ -90,6 +90,12 @@ export interface ActionButtonProps {
   overideBg?: boolean;
 }
 
+export interface SearchResult {
+  title: string;
+  url: string;
+  snippet?: string;
+}
+
 export interface UserProps {
   id: number;
   username: string;
@@ -116,6 +122,15 @@ export interface CompanyProps {
   phoneNumber: string
   staff: number
   tier: string
+  status: string
+}
+
+export interface StaffProps {
+  id?: number
+  name: string
+  email: string
+  phoneNumber: string
+  role: string
   status: string
 }
 
