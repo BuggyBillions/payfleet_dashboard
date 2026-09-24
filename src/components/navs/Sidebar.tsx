@@ -5,6 +5,7 @@ import { MdSettings } from "react-icons/md";
 import { navItems } from "../../lib/navItems";
 import Modal from "../modal/Modal";
 import { useUser } from "../../hooks/useUser";
+import { assets } from "../../assets/assets";
 
 const Sidebar = ({
   setIsOpen,
@@ -24,7 +25,8 @@ const Sidebar = ({
 
   return (
     <div className="bg-white lg:w-full md:w-3/5 w-4/5 h-full px-2 py-4 md:pt-0 pt-8 flex flex-col">
-      <ul className="px-3 lg:mt-4 mt-8 flex flex-col gap-2 h-4/5 overflow-y-scroll no-scrollbar pb-6">
+      <img src={assets.logo} alt="Payfleet Logo" className="w-1/3 mx-auto md:hidden inline" />
+      <ul className="px-3 lg:mt-4 mt-4 flex flex-col gap-2 h-4/5 overflow-y-scroll no-scrollbar pb-6">
         {filteredLinks.map((item, index) => {
           return (
             <NavLink

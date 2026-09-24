@@ -104,19 +104,19 @@ const MainLayout = ({
 
   return (
     <div className="flex flex-col gap-3 w-full relative! bg-secondary h-dvh overflow-hidden px-4 py-3">
-      <div className="md:px-6 px-4 md:flex gap-4 sticky top-0 z-10 items-center hidden bg-white rounded-xl">
+      <div className="md:px-6 px-4 flex gap-2 sticky top-0 z-10 items-center bg-white rounded-xl">
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="md:hidden block"
+          className="lg:hidden block"
         >
-          <HiBars3 size={30} />
+          <HiBars3 size={20} />
         </button>
         <TopNav />
       </div>
       <div className="flex items-start h-[calc(100vh-58px)]">
         <div
-          className={`lg:w-[20%] z-100 bg-black/50 rounded-2xl overflow-hidden h-full w-full lg:sticky absolute transition-all duration-500 ${
+          className={`lg:w-[20%] z-100 bg-black/50 rounded-2xl overflow-hidden h-full w-full lg:sticky absolute top-0 transition-all duration-500 ${
             isOpen ? "left-0" : "-left-full"
           }`}
         >
@@ -152,7 +152,7 @@ const MainLayout = ({
                   display: "flex",
                   flexDirection: "column",
                 }}
-                className="px-4 h-full overflow-y-scroll no-scrollbar pb-4"
+                className="md:px-4 h-full overflow-y-scroll no-scrollbar pb-4"
               >
                 {children}
               </motion.div>

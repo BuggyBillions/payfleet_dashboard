@@ -11,7 +11,7 @@ export const navItems = [
     name: "Dashboard",
     icon: RxDashboard,
     path: "/admin/dashboard/overview",
-    role: ["admin"],
+    role: [""],
   },
   {
     name: "Dashboard",
