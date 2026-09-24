@@ -11,7 +11,7 @@ export type StatusType = "successful" | "pending" | "failed";
 
 export type OverviewCardsProps = {
   title: string;
-  value: string | number;
+  value: string | number | React.ReactNode;
   icon?: IconType;
   icon2?: IconType;
 };

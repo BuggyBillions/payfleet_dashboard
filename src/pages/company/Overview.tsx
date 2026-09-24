@@ -14,7 +14,7 @@ import {
   getDemoPayments,
   type DemoPayment,
 } from "../../services/demoPaymentService";
-import StatusCard from "../../components/cards/StatusCard";
+import StatusBadge from "../../components/ui/StatusBadge";
 import PageHeader from "../../components/navs/PageHeader";
 
 const Overview: React.FC = () => {
@@ -42,7 +42,7 @@ const Overview: React.FC = () => {
     },
     {
       label: "Status",
-      render: (item) => <StatusCard type={item.status} />,
+      render: (item) => <StatusBadge status={item.status} />,
     },
     {
       label: "Date",

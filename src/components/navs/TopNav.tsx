@@ -29,7 +29,7 @@ const TopNav: React.FC = () => {
               Damola Oyegbemile
             </h3>
             <small className="uppercase font-medium text-[10px]">
-              Admin
+              starter
             </small>
           </div>
         </div>

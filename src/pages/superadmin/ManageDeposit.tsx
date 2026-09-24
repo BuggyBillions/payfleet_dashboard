@@ -12,23 +12,9 @@ import { LuClock, LuCopy, LuCheck, LuX } from "react-icons/lu";
 import { TbReceiptDollar, TbArrowUpRight } from "react-icons/tb";
 import { BsCheck2Circle, BsXCircle } from "react-icons/bs";
 
+import StatusBadge from "../../components/ui/StatusBadge";
+
 export type { DepositItemProps, ManageDepositProps };
-
-const statusBadge = (status: DepositItemProps["status"]) => {
-  const styles = {
-    successful: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
-    pending: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-    failed: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
-  };
-
-  return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full border text-[10px] font-medium capitalize ${styles[status]}`}
-    >
-      {status}
-    </span>
-  );
-};
 
 export const INITIAL_DEPOSIT_DATA: DepositItemProps[] = [
   {
@@ -331,7 +317,7 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
     },
     {
       label: "Status",
-      render: (item) => statusBadge(item.status),
+      render: (item) => <StatusBadge status={item.status} />,
     },
     {
       label: "Date & Time",
@@ -676,7 +662,7 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
                 <p className="text-xs text-textBlack/60">Transaction ID & payment details</p>
               </div>
               <div className="flex items-center gap-2">
-                {statusBadge(selectedDeposit.status)}
+                <StatusBadge status={selectedDeposit.status} />
                 <button
                   type="button"
                   onClick={() => {

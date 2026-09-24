@@ -27,7 +27,7 @@ const MOCK_USERS: ChatUser[] = [
   { id: 106, name: "Acme Tech Support", email: "support@acmetech.io", role: "Client Rep", online: true },
 ];
 
-const INITIAL_CONVERSATIONS: Conversation[] = [
+export const INITIAL_CONVERSATIONS: Conversation[] = [
   {
     id: "conv-1",
     name: "Sarah Jenkins",

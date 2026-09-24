@@ -12,22 +12,7 @@ import {
   getDemoPayments,
   type DemoPayment,
 } from "../../services/demoPaymentService";
-
-const statusBadge = (status: DemoPayment["status"]) => {
-  const styles = {
-    successful: "bg-green-50 text-green-600 border-green-500/30",
-    pending: "bg-amber-50 text-amber-600 border-amber-500/30",
-    failed: "bg-red-50 text-red-600 border-red-500/30",
-  };
-
-  return (
-    <span
-      className={`inline-flex items-center px-2 py-1 rounded-full border text-[10px] font-medium capitalize ${styles[status]}`}
-    >
-      {status}
-    </span>
-  );
-};
+import StatusBadge from "../../components/ui/StatusBadge";
 
 const PaymentHistory: React.FC = () => {
   const [payments] = useState<DemoPayment[]>(() => getDemoPayments());
@@ -72,7 +57,7 @@ const PaymentHistory: React.FC = () => {
     { label: "Method", key: "method" },
     {
       label: "Status",
-      render: (item) => statusBadge(item.status),
+      render: (item) => <StatusBadge status={item.status} />,
     },
     {
       label: "Date",

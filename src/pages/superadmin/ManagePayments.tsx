@@ -12,7 +12,6 @@ import {
   getInitialCompanyPayments,
   type CompanyPaymentItem,
   type PaymentCategory,
-  type ExtendedPaymentStatus,
 } from "../../services/adminPaymentService";
 import { FiSearch, FiDownload, FiCheckCircle, FiXCircle, FiRefreshCw } from "react-icons/fi";
 import {
@@ -30,26 +29,7 @@ import {
 import { TbReceiptDollar } from "react-icons/tb";
 import { IoMdClose } from "react-icons/io";
 
-const statusBadge = (status: ExtendedPaymentStatus) => {
-  const styles: Record<ExtendedPaymentStatus, { bg: string; dot: string; text: string }> = {
-    successful: { bg: "bg-emerald-50 text-emerald-700 border-emerald-500/30", dot: "bg-emerald-500", text: "Successful" },
-    pending: { bg: "bg-amber-50 text-amber-700 border-amber-500/30", dot: "bg-amber-500 animate-pulse", text: "Pending" },
-    processing: { bg: "bg-blue-50 text-blue-700 border-blue-500/30", dot: "bg-blue-500 animate-pulse", text: "Processing" },
-    failed: { bg: "bg-rose-50 text-rose-700 border-rose-500/30", dot: "bg-rose-500", text: "Failed" },
-    cancelled: { bg: "bg-gray-100 text-gray-700 border-gray-300", dot: "bg-textBlack/50", text: "Cancelled" },
-  };
-
-  const style = styles[status] || styles.pending;
-
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-medium ${style.bg}`}
-    >
-      <span className={`size-1.5 rounded-full ${style.dot}`} />
-      {style.text}
-    </span>
-  );
-};
+import StatusBadge from "../../components/ui/StatusBadge";
 
 const categoryBadge = (category: PaymentCategory) => {
   const colors: Record<PaymentCategory, string> = {
@@ -601,7 +581,7 @@ const SuperAdminManagePayments: React.FC = () => {
     },
     {
       label: "Status",
-      render: (item) => statusBadge(item.status),
+      render: (item) => <StatusBadge status={item.status} />,
     },
     {
       label: "Date",
@@ -1078,7 +1058,7 @@ const SuperAdminManagePayments: React.FC = () => {
                 </span>
               </div>
               <div className="flex flex-col items-end gap-1">
-                {statusBadge(selectedPayment.status)}
+                <StatusBadge status={selectedPayment.status} />
                 <span className="text-[11px] text-textBlack/50">
                   {formatShortDate(selectedPayment.date)}
                 </span>

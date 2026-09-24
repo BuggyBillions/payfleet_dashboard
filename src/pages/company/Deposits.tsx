@@ -13,23 +13,7 @@ import { FiSearch } from "react-icons/fi";
 import { LuWallet, LuClock, LuCheck } from "react-icons/lu";
 import Deposit from "../../components/modal/Deposit";
 
-export type { DepositsProps };
-
-const statusBadge = (status: DemoDeposit["status"]) => {
-  const styles = {
-    successful: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
-    pending: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-    failed: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
-  };
-
-  return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full border text-[10px] font-medium capitalize ${styles[status]}`}
-    >
-      {status}
-    </span>
-  );
-};
+import StatusBadge from "../../components/ui/StatusBadge";
 
 const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
   const [deposits, setDeposits] = useState<DemoDeposit[]>(() => getDemoDeposits());
@@ -108,7 +92,7 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
     },
     {
       label: "Status",
-      render: (item) => statusBadge(item.status),
+      render: (item) => <StatusBadge status={item.status} />,
     },
     {
       label: "Date & Time",

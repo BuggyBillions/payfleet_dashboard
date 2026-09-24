@@ -6,6 +6,7 @@ import ConfirmDialog from '../../components/modal/ConfirmDialog'
 import { getErrorMessage } from '../../helpers/api'
 import { toast } from "sonner"
 import type { CompanyProps } from '../../lib/interfaces'
+import StatusBadge from '../../components/ui/StatusBadge'
 
 
 const ManageCompany: React.FC = () => {
@@ -60,7 +61,7 @@ const ManageCompany: React.FC = () => {
                {
                     label: 'Status',
                     key: 'status',
-                    render: (item: CompanyProps) => <div>{item.status}</div>
+                    render: (item: CompanyProps) => <StatusBadge status={item.status} />
                },
                {
                     label: 'Actions',

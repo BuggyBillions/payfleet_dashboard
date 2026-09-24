@@ -7,6 +7,7 @@ import { getErrorMessage } from '../../helpers/api'
 import { toast } from "sonner"
 import type { StaffProps, TableColumnProps } from '../../lib/interfaces'
 import ActionButton from '../../components/ui/ActionButton'
+import StatusBadge from '../../components/ui/StatusBadge'
 import { FaPlus } from 'react-icons/fa6'
 import { FiSearch } from 'react-icons/fi'
 
@@ -154,17 +155,7 @@ const ManageStaff: React.FC = () => {
           {
                label: 'Status',
                key: 'status',
-               render: (item: StaffProps) => (
-                    <span
-                         className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              item?.status?.toLowerCase() === "active"
-                                   ? "bg-green-100 text-green-700"
-                                   : "bg-gray-100 text-gray-700"
-                         }`}
-                    >
-                         {item.status}
-                    </span>
-               )
+               render: (item: StaffProps) => <StatusBadge status={item.status} />,
           },
           {
                label: 'Actions',

@@ -4,6 +4,7 @@ import ActionCell from "../../components/ui/ActionCell";
 import Modal from "../../components/modal/Modal";
 import ConfirmDialog from "../../components/modal/ConfirmDialog";
 import ActionButton from "../../components/ui/ActionButton";
+import StatusBadge from "../../components/ui/StatusBadge";
 import OverviewCards from "../../components/cards/OverviewCards";
 import { toast } from "sonner";
 import { formatShortDate } from "../../helpers/formatterUtility";
@@ -20,7 +21,7 @@ import { HiOutlineBuildingOffice2 } from "react-icons/hi2";
 
 export type { VerificationStatus, CompanyVerificationItem };
 
-const SEED_COMPANIES: CompanyVerificationItem[] = [
+export const SEED_COMPANIES: CompanyVerificationItem[] = [
   {
     id: 1,
     companyName: "Acme Technologies Ltd",
@@ -165,42 +166,6 @@ const SEED_COMPANIES: CompanyVerificationItem[] = [
     verifiedAt: "2026-09-15T15:20:00",
   },
 ];
-
-const verificationBadge = (status: VerificationStatus) => {
-  const styles: Record<VerificationStatus, { bg: string; dot: string; text: string }> = {
-    verified: {
-      bg: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
-      dot: "bg-emerald-500",
-      text: "Verified Business",
-    },
-    pending_verification: {
-      bg: "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-500/30",
-      dot: "bg-amber-500 animate-pulse",
-      text: "Pending Verification",
-    },
-    under_review: {
-      bg: "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-blue-500/30",
-      dot: "bg-blue-500 animate-pulse",
-      text: "Under Review",
-    },
-    action_required: {
-      bg: "bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border-rose-500/30",
-      dot: "bg-rose-500",
-      text: "Action Required",
-    },
-  };
-
-  const style = styles[status] || styles.pending_verification;
-
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[11px] font-medium ${style.bg}`}
-    >
-      <span className={`size-1.5 rounded-full ${style.dot}`} />
-      {style.text}
-    </span>
-  );
-};
 
 const CLARIFICATION_REASONS = [
   "Uploaded CAC document is blurry or unreadable",
@@ -393,7 +358,7 @@ const SupportManageCompany: React.FC = () => {
     },
     {
       label: "Verification Status",
-      render: (item) => verificationBadge(item.verificationStatus),
+      render: (item) => <StatusBadge status={item.verificationStatus} />,
     },
     {
       label: "Submitted Date",
@@ -576,7 +541,7 @@ const SupportManageCompany: React.FC = () => {
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1">
-                {verificationBadge(selectedCompany.verificationStatus)}
+                <StatusBadge status={selectedCompany.verificationStatus} />
               </div>
             </div>
 

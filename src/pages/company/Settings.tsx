@@ -434,8 +434,8 @@ const Settings: React.FC = () => {
               onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-2 px-4 h-9 rounded-lg text-xs font-medium transition cursor-pointer ${
                 activeTab === tab.key
-                  ? "bg-primary text-textWhite shadow-xs"
-                  : "border border-primary/10 text-textBlack/70 hover:bg-secondary hover:text-textBlack"
+                  ? "bg-primary text-white shadow-xs"
+                  : "border border-textBlack/10 text-textBlack/70 hover:bg-secondary hover:text-textBlack"
               }`}
             >
               <TabIcon size={14} />

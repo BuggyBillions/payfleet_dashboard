@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react';
 import type { CompanyProps, TableColumnProps } from '../../../lib/interfaces';
 import Modal from '../Modal';
+import StatusBadge from '../../ui/StatusBadge';
 import { IoMdCall } from "react-icons/io";
 import { CiMail } from "react-icons/ci";
 import { LiaUserTagSolid } from "react-icons/lia";
@@ -88,17 +89,7 @@ const ViewCompanyModal: React.FC<{
           {
                label: "Status",
                key: "status",
-               render: (item: CompanyProps) => (
-                    <span
-                         className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              item?.status?.toLowerCase() === "active"
-                                   ? "bg-green-100 text-green-700"
-                                   : "bg-gray-100 text-gray-700"
-                         }`}
-                    >
-                         {item?.status}
-                    </span>
-               ),
+               render: (item: CompanyProps) => <StatusBadge status={item?.status} />,
           },
      ];
 
