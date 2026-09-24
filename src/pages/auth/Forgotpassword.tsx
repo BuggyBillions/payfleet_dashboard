@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useFormik } from "formik";
-import { RegisterFormSchema } from "../../lib/validationSchemas";
 import api from "../../helpers/api";
 import { toast } from "sonner";
 import StepOne from "./Forgotpassword/StepOne";
@@ -13,7 +12,7 @@ import { assets } from "../../assets/assets";
 import { useMutation } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import type { ApiErrorResponse } from "../../lib/interfaces";
-import type { Forgotpassword, RegisterFormValues } from "../../lib/formTypes";
+import type { Forgotpassword } from "../../lib/formTypes";
 
 const lineVariants = {
   hidden: { opacity: 0, y: 10 },
@@ -83,7 +82,7 @@ const Forgotpassword: React.FC = () => {
       console.log("error", error);
       toast.error(
         error?.response?.data?.message ||
-          "An error occurred during registration.",
+        "An error occurred during registration.",
       );
     },
   });
@@ -208,11 +207,10 @@ const Forgotpassword: React.FC = () => {
                 type="button"
                 onClick={handleBack}
                 disabled={currentStep === 0}
-                className={`px-6 h-12 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed rounded-lg shadow font-medium transition-colors ${
-                  currentStep === 0
+                className={`px-6 h-12 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed rounded-lg shadow font-medium transition-colors ${currentStep === 0
                     ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                     : "bg-gray-200 text-gray-700 hover:bg-gray-200"
-                }`}
+                  }`}
               >
                 Back
               </button>

@@ -35,9 +35,9 @@ function App() {
     <>
       <Toaster />
       <Routes>
-        <Route index path="/login" element={<Login />} />
+        <Route index path="/" element={<Login />} />
         <Route path="/getstarted" element={<Register />} />
-        <Route path="/forgotpassword" element={<Forgotpassword />} />
+        <Route path="/forgotpassword" element={<Forgotpassword />} />wh
         <Route path="*" element={<NotFound />} />
         <Route
           index
