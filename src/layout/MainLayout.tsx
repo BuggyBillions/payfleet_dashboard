@@ -6,6 +6,7 @@ import TopNav from "../components/navs/TopNav";
 import { HiBars3 } from "react-icons/hi2";
 import { FaXmark } from "react-icons/fa6";
 import Sidebar from "../components/navs/Sidebar";
+import FloatingContactWidget from "../components/ui/FloatingContactWidget";
 
 type LayoutProps = {
   children: React.ReactNode;
@@ -159,6 +160,11 @@ const MainLayout = ({
             </AnimatePresence>
           </div>
         </div>
+
+        {/* Floating contact support icon for company users */}
+        {!location.pathname.startsWith("/admin") && !location.pathname.startsWith("/support") && (
+          <FloatingContactWidget />
+        )}
       </div>
     </div>
   );
