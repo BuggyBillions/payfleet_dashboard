@@ -69,8 +69,8 @@ const PaymentHistory: React.FC = () => {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div className="flex flex-col">
-          <h2 className="text-lg font-semibold">Payment History</h2>
-          <p className="text-sm text-gray-500">
+          <h2 className="text-lg font-semibold text-textBlack">Payment History</h2>
+          <p className="text-sm text-textBlack/50">
             View all money paid out to staff
           </p>
         </div>
@@ -89,7 +89,7 @@ const PaymentHistory: React.FC = () => {
         />
       </div>
 
-      <div className="bg-white rounded-xl p-4">
+      <div className="bg-tertiary p-2">
         <ReusableTable
           columns={columns}
           data={paginatedData}

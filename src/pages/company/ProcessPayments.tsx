@@ -141,7 +141,7 @@ const ProcessPayments: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl p-4">
+      <div className="bg-tertiary rounded-lg p-4">
         <div className="flex items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2 border border-black/10 rounded-md px-3 h-10 w-full sm:w-72 bg-secondary">
             <IoSearchOutline className="text-gray-400 shrink-0" />

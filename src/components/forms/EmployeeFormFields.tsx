@@ -7,13 +7,13 @@ import {
 } from "../../services/demoEmployeeService";
 
 const inputClass = (error?: string) =>
-  `w-full text-black border ${
-    error ? "border-red-500" : "border-black/10"
+  `w-full text-textBlack border ${
+    error ? "border-red-500" : "border-textBlack/10"
   } bg-backgroundBlack rounded-md px-4 h-[45px] text-sm outline-0 placeholder-black`;
 
 const textareaClass = (error?: string) =>
-  `w-full text-black border ${
-    error ? "border-red-500" : "border-black/10"
+  `w-full text-textBlack border ${
+    error ? "border-red-500" : "border-textBlack/10"
   } bg-backgroundBlack rounded-md px-4 py-3 text-sm outline-0 placeholder-black resize-none`;
 
 const fieldError = (
@@ -31,7 +31,7 @@ const formField = (
   className?: string,
 ) => (
   <div className={`flex flex-col space-y-1 ${className ?? ""}`}>
-    <label className="font-medium text-sm">{label}</label>
+    <label className="font-medium text-sm text-textBlack">{label}</label>
     {children}
     {error && <span className="text-red-500 pl-3 text-sm">{error}</span>}
   </div>
@@ -39,15 +39,15 @@ const formField = (
 
 const sectionTitle = (title: string, sub: string) => (
   <div className="mb-4">
-    <h3 className="font-semibold">{title}</h3>
-    <p className="text-xs text-gray-500">{sub}</p>
+    <h3 className="font-semibold text-textBlack">{title}</h3>
+    <p className="text-xs text-textBlack/50">{sub}</p>
   </div>
 );
 
 const EmployeeFormFields: React.FC<{
   formik: FormikProps<EmployeeFormValues>;
 }> = ({ formik }) => {
-  const grid = "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-4 gap-y-4";
+  const grid = "grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4";
 
   return (
     <>
@@ -124,7 +124,7 @@ const EmployeeFormFields: React.FC<{
         </div>
       </section>
 
-      <section className="flex flex-col space-y-4 border-t border-black/5 pt-6">
+      <section className="flex flex-col space-y-4 border-t border-textBlack/5 pt-6">
         {sectionTitle("Employment Details", "Job and employment information")}
         <div className={grid}>
           {formField(
@@ -160,7 +160,7 @@ const EmployeeFormFields: React.FC<{
         </div>
       </section>
 
-      <section className="flex flex-col space-y-4 border-t border-black/5 pt-6">
+      <section className="flex flex-col space-y-4 border-t border-textBlack/5 pt-6">
         {sectionTitle("Payment Details", "Bank and pay information")}
         <div className={grid}>
           {formField(

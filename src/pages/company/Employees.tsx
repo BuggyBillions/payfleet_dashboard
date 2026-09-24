@@ -79,7 +79,7 @@ const Employees: React.FC = () => {
     {
       label: "Employment Type",
       render: (item) => (
-        <span className="inline-flex items-center px-2 py-1 rounded-full bg-[#2A5D56]/10 text-[#2A5D56] text-[10px] font-medium capitalize">
+        <span className="inline-flex items-center px-2 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-medium capitalize">
           {item.employment_type}
         </span>
       ),
@@ -114,8 +114,8 @@ const Employees: React.FC = () => {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div className="flex flex-col">
-          <h2 className="text-lg font-semibold">Employees</h2>
-          <p className="text-sm text-gray-500">
+          <h2 className="text-lg font-semibold text-textBlack">Employees</h2>
+          <p className="text-sm text-textBlack/50">
             Manage and view all employees
           </p>
         </div>
@@ -155,7 +155,10 @@ const Employees: React.FC = () => {
         />
       </div>
 
-      <div className="bg-white rounded-xl p-4">
+      <div className="bg-tertiary rounded-xl p-4">
+        <div>
+          
+        </div>
         <ReusableTable
           columns={columns}
           data={paginatedData}

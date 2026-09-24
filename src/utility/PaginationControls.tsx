@@ -17,7 +17,7 @@ const PaginationControls: React.FC<PaginationControlProps> = ({
   const end = Math.min(currentPage * itemsPerPage, totalItems);
 
   return (
-    <div className="flex justify-center items-center gap-6 text-[10px]">
+    <div className="flex justify-center items-center gap-6 text-[10px] text-textBlack">
       <div className="flex items-center gap-2">
         <span>Items per page:</span>
         <select
@@ -43,7 +43,7 @@ const PaginationControls: React.FC<PaginationControlProps> = ({
         <button
           disabled={currentPage === 1}
           onClick={() => setCurrentPage(1)}
-          className="px-2 py-2.5 rounded-md hover:bg-gray-200 disabled:opacity-25"
+          className="px-2 py-2.5 rounded-md hover:bg-textBlack/20 disabled:opacity-25"
         >
           <RiSkipLeftLine />
         </button>
@@ -51,7 +51,7 @@ const PaginationControls: React.FC<PaginationControlProps> = ({
         <button
           disabled={currentPage === 1}
           onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          className="px-2 py-2.5 rounded-md hover:bg-gray-200 disabled:opacity-25"
+          className="px-2 py-2.5 rounded-md hover:bg-textBlack/20 disabled:opacity-25"
         >
           <MdKeyboardArrowLeft />
         </button>
@@ -61,7 +61,7 @@ const PaginationControls: React.FC<PaginationControlProps> = ({
           onClick={() =>
             setCurrentPage((prev) => Math.min(prev + 1, totalPages))
           }
-          className="px-2 py-2.5 rounded-md hover:bg-gray-200 disabled:opacity-25"
+          className="px-2 py-2.5 rounded-md hover:bg-textBlack/20 disabled:opacity-25"
         >
           <MdKeyboardArrowRight />
         </button>
@@ -69,7 +69,7 @@ const PaginationControls: React.FC<PaginationControlProps> = ({
         <button
           disabled={currentPage === totalPages}
           onClick={() => setCurrentPage(totalPages)}
-          className="px-2 py-2.5 rounded-md hover:bg-gray-200 disabled:opacity-25"
+          className="px-2 py-2.5 rounded-md hover:bg-textBlack/20 disabled:opacity-25"
         >
           <RiSkipRightLine />
         </button>
