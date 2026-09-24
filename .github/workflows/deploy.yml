@@ -1,0 +1,52 @@
+name: Deploy Pineleaf Land BuyBack Admin Console via FTP
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Project
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+          VITE_COUNTRY_BASE_URL: ${{ secrets.VITE_COUNTRY_BASE_URL }}
+          VITE_PAYSTACK_SECRET_KEY: ${{ secrets.VITE_PAYSTACK_SECRET_KEY }}
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
+          
+          VITE_ECHO_WS_HOST: ${{ secrets.VITE_ECHO_WS_HOST }}
+          VITE_ECHO_WS_PORT: ${{ secrets.VITE_ECHO_WS_PORT }}
+          VITE_ECHO_WSS_PORT: ${{ secrets.VITE_ECHO_WSS_PORT }}
+
+          VITE_ECHO_FORCE_TLS: ${{ secrets.VITE_ECHO_FORCE_TLS }}
+          VITE_ECHO_KEY: ${{ secrets.VITE_ECHO_KEY }}
+          VITE_ECHO_CLUSTER: ${{ secrets.VITE_ECHO_CLUSTER }}
+
+          VITE_ECHO_AUTH_ENDPOINT: ${{ secrets.VITE_ECHO_AUTH_ENDPOINT }}
+
+        run: npm run build
+      - name: Deploy to Hostinger FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: dist/
+          server-dir: ${{ secrets.FTP_TARGET_DIR }}

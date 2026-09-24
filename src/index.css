@@ -1,0 +1,44 @@
+@import url("https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #154a22;
+  --color-secondary: #f4f6f1;
+  --color-tetiary: #e6fff6;
+}
+
+* {
+  font-family: "Quicksand", sans-serif;
+  font-optical-sizing: auto;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  @apply hidden;
+}
+
+.styled-scrollbar::-webkit-scrollbar {
+  @apply w-1 h-1;
+}
+
+.styled-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-primary/30 rounded-full;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield; /* Firefox */
+}
+
+:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.action-btn {
+  background: linear-gradient(100.65deg, #2f5318 7.92%, #69b935 265.65%);
+}
