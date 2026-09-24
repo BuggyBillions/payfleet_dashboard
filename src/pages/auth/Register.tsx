@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useFormik } from "formik";
 import { RegisterFormSchema } from "../../lib/validationSchemas";
 import api from "../../helpers/api";

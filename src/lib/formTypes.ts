@@ -1,19 +1,7 @@
-export type RegisterFormValues = {
-  name: string;
-  email: string;
-  logo: File | null;
-  about: string;
-  address: string;
-  phone: string;
-  password: string;
-};
+import type {
+  RegisterFormValues,
+  ForgotPasswordFormValues,
+} from "./interfaces";
 
-export type Forgotpassword = {
-  name: string;
-  email: string;
-  logo: File | null;
-  about: string;
-  address: string;
-  phone: string;
-  password: string;
-};
+export type { RegisterFormValues, ForgotPasswordFormValues };
+export type Forgotpassword = ForgotPasswordFormValues;

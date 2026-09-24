@@ -9,10 +9,12 @@ export const RegisterFormSchema = Yup.object({
   password: Yup.string().required("password is required."),
 });
 
-export const Forgotpassword = Yup.object({
-  name: Yup.string().required(" is required."),
+export const ForgotPasswordSchema = Yup.object({
+  name: Yup.string().required("Name is required."),
   email: Yup.string().required("Email is required."),
 });
+
+export const Forgotpassword = ForgotPasswordSchema;
 
 export const LoginFormSchema = Yup.object({
   email: Yup.string().required("Email Address is required."),

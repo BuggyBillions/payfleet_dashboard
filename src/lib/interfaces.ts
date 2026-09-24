@@ -202,10 +202,44 @@ export interface UserProps {
   updated_at: string;
 }
 
+export interface sendEmailVerificationValues {
+  email: string;
+}
+export interface PendingVerification {
+  flow: "email_verification" | string;
+  email: string;
+  savedAt: number;
+}
 export interface LoginValues {
   email: string;
   password: string;
 }
+
+export interface ApiErrorResponse {
+  message?: string;
+  error?: string;
+  errors?: Record<string, string[]>;
+}
+
+export type RegisterFormValues = {
+  name: string;
+  email: string;
+  logo: File | null;
+  about: string;
+  address: string;
+  phone: string;
+  password: string;
+};
+
+export type ForgotPasswordFormValues = {
+  name: string;
+  email: string;
+  logo: File | null;
+  about: string;
+  address: string;
+  phone: string;
+  password: string;
+};
 
 export interface RegisterValues {
   name: string;

@@ -72,21 +72,21 @@ const AddEmployee: React.FC = () => {
         </p>
       </div>
 
-      <form onSubmit={formik.handleSubmit} noValidate className="w-full bg-white rounded-xl p-5 md:p-8 flex flex-col space-y-6">
+      <form onSubmit={formik.handleSubmit} noValidate className="w-full bg-tertiary rounded-xl p-5 md:p-8 flex flex-col space-y-6">
         <EmployeeFormFields formik={formik} />
 
         <div className="flex flex-col sm:flex-row gap-4 border-t border-black/5 pt-6">
           <button
             type="button"
             onClick={() => navigate("/dashboard/employees")}
-            className="bg-secondary text-xs rounded-md font-medium border border-black/10 w-full sm:w-48 h-10 cursor-pointer"
+            className="bg-textBlack/20 text-xs rounded-md font-medium  w-full sm:w-48 h-10 cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={formik.isSubmitting}
-            className="action-btn text-white text-xs rounded-md font-medium w-full sm:w-48 h-10 cursor-pointer disabled:opacity-60"
+            className="text-white bg-primary text-xs rounded-md font-medium w-full sm:w-48 h-10 cursor-pointer disabled:opacity-60"
           >
             {formik.isSubmitting ? "Saving..." : "Add Employee"}
           </button>

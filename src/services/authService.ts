@@ -1,5 +1,5 @@
 import api from "../helpers/api";
-import type { LoginValues, RegisterValues } from "../lib/interfaces";
+import type { LoginValues, RegisterValues, sendEmailVerificationValues } from "../lib/interfaces";
 
 export const registerService = async (values: RegisterValues) => {
     const response = await api.post(`/api/auth/register`, values);
@@ -7,11 +7,16 @@ export const registerService = async (values: RegisterValues) => {
 };
 
 export const loginService = async (values: LoginValues) => {
-    const response = await api.post(`/api/auth/login`, values);
+    const response = await api.post(`/login`, values);
     return response.data;
 };
 
 export const getUserService = async () => {
-    const response = await api.get(`/api/auth/me`);
+    const response = await api.get(`/me`);
     return response.data;
 };
+
+export const sendEmailVerificationCodeService = async (values: sendEmailVerificationValues) => {
+    const response = await api.post(`/resend-otp`, values);
+    return response.data;
+}
