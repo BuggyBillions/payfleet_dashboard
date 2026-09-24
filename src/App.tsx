@@ -4,6 +4,8 @@ import MainLayout from "./layout/MainLayout";
 
 // Auth
 import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import Forgotpassword from "./pages/auth/Forgotpassword";
 
 // General
 import NotFound from "./pages/view/NotFound";
@@ -27,12 +29,15 @@ import SupportManageCompany from "./pages/support/ManageCompany";
 import Communication from "./pages/chat/Communication";
 import Tier from "./pages/company/Tier";
 
+
 function App() {
   return (
     <>
       <Toaster />
       <Routes>
-        <Route index element={<Login />} />
+        <Route index path="/login" element={<Login />} />
+        <Route path="/getstarted" element={<Register />} />
+        <Route path="/forgotpassword" element={<Forgotpassword />} />
         <Route path="*" element={<NotFound />} />
         <Route
           index
@@ -106,7 +111,12 @@ function App() {
         <Route
           index
           path="/admin/dashboard/overview"
-          element={<MainLayout pageName="Dashboard" children={<SuperAdminOverview />} />}
+          element={
+            <MainLayout
+              pageName="Dashboard"
+              children={<SuperAdminOverview />}
+            />
+          }
         />
         <Route
           index
@@ -146,7 +156,9 @@ function App() {
         <Route
           index
           path="/financial/dashboard/overview"
-          element={<MainLayout pageName="Dashboard" children={<FinancialOverview />} />}
+          element={
+            <MainLayout pageName="Dashboard" children={<FinancialOverview />} />
+          }
         />
         <Route
           index
@@ -171,7 +183,9 @@ function App() {
         <Route
           index
           path="/support/dashboard/overview"
-          element={<MainLayout pageName="Dashboard" children={<SupportOverview />} />}
+          element={
+            <MainLayout pageName="Dashboard" children={<SupportOverview />} />
+          }
         />
         <Route
           index
