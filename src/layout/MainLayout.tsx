@@ -162,7 +162,7 @@ const MainLayout = ({
         </div>
 
         {/* Floating contact support icon for company users */}
-        {!location.pathname.startsWith("/admin") && !location.pathname.startsWith("/support") && (
+        {!location.pathname.startsWith("/admin") && !location.pathname.startsWith("/support") && !location.pathname.startsWith("/financial") && (
           <FloatingContactWidget />
         )}
       </div>

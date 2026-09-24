@@ -23,6 +23,7 @@ import Payment from "./pages/financial/Payment";
 import ManageCompany from "./pages/superadmin/ManageCompany";
 import ManageStaff from "./pages/superadmin/ManageStaff";
 import ManageDeposit from "./pages/superadmin/ManageDeposit";
+import SuperAdminManagePayments from "./pages/superadmin/ManagePayments";
 import FinancialManageDeposit from "./pages/financial/ManageDeposit";
 import Communication from "./pages/chat/Communication";
 
@@ -105,7 +106,12 @@ function App() {
         <Route
           index
           path="/admin/dashboard/deposit"
-          element={<MainLayout pageName="Manage deposit" children={<ManageDeposit />} />}
+          element={<MainLayout pageName="Manage Deposits" children={<ManageDeposit />} />}
+        />
+        <Route
+          index
+          path="/admin/dashboard/payments"
+          element={<MainLayout pageName="Manage Payments" children={<SuperAdminManagePayments />} />}
         />
         <Route
           index
@@ -133,12 +139,22 @@ function App() {
         />
         <Route
           index
+          path="/financial/dashboard/payments"
+          element={<MainLayout pageName="Manage Payments" children={<SuperAdminManagePayments />} />}
+        />
+        <Route
+          index
           path="/support/dashboard/overview"
           element={<MainLayout pageName="Dashboard" children={<SupportOverview />} />}
         />
         <Route
           index
           path="/support/dashboard/chat"
+          element={<MainLayout pageName="Live Support Chat" children={<Communication />} />}
+        />
+        <Route
+          index
+          path="/financial/dashboard/chat"
           element={<MainLayout pageName="Live Support Chat" children={<Communication />} />}
         />
       </Routes>

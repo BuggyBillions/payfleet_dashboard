@@ -80,6 +80,12 @@ export const navItems: NavItem[] = [
     role: ["superadmin", "super_admin", "admin"],
   },
   {
+    name: "Manage Payments",
+    icon: FaMoneyBillWave,
+    path: "/admin/dashboard/payments",
+    role: ["superadmin", "super_admin", "admin"],
+  },
+  {
     name: "Chat Support",
     icon: BsChat,
     path: "/admin/dashboard/chat",
@@ -97,6 +103,18 @@ export const navItems: NavItem[] = [
     name: "Manage Deposits",
     icon: LuArrowDownToLine,
     path: "/financial/dashboard/deposit",
+    role: ["financial", "finance"],
+  },
+  {
+    name: "Manage Payments",
+    icon: FaMoneyBillWave,
+    path: "/financial/dashboard/payments",
+    role: ["financial", "finance"],
+  },
+  {
+    name: "Chat Support",
+    icon: BsChat,
+    path: "/financial/dashboard/chat",
     role: ["financial", "finance"],
   },
 
