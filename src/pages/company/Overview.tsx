@@ -1,10 +1,10 @@
 import React from "react";
-import OverviewCards from "../components/cards/OverviewCards";
+import OverviewCards from "../../components/cards/OverviewCards";
 import { TbReceiptDollar } from "react-icons/tb";
 import { HiHome, HiOutlineArrowTrendingUp } from "react-icons/hi2";
 import { LuUsersRound } from "react-icons/lu";
-import { formatterUtility } from "../helpers/formatterUtility";
-import { useUser } from "../hooks/useUser";
+import { formatterUtility } from "../../helpers/formatterUtility";
+import { useUser } from "../../hooks/useUser";
 
 const Overview: React.FC = () => {
   const { user } = useUser();
