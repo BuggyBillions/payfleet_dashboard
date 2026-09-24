@@ -35,6 +35,13 @@ export interface TableColumnProps<T = unknown> {
   tableHeadingClassName?: string;
 }
 
+export interface EmployeeListResponse {
+  items: Employee[];
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+}
+
 export interface PaginationControlProps {
   currentPage: number;
   totalPages: number;
@@ -131,10 +138,10 @@ export interface OtherActionProps {
 }
 
 export interface ActionCellProps {
-  rowId: number;
-  onEdit?: (id: number) => void;
-  onDelete?: (id: number) => void;
-  onView?: (id: number) => void;
+  rowId: number | string;
+  onEdit?: (id: number | string) => void;
+  onDelete?: (id: number | string) => void;
+  onView?: (id: number | string) => void;
   toggleAction?: () => void;
   canView?: boolean;
   otherActions?: OtherActionProps[];
@@ -262,45 +269,61 @@ export interface StaffProps {
   status: string;
 }
 
-export interface DemoEmployee {
-  id: number;
+export interface Bank {
+  name: string;
+  code: string;
+}
+
+export interface ResolvedAccount {
+  account_name?: string;
+  account_number?: string;
+  bank_code?: string;
+}
+
+export interface Employee {
+  id: number | string;
+  company_id?: number | string;
   first_name: string;
   last_name: string;
   email: string;
-  phone_number: string;
+  phone: string;
   address: string;
   job_title: string;
   employment_type: string;
   bank_name: string;
+  bank_code?: string;
+  account_name: string;
   account_number: string;
   estimate_pay: number;
-  status: "Active" | "Inactive";
-  is_payroll: boolean;
-  addedAt: string;
+  status?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
-export type DemoEmployeeInput = Omit<
-  DemoEmployee,
-  "id" | "status" | "is_payroll" | "addedAt"
+export type EmployeeInput = Omit<
+  Employee,
+  "id" | "status" | "created_at" | "updated_at"
 >;
 
 export interface EmployeeFormValues {
   first_name: string;
   last_name: string;
   email: string;
-  phone_number: string;
+  phone: string;
   address: string;
   job_title: string;
   employment_type: string;
   bank_name: string;
+  bank_code: string;
+  account_name: string;
   account_number: string;
   estimate_pay: number | string;
 }
 
 export interface EditEmployeeModalProps {
-  employee: DemoEmployee;
+  employee: Employee;
   onClose: () => void;
-  onSaved: (updated: DemoEmployee) => void;
+  onSaved: (updated: Employee) => void;
 }
 
 export interface EditStaffModalProps {
@@ -311,9 +334,9 @@ export interface EditStaffModalProps {
 }
 
 export interface ReduceSalaryModalProps {
-  employee: DemoEmployee;
+  employee: Employee;
   onClose: () => void;
-  onSaved: (updated: DemoEmployee) => void;
+  onSaved: (updated: Employee) => void;
 }
 
 export interface ReductionValues {

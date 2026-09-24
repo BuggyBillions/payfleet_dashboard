@@ -3,49 +3,63 @@ import { useFormik } from "formik";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import EmployeeFormFields from "../../components/forms/EmployeeFormFields";
+import { useUser } from "../../hooks/useUser";
+import { getErrorMessage } from "../../helpers/api";
 import {
-  addDemoEmployee,
+  createEmployee,
   employeeValidationSchema,
-  type DemoEmployeeInput,
   type EmployeeFormValues,
-} from "../../services/demoEmployeeService";
+} from "../../services/employeeService";
 
 const AddEmployee: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useUser();
 
   const formik = useFormik<EmployeeFormValues>({
     initialValues: {
       first_name: "",
       last_name: "",
       email: "",
-      phone_number: "",
+      phone: "",
       address: "",
       job_title: "",
       employment_type: "full-time",
       bank_name: "",
+      bank_code: "",
+      account_name: "",
       account_number: "",
       estimate_pay: "",
     },
     validationSchema: employeeValidationSchema,
-    onSubmit: (values, { resetForm }) => {
-      const input: DemoEmployeeInput = {
-        first_name: values.first_name.trim(),
-        last_name: values.last_name.trim(),
-        email: values.email.trim(),
-        phone_number: values.phone_number.trim(),
-        address: values.address.trim(),
-        job_title: values.job_title.trim(),
-        employment_type: values.employment_type,
-        bank_name: values.bank_name.trim(),
-        account_number: values.account_number.trim(),
-        estimate_pay: Number(values.estimate_pay) || 0,
-      };
-      addDemoEmployee(input);
-      toast.success(
-        `${input.first_name} ${input.last_name} added successfully `,
-      );
-      resetForm();
-      navigate("/dashboard/employees");
+    onSubmit: async (values, { setSubmitting }) => {
+      if (!user?.id) {
+        toast.error("Your account session is not available. Please log in again.");
+        return;
+      }
+      try {
+        await createEmployee({
+          company_id: user.id,
+          first_name: values.first_name.trim(),
+          last_name: values.last_name.trim(),
+          email: values.email.trim(),
+          phone: values.phone.trim(),
+          address: values.address.trim(),
+          job_title: values.job_title.trim(),
+          employment_type: values.employment_type,
+          bank_name: values.bank_name.trim(),
+          account_name: values.account_name.trim(),
+          account_number: values.account_number.trim(),
+          estimate_pay: Number(values.estimate_pay) || 0,
+        });
+        toast.success(
+          `${values.first_name.trim()} ${values.last_name.trim()} added successfully `,
+        );
+        navigate("/dashboard/employees");
+      } catch (error) {
+        toast.error(getErrorMessage(error, "Failed to add employee"));
+      } finally {
+        setSubmitting(false);
+      }
     },
   });
 
