@@ -1,16 +1,17 @@
 import React, { useState } from "react";
-import { useFormik } from "formik";
+import { Link, useNavigate } from "react-router-dom";
+import { FaEyeSlash } from "react-icons/fa";
+import { FaEye } from "react-icons/fa6";
+import { assets } from "../../assets/assets";
 import * as Yup from "yup";
-import { FiEye, FiEyeOff } from "react-icons/fi";
-import api, { getErrorMessage } from "../../helpers/api";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import api, { getErrorMessage } from "../../helpers/api";
+import { useFormik } from "formik";
 import { useUser } from "../../hooks/useUser";
 
 const Login: React.FC = () => {
-  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [passwordVisibility, setPasswordVisibility] = useState(false);
   const { login } = useUser();
-  const navigate = useNavigate();
 
   const validationSchema = Yup.object({
     email: Yup.string()
@@ -27,129 +28,110 @@ const Login: React.FC = () => {
       password: "",
     },
     validationSchema,
-    onSubmit: async (values, { setSubmitting }) => {
+    onSubmit: async (values) => {
+      console.log(values);
       try {
         const response = await api.post("/login", values);
-        console.log("response", response);
-
-        if (response.status === 200 && response.data.data) {
-          const data = response.data;
-          login(data.data.token, data.data.user, data.data.role);
-          const message = data.message || "Login successful!";
-          console.log("data.data.role", data.data.role);
-
-          toast.success(message);
-          navigate(
-            data.data.role === "user"
-              ? "/dashboard/assigned-tasks"
-              : "/dashboard/overview",
+        console.log(response);
+        if (response.status === 200 || response.status === 201) {
+          console.log();
+          const { user, token } = response.data.data;
+          login(
+            token,
+            user,
+            user.role,
           );
+          toast.success("login sussessful");
+
+          const finalRoute = user.role === "admin" ? "/admin/dashboard/overview" : "/dashboard/overview"
+          navigate(finalRoute);
         }
-      } catch (error: unknown) {
-        console.error("Failed to perform action: ", error);
-        toast.error(getErrorMessage(error, "Failed to perform action"));
-      } finally {
-        setSubmitting(false);
+      } catch (error) {
+        console.error(error);
+        toast.error(getErrorMessage(error));
       }
     },
   });
 
-  return (
-    <div className="flex items-center justify-center h-screen">
-      <div className="w-xl bg-white shadow-xl flex flex-col items-center justify-center px-4 py-8 rounded-2xl">
-        <div className="w-full flex flex-col items-center justify-center">
-          <span className="text-center mb-6">
-            <h2 className="text-lg md:text-xl font-semibold">
-              Login into your account
-            </h2>
-            <p className="text-sm md:text-base">
-              Enter your credentials to get access
-            </p>
-          </span>
+  const navigate = useNavigate();
 
-          <form
-            onSubmit={formik.handleSubmit}
-            className="flex flex-col space-y-4 w-full max-w-md"
-          >
-            {/* Email */}
-            <div className="flex flex-col space-y-1">
-              <label htmlFor="email" className="font-semibold">
-                Email address
-              </label>
+  return (
+    <div className="w-screen h-screen flex md:flex-row flex-col items-start bg-primary">
+      <div className="md:h-full h-[35vh] overflow-hidden bg-primary md:w-1/2 w-full flex flex-col gap-4 items-start justify-center lg:px-8 md:px-6 px-0 pb-8 md:pt-0 pt-15 relative">
+        <h1 className="text-white text-xl px-10 lg:px-0 lg:text-4xl lg:leading-12 lg:max-w-100 font-semibold">
+          Welcome Back! Securely access your dashboard Manage.
+        </h1>
+        <Link
+          to={"/"}
+          className="bg-white p-2 md:rounded-lg absolute md:top-8 md:h-auto h-15 top-0 md:left-8 left-0 lg:w-1/5 md:w-1/3 w-full"
+        >
+          <img
+            src={assets.logo}
+            alt="PayFleet Logo"
+            className="md:w-full w-1/3 mx-auto object-cover"
+          />
+        </Link>
+      </div>
+      <div className="md:w-1/2 w-full md:h-full h-[65vh] overflow-y-auto lg:p-12 p-8 flex flex-col md:justify-center bg-white md:rounded-none rounded-t-4xl">
+        <div className="w-full">
+          <h2 className="text-3xl font-bold mb-6 text-gray-800">
+            Login to your account
+          </h2>
+
+          <form onSubmit={formik.handleSubmit} className="space-y-4">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="email">Email Address</label>
               <input
                 type="email"
-                id="email"
-                name="email"
                 placeholder="Enter email address"
                 value={formik.values.email}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
-                className={`text-black border-outlineBlack bg-backgroundBlack ${
-                  formik.touched.email && formik.errors.email
-                    ? "border-red-500"
-                    : "border-[#FBFCFB3]"
-                } placeholder-black rounded-md px-4 h-[50px] border text-sm w-full outline-0`}
+                name="email"
+                id="email"
+                className="w-full border h-12.5 border-primary/20 indent-3 rounded-md outline-0"
               />
-              {formik.touched.email && formik.errors.email && (
-                <span className="text-red-500 pl-3 text-sm">
-                  {formik.errors.email}
-                </span>
-              )}
             </div>
-
-            {/* Password */}
-            <div className="relative flex flex-col space-y-1">
-              <label htmlFor="password" className="font-semibold">
-                Password
-              </label>
-              <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                name="password"
-                placeholder="Enter password"
-                value={formik.values.password}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                className={`border border-outlineBlack bg-backgroundBlack pr-12 ${
-                  formik.touched.password && formik.errors.password
-                    ? "border-red-500"
-                    : "border-backgroundBlack"
-                } rounded-md px-4 h-[50px] outline-none w-full text-sm placeholder-black`}
-              />
-              <span
-                className="absolute right-4 top-11 cursor-pointer text-black"
-                onClick={() => setShowPassword((prev) => !prev)}
-              >
-                {showPassword ? <FiEye size={18} /> : <FiEyeOff size={18} />}
-              </span>
-              {formik.touched.password && formik.errors.password && (
-                <span className="text-red-500 pl-3 text-sm">
-                  {formik.errors.password}
-                </span>
-              )}
+            <div className="flex flex-col gap-1">
+              <label htmlFor="password">Password</label>
+              <div className="flex border h-12.5 border-primary/20 pe-3 rounded-md">
+                <input
+                  type={passwordVisibility ? "text" : "password"}
+                  placeholder="Enter password"
+                  value={formik.values.password}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  name="password"
+                  id="password"
+                  className="w-full border-0 h-full border-primary/20 indent-3 rounded-md outline-0"
+                />
+                <button
+                  type="button"
+                  onClick={() => setPasswordVisibility(!passwordVisibility)}
+                >
+                  {passwordVisibility ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
             </div>
-
-            {/* Forgot password */}
-            <span className="self-end text-primary">
-              <button
-                type="button"
-                className="font-medium text-sm cursor-pointer"
-              >
-                Forgot Password?
-              </button>
-            </span>
-
-            {/* Buttons */}
-            <div className="flex flex-col space-y-9 mt-4">
-              <button
-                type="submit"
-                disabled={formik.isSubmitting}
-                className="bg-primary text-white font-medium rounded-md h-[45px] cursor-pointer disabled:opacity-70 transition"
-              >
-                {formik.isSubmitting ? "Logging in..." : "Login"}
-              </button>
-            </div>
+            <button
+              type="submit"
+              className="w-full px-6 h-12 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed bg-primary text-white rounded-lg shadow font-medium hover:bg-primary/90 transition-colors"
+            >
+              {/* {handleCompanyLoginMutation.isPending || formik.isSubmitting
+                ? "Logging in..."
+                : "Login"} */}
+              Login
+            </button>
           </form>
+          <div className="mt-6 text-center text-sm text-gray-600">
+            Don't have an account?{" "}
+            <span
+              onClick={() => navigate("/getstarted")}
+              className="text-primary font-medium cursor-pointer hover:underline"
+            >
+              Get Started
+            </span>
+          </div>
         </div>
       </div>
     </div>
