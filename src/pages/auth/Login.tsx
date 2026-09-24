@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { getErrorMessage } from "../../helpers/api";
 import { useFormik } from "formik";
 import { useUser } from "../../hooks/useUser";
+import OtpModal from "../../components/modal/OtpModal";
+import type { UserProps } from "../../lib/interfaces";
 import { loginService, sendEmailVerificationCodeService } from "../../services/authService";
 import { useMutation } from "@tanstack/react-query";
 import type { LoginValues } from "../../lib/interfaces";
@@ -16,6 +18,11 @@ import { savePendingVerification } from "../../helpers/pendingVerification";
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const [passwordVisibility, setPasswordVisibility] = useState(false);
+  const [showOtp, setShowOtp] = useState(false);
+  const [pendingLogin, setPendingLogin] = useState<{
+    email: string;
+    password: string;
+  } | null>(null);
   const { login } = useUser();
 
   const validationSchema = Yup.object({
@@ -26,6 +33,19 @@ const Login: React.FC = () => {
       .min(8, "Password must be at least 8 characters")
       .required("Password is required"),
   });
+
+  const completeLogin = (
+    token: string,
+    user: UserProps,
+    message = "Login successful",
+  ) => {
+    login(token, user, user.role);
+    toast.success(message);
+
+    const finalRoute =
+      user.role === "admin" ? "/admin/dashboard/overview" : "/dashboard/overview";
+    navigate(finalRoute);
+  };
 
   const sendCodeMutation = useMutation({
     mutationFn: sendEmailVerificationCodeService,
@@ -67,10 +87,53 @@ const Login: React.FC = () => {
     validationSchema,
     onSubmit: async (values) => {
       console.log(values);
-      loginMutation.mutateAsync(values)
+      try {
+        const response = await api.post("/login", values);
+        console.log(response);
+        if (response.status === 200 || response.status === 201) {
+          const { user, token } = response.data.data;
+          completeLogin(token, user);
+        }
+      } catch (error: unknown) {
+        console.error(error);
+        const message = getErrorMessage(error);
+        // Company account must verify OTP before logging in
+        if (message.toLowerCase().includes("verify your email")) {
+          setPendingLogin({ email: values.email, password: values.password });
+          setShowOtp(true);
+          return;
+        }
+        toast.error(message);
+      }
     },
   });
 
+  const handleOtpVerified = async (data?: unknown) => {
+    setShowOtp(false);
+
+    // If /verify-otp already returns auth data, use it directly
+    const authData = (data as { data?: { token: string; user: UserProps } })
+      ?.data;
+    if (authData?.token && authData?.user) {
+      completeLogin(authData.token, authData.user);
+      return;
+    }
+
+    // Otherwise re-attempt login with the stored credentials
+    if (!pendingLogin) return;
+    try {
+      const response = await api.post("/login", pendingLogin);
+      if (response.status === 200 || response.status === 201) {
+        const { user, token } = response.data.data;
+        completeLogin(token, user);
+      }
+    } catch (error: unknown) {
+      console.error(error);
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const navigate = useNavigate();
 
   return (
     <div className="w-screen h-screen flex md:flex-row flex-col items-start bg-primary">
@@ -151,6 +214,14 @@ const Login: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {showOtp && (
+        <OtpModal
+          email={pendingLogin?.email}
+          onClose={() => setShowOtp(false)}
+          onVerified={handleOtpVerified}
+        />
+      )}
     </div>
   );
 };

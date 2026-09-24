@@ -1,68 +1,111 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import ReusableTable from "../../utility/ReusableTable";
-import OverviewCards from "../../components/cards/OverviewCards";
-import EditEmployeeModal from "../../components/modal/EditEmployeeModal";
-import type { TableColumnProps } from "../../lib/interfaces";
-import { formatterUtility } from "../../helpers/formatterUtility";
 import { LuUsersRound } from "react-icons/lu";
 import { HiOutlineArrowTrendingUp, HiOutlineArrowTrendingDown } from "react-icons/hi2";
 import { TbReceiptDollar } from "react-icons/tb";
+import { IoSearchOutline } from "react-icons/io5";
+import ReusableTable from "../../utility/ReusableTable";
+import OverviewCards from "../../components/cards/OverviewCards";
+import EditEmployeeModal from "../../components/modal/EditEmployeeModal";
+import ConfirmDialog from "../../components/modal/ConfirmDialog";
 import ActionCell from "../../components/ui/ActionCell";
-import { FaMoneyBillWave } from "react-icons/fa6";
+import type { TableColumnProps, Employee, EmployeeListResponse } from "../../lib/interfaces";
+import { formatterUtility } from "../../helpers/formatterUtility";
+import { getErrorMessage } from "../../helpers/api";
 import {
-  getDemoEmployees,
-  toggleEmployeePayroll,
-  type DemoEmployee,
-} from "../../services/demoEmployeeService";
+  getEmployees,
+  deleteEmployee,
+  EMPLOYMENT_TYPES,
+} from "../../services/employeeService";
 
 const Employees: React.FC = () => {
   const navigate = useNavigate();
-  const [employees, setEmployees] = useState<DemoEmployee[]>(() =>
-    getDemoEmployees(),
-  );
-  const [editing, setEditing] = useState<DemoEmployee | null>(null);
+  const queryClient = useQueryClient();
+
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [employmentFilter, setEmploymentFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [editing, setEditing] = useState<Employee | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
 
-  const totalItems = employees.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-  const activeCount = employees.filter((emp) => emp.status === "Active").length;
-  const payrollCount = employees.filter((emp) => emp.is_payroll).length;
-  const totalPayroll = employees.reduce(
-    (sum, emp) => sum + (emp.is_payroll ? emp.estimate_pay : 0),
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+  } = useQuery<EmployeeListResponse>({
+    queryKey: [
+      "employees",
+      debouncedSearch,
+      employmentFilter,
+      currentPage,
+      itemsPerPage,
+    ],
+    queryFn: () =>
+      getEmployees({
+        search: debouncedSearch,
+        employment_type:
+          employmentFilter === "all" ? undefined : employmentFilter,
+        page: currentPage,
+        per_page: itemsPerPage,
+      }),
+    placeholderData: (prev) => prev,
+  });
+
+  const { data: statsData } = useQuery<EmployeeListResponse>({
+    queryKey: ["employees", "stats", debouncedSearch, employmentFilter],
+    queryFn: () =>
+      getEmployees({
+        search: debouncedSearch,
+        employment_type:
+          employmentFilter === "all" ? undefined : employmentFilter,
+        per_page: 500,
+      }),
+  });
+
+  const employees = data?.items ?? [];
+  const totalItems = data?.totalItems ?? employees.length;
+
+  const statsEmployees = statsData?.items ?? [];
+  const activeCount = statsEmployees.filter(
+    (emp) => String(emp.status ?? "").toLowerCase() === "active",
+  ).length;
+  const totalPayroll = statsEmployees.reduce(
+    (sum, emp) => sum + (Number(emp.estimate_pay) || 0),
     0,
   );
+  const averagePay = totalItems ? totalPayroll / totalItems : 0;
 
-  const paginatedData = employees.slice(
-    (currentPage - 1) * itemsPerPage,
-    (currentPage - 1) * itemsPerPage + itemsPerPage,
-  );
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: ["employees"] });
 
-  const handleSaved = (updated: DemoEmployee) => {
-    setEmployees((prev) =>
-      prev.map((emp) => (emp.id === updated.id ? updated : emp)),
-    );
+  const deleteMutation = useMutation({
+    mutationFn: (id: number | string) => deleteEmployee(id),
+    onSuccess: () => {
+      toast.success("Employee deleted ");
+      setDeleteTarget(null);
+      invalidate();
+    },
+    onError: (err) => {
+      toast.error(getErrorMessage(err, "Failed to delete employee"));
+    },
+  });
+
+  const handleSaved = () => {
     setEditing(null);
+    invalidate();
   };
 
-  const handleTogglePayroll = (emp: DemoEmployee) => {
-    const updated = toggleEmployeePayroll(emp.id);
-    if (!updated) return;
-
-    setEmployees((prev) =>
-      prev.map((e) => (e.id === updated.id ? updated : e)),
-    );
-    toast.success(
-      updated.is_payroll
-        ? `${updated.first_name} ${updated.last_name} added to payroll `
-        : `${updated.first_name} ${updated.last_name} removed from payroll `,
-    );
-  };
-
-  const columns: TableColumnProps<DemoEmployee>[] = [
+  const columns: TableColumnProps<Employee>[] = [
     {
       label: "Full Name",
       render: (item) => (
@@ -90,7 +133,7 @@ const Employees: React.FC = () => {
         <span className="font-semibold text-primary">
           {formatterUtility(item.estimate_pay)}
         </span>
-      ),  
+      ),
     },
     {
       label: "Action",
@@ -98,13 +141,7 @@ const Employees: React.FC = () => {
         <ActionCell
           rowId={item.id}
           onEdit={() => setEditing(item)}
-          otherActions={[
-            {
-              name: item.is_payroll ? "Remove from payroll" : "Add to payroll",
-              icon: <FaMoneyBillWave size={12} />,
-              action: () => handleTogglePayroll(item),
-            },
-          ]}
+          onDelete={() => setDeleteTarget(item)}
         />
       ),
     },
@@ -142,30 +179,60 @@ const Employees: React.FC = () => {
           value={activeCount}
         />
         <OverviewCards
-          icon={LuUsersRound}
-          icon2={HiOutlineArrowTrendingUp}
-          title="On Payroll"
-          value={payrollCount}
-        />
-        <OverviewCards
           icon={TbReceiptDollar}
           icon2={HiOutlineArrowTrendingDown}
           title="Total Payroll"
           value={formatterUtility(totalPayroll)}
         />
+        <OverviewCards
+          icon={TbReceiptDollar}
+          icon2={HiOutlineArrowTrendingDown}
+          title="Average Pay"
+          value={formatterUtility(averagePay)}
+        />
       </div>
 
-      <div className="bg-tertiary rounded-xl p-4">
-        <div>
-          
+      <div className="bg-white rounded-xl p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2 border border-black/10 rounded-md px-3 h-10 w-full sm:w-64 bg-secondary">
+            <IoSearchOutline className="text-gray-400 shrink-0" />
+            <input
+              type="text"
+              placeholder="Search by name, email, title..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full outline-0 text-sm placeholder:text-gray-400 bg-transparent"
+            />
+          </div>
+          <div className="w-full sm:w-56">
+            <select
+              value={employmentFilter}
+              onChange={(e) => {
+                setEmploymentFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full border border-black/10 bg-secondary rounded-md px-3 h-10 text-sm outline-0"
+            >
+              <option value="all">All Employment Types</option>
+              {EMPLOYMENT_TYPES.map((type) => (
+                <option key={type} value={type} className="capitalize">
+                  {type}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
+
         <ReusableTable
           columns={columns}
-          data={paginatedData}
-          isLoading={false}
-          error={null}
+          data={employees}
+          isLoading={isLoading}
+          error={isError ? error : null}
           currentPage={currentPage}
-          totalPages={totalPages}
+          totalPages={data?.totalPages ?? 1}
           totalItems={totalItems}
           itemsPerPage={itemsPerPage}
           setCurrentPage={setCurrentPage}
@@ -180,6 +247,18 @@ const Employees: React.FC = () => {
           onSaved={handleSaved}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="Delete employee?"
+        message={`Are you sure you want to delete ${
+          deleteTarget ? `${deleteTarget.first_name} ${deleteTarget.last_name}` : ""
+        }? This action cannot be undone.`}
+        confirmText="Yes, Delete"
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   );
 };

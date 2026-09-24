@@ -6,10 +6,11 @@ import { FaMoneyBillWave } from "react-icons/fa6";
 import Modal from "./Modal";
 import FormattedInput from "../ui/FormattedInput";
 import { formatterUtility } from "../../helpers/formatterUtility";
+import { getErrorMessage } from "../../helpers/api";
 import {
-  updateDemoEmployee,
-  type DemoEmployee,
-} from "../../services/demoEmployeeService";
+  updateEmployee,
+  type Employee,
+} from "../../services/employeeService";
 import type { ReduceSalaryModalProps, ReductionValues } from "../../lib/interfaces";
 
 const inputClass = (error?: string) =>
@@ -38,18 +39,25 @@ const ReduceSalaryModal: React.FC<ReduceSalaryModalProps> = ({
         .required("Amount is required"),
       reason: Yup.string().trim().required("A reason is required"),
     }),
-    onSubmit: (values, { setSubmitting }) => {
+    onSubmit: async (values, { setSubmitting }) => {
       const deduction = Number(values.amount);
-      const updated: DemoEmployee = {
+      const updated: Employee = {
         ...employee,
         estimate_pay: Math.max(0, employee.estimate_pay - deduction),
       };
-      updateDemoEmployee(updated);
-      toast.success(
-        `${formatterUtility(deduction)} deducted from ${employee.first_name} ${employee.last_name}'s salary ${values.reason ? `- ${values.reason}` : ""}`,
-      );
-      onSaved(updated);
-      setSubmitting(false);
+      try {
+        await updateEmployee(employee.id, {
+          estimate_pay: updated.estimate_pay,
+        });
+        toast.success(
+          `${formatterUtility(deduction)} deducted from ${employee.first_name} ${employee.last_name}'s salary ${values.reason ? `- ${values.reason}` : ""}`,
+        );
+        onSaved(updated);
+      } catch (error) {
+        toast.error(getErrorMessage(error, "Failed to apply deduction"));
+      } finally {
+        setSubmitting(false);
+      }
     },
   });
 
