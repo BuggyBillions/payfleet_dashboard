@@ -32,13 +32,15 @@ const AddEmployee: React.FC = () => {
     },
     validationSchema: employeeValidationSchema,
     onSubmit: async (values, { setSubmitting }) => {
-      if (!user?.id) {
-        toast.error("Your account session is not available. Please log in again.");
+      if (!user?.company_details?.id) {
+        toast.error(
+          "Company is not available. Please log in again.",
+        );
         return;
       }
       try {
         await createEmployee({
-          company_id: user.id,
+          company_id: user.company_details.id,
           first_name: values.first_name.trim(),
           last_name: values.last_name.trim(),
           email: values.email.trim(),

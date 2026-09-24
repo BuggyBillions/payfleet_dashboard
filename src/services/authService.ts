@@ -13,7 +13,7 @@ export const loginService = async (values: LoginValues) => {
 
 export const getUserService = async () => {
     const response = await api.get(`/me`);
-    return response.data;
+    return response.data?.data ?? response.data;
 };
 
 export const sendEmailVerificationCodeService = async (values: sendEmailVerificationValues) => {

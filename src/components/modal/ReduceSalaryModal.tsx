@@ -33,8 +33,8 @@ const ReduceSalaryModal: React.FC<ReduceSalaryModalProps> = ({
         .typeError("Amount must be a number")
         .positive("Amount must be greater than 0")
         .max(
-          employee.estimate_pay,
-          `Amount cannot exceed ${formatterUtility(employee.estimate_pay)}`,
+          Number(employee.estimate_pay),
+          `Amount cannot exceed ${formatterUtility(Number(employee.estimate_pay))}`,
         )
         .required("Amount is required"),
       reason: Yup.string().trim().required("A reason is required"),
@@ -43,11 +43,11 @@ const ReduceSalaryModal: React.FC<ReduceSalaryModalProps> = ({
       const deduction = Number(values.amount);
       const updated: Employee = {
         ...employee,
-        estimate_pay: Math.max(0, employee.estimate_pay - deduction),
+        estimate_pay: Math.max(0, Number(employee.estimate_pay) - deduction),
       };
       try {
         await updateEmployee(employee.id, {
-          estimate_pay: updated.estimate_pay,
+          estimate_pay: Number(updated.estimate_pay),
         });
         toast.success(
           `${formatterUtility(deduction)} deducted from ${employee.first_name} ${employee.last_name}'s salary ${values.reason ? `- ${values.reason}` : ""}`,
@@ -82,7 +82,7 @@ const ReduceSalaryModal: React.FC<ReduceSalaryModalProps> = ({
           <div className="flex flex-col gap-0.5 text-start">
             <p className="text-[10px] text-tableHeading">Current Salary</p>
             <p className="text-xl font-semibold">
-              {formatterUtility(employee.estimate_pay)}
+              {formatterUtility(Number(employee.estimate_pay))}
             </p>
           </div>
         </div>
