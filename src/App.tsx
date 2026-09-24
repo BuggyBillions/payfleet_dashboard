@@ -9,6 +9,12 @@ import Login from "./pages/auth/Login";
 import NotFound from "./pages/view/NotFound";
 
 import Overview from "./pages/company/Overview";
+import Employees from "./pages/company/Employees";
+import AddEmployee from "./pages/company/AddEmployee";
+import Deposits from "./pages/company/Deposits";
+import ProcessPayments from "./pages/company/ProcessPayments";
+import PaymentHistory from "./pages/company/PaymentHistory";
+import Settings from "./pages/company/Settings";
 import SuperAdminOverview from "./pages/superadmin/Overview";
 import FinancialOverview from "./pages/financial/Overview";
 import SupportOverview from "./pages/support/Overview";
@@ -24,6 +30,44 @@ function App() {
           index
           path="/dashboard/overview"
           element={<MainLayout pageName="Dashboard" children={<Overview />} />}
+        />
+        <Route
+          path="/dashboard/employees"
+          element={<MainLayout pageName="Employees" children={<Employees />} />}
+        />
+        <Route
+          path="/dashboard/employees/add"
+          element={
+            <MainLayout pageName="Add Employee" children={<AddEmployee />} />
+          }
+        />
+<Route
+          path="/dashboard/deposits"
+          element={<MainLayout pageName="Deposits" children={<Deposits />} />}
+        />
+        <Route
+          path="/dashboard/payments/process"
+          element={
+            <MainLayout
+              pageName="Process Payments"
+              children={<ProcessPayments />}
+            />
+          }
+        />
+        <Route
+          path="/dashboard/payments/history"
+          element={
+            <MainLayout
+              pageName="Payment History"
+              children={<PaymentHistory />}
+            />
+          }
+        />
+        <Route
+          path="/dashboard/settings"
+          element={
+            <MainLayout pageName="Settings" children={<Settings />} />
+          }
         />
         <Route
           index
