@@ -7,9 +7,11 @@ import OverviewCards from "../../components/cards/OverviewCards";
 import StatusBadge from "../../components/ui/StatusBadge";
 import type { CompanyProps, TableColumnProps } from "../../lib/interfaces";
 import { useCompanies, useCompanyStats, useDeleteCompany } from "../../hooks/useCompany";
+import { getTierConfig } from "../../services/tierService";
+import ChangeTierModal from "../../components/modal/tier/ChangeTierModal";
 import { FiSearch } from "react-icons/fi";
 import { HiOutlineBuildingOffice2 } from "react-icons/hi2";
-import { LuShieldCheck, LuUsersRound, LuBuilding } from "react-icons/lu";
+import { LuShieldCheck, LuUsersRound, LuBuilding, LuSlidersHorizontal } from "react-icons/lu";
 
 const ManageCompany: React.FC = () => {
      const [searchTerm, setSearchTerm] = useState("");
@@ -19,6 +21,7 @@ const ManageCompany: React.FC = () => {
 
      const [deleteModal, setDeleteModal] = useState(false);
      const [selectedCompany, setSelectedCompany] = useState<CompanyProps | null>(null);
+     const [companyForTierChange, setCompanyForTierChange] = useState<CompanyProps | null>(null);
 
      // Debounce search input
      useEffect(() => {
@@ -135,11 +138,20 @@ const ManageCompany: React.FC = () => {
           {
                label: "Tier",
                key: "tier",
-               render: (item: CompanyProps) => (
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                         {item.tier || "Standard"}
-                    </span>
-               ),
+               render: (item: CompanyProps) => {
+                    const t = getTierConfig(item.tier);
+                    return (
+                         <button
+                              type="button"
+                              onClick={() => setCompanyForTierChange(item)}
+                              title="Click to modify tier"
+                              className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition cursor-pointer flex items-center gap-1"
+                         >
+                              <span>{t.badge} ({t.name})</span>
+                              <LuSlidersHorizontal className="text-[10px] opacity-70" />
+                         </button>
+                    );
+               },
           },
           {
                label: "Status",
@@ -162,6 +174,12 @@ const ManageCompany: React.FC = () => {
                          rowId={Number(item.id ?? 0)}
                          canView={true}
                          onView={() => setSelectedCompany(item)}
+                         otherActions={[
+                              {
+                                   name: "Modify Tier",
+                                   action: () => setCompanyForTierChange(item),
+                              },
+                         ]}
                          onDelete={() => {
                               setSelectedCompany(item);
                               setDeleteModal(true);
@@ -260,6 +278,14 @@ const ManageCompany: React.FC = () => {
                     <ViewCompanyModal
                          selectedCompany={selectedCompany}
                          onClose={() => setSelectedCompany(null)}
+                    />
+               )}
+
+               {/* Change Tier Modal */}
+               {companyForTierChange && (
+                    <ChangeTierModal
+                         company={companyForTierChange}
+                         onClose={() => setCompanyForTierChange(null)}
                     />
                )}
           </div>

@@ -16,20 +16,22 @@ export const getStaffsService = async ({
   searchTerm = "",
   search = "",
   per_page = 10,
-  role,
+  role = "all",
   status,
 }: GetStaffsParams = {}): Promise<StaffListResponse> => {
-  // If role filter is active (e.g. "support" or "finance") and no other text search is typed,
-  // query with ?search=support or ?search=finance as specified by API
-  let querySearch = (searchTerm || search || "").trim();
-  if (!querySearch && role && role !== "all") {
-    querySearch = role.trim();
-  }
+  const querySearch = (searchTerm || search || "").trim();
+
+  // Backend strictly requires role to be "finance", "support", or "all"
+  const rawRole = String(role || "").toLowerCase().trim();
+  const validRole = ["finance", "support", "all"].includes(rawRole)
+    ? rawRole
+    : "all";
 
   const params: Record<string, unknown> = {
     page,
     search: querySearch || undefined,
     per_page,
+    role: validRole,
   };
 
   if (status && status !== "all") {
@@ -102,7 +104,7 @@ export const createFinanceOfficerService = async (
     phone: payload.phoneNumber?.trim() || payload.phone?.trim(),
     phoneNumber: payload.phoneNumber?.trim() || payload.phone?.trim(),
     password: payload.password,
-    role: "Finance",
+    role: "finance",
   };
 
   const response = await api.post("/create-finance", dataToSend);
@@ -128,7 +130,7 @@ export const createSupportOfficerService = async (
     phone: payload.phoneNumber?.trim() || payload.phone?.trim(),
     phoneNumber: payload.phoneNumber?.trim() || payload.phone?.trim(),
     password: payload.password,
-    role: "Support",
+    role: "support",
   };
 
   const response = await api.post("/create-support", dataToSend);
@@ -150,28 +152,17 @@ export const createStaffService = async (payload: CreateStaffPayload) => {
  * Deactivate User: POST /deactivate-users/{id} (fallback PUT/PATCH)
  */
 export const deactivateUserService = async (id: number | string) => {
-  try {
-    const response = await api.post(`/deactivate-users/${id}`);
-    return response.data;
-  } catch {
-    // Try PUT as fallback if POST is not used by backend
-    const response = await api.put(`/deactivate-users/${id}`);
-    return response.data;
-  }
+  // Try PUT as fallback if POST is not used by backend
+  const response = await api.patch(`/deactivate-users/${id}`);
+  return response.data;
 };
 
 /**
  * Activate User: POST /activate-users/{id} (fallback PUT/PATCH)
  */
 export const activateUserService = async (id: number | string) => {
-  try {
-    const response = await api.post(`/activate-users/${id}`);
+    const response = await api.patch(`/activate-users/${id}`);
     return response.data;
-  } catch {
-    // Try PUT as fallback if POST is not used by backend
-    const response = await api.put(`/activate-users/${id}`);
-    return response.data;
-  }
 };
 
 /**

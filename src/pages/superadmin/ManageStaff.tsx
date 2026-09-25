@@ -23,7 +23,7 @@ const ManageStaff: React.FC = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [roleFilter, setRoleFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("");
 
   const [deleteModal, setDeleteModal] = useState(false);
   const [createStaff, setCreateStaff] = useState(false);
@@ -50,7 +50,7 @@ const ManageStaff: React.FC = () => {
     page: currentPage,
     searchTerm: debouncedSearch,
     per_page: itemsPerPage,
-    role: roleFilter !== "all" ? roleFilter : undefined,
+    role: roleFilter || "",
   });
 
   // Full staff stats query for top KPI cards
@@ -306,7 +306,7 @@ const ManageStaff: React.FC = () => {
 
           {/* Role Filter Tabs */}
           <div className="flex items-center gap-1.5 bg-secondary p-1 rounded-lg border border-primary/10 self-start sm:self-auto">
-            {["all", "finance", "support"].map((r) => (
+            {["", "finance", "support"].map((r) => (
               <button
                 key={r}
                 type="button"
@@ -320,7 +320,7 @@ const ManageStaff: React.FC = () => {
                     : "text-textBlack/60 hover:text-textBlack hover:bg-primary/5"
                 }`}
               >
-                {r === "all" ? "All Roles" : `${r} Officers`}
+                {r === "" ? "All Roles" : `${r} Officers`}
               </button>
             ))}
           </div>

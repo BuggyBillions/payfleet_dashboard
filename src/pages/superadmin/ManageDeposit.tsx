@@ -33,7 +33,7 @@ const REJECTION_PRESETS = [
 
 const ManageDeposit: React.FC<ManageDepositProps> = ({
   defaultFilter = "all",
-  role = "superadmin",
+  role = "admin",
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -198,31 +198,9 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
       key: "companyName",
       render: (item: DepositItemProps) => (
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
-            {getInitials(item.companyName)}
-          </div>
           <div className="flex flex-col">
-            <span className="font-semibold text-textBlack text-xs">{item.companyName}</span>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="text-[10px] text-textBlack/50 font-mono">{item.reference}</span>
-              {item.reference && item.reference !== "—" && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCopyRef(item.reference);
-                  }}
-                  className="text-textBlack/40 hover:text-primary transition cursor-pointer"
-                  title="Copy reference"
-                >
-                  {copiedRef === item.reference ? (
-                    <LuCheck size={11} className="text-emerald-500" />
-                  ) : (
-                    <LuCopy size={11} />
-                  )}
-                </button>
-              )}
-            </div>
+            <span className="font-semibold text-textBlack text-sm">{item.companyName}</span>
+            <span className=" text-textBlack/70 text-xs">{item.email}</span>
           </div>
         </div>
       ),
@@ -237,15 +215,27 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
       ),
     },
     {
-      label: "Channel",
-      key: "method",
+      label: "Refrence No.",
+      key: "refrence",
       render: (item: DepositItemProps) => (
-        <div className="flex flex-col">
-          <span className="text-xs text-textBlack/80 font-medium">{item.method}</span>
-          {item.bankName && (
-            <span className="text-[10px] text-textBlack/50">
-              {item.bankName} {item.accountNumber ? `(${item.accountNumber.slice(-4)})` : ""}
-            </span>
+        <div className="flex items-center gap-1.5 mt-0.5">
+          <span className="text-[10px] text-textBlack/50 font-mono">{item.reference}</span>
+          {item.reference && item.reference !== "—" && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCopyRef(item.reference);
+              }}
+              className="text-textBlack/40 hover:text-primary transition cursor-pointer"
+              title="Copy reference"
+            >
+              {copiedRef === item.reference ? (
+                <LuCheck size={11} className="text-emerald-500" />
+              ) : (
+                <LuCopy size={11} />
+              )}
+            </button>
           )}
         </div>
       ),
@@ -271,24 +261,24 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
         const otherActions = [
           ...(item.status === "pending"
             ? [
-                {
-                  name: "Approve Deposit",
-                  icon: <BsCheck2Circle className="text-emerald-500" />,
-                  action: () => {
-                    setSelectedDeposit(item);
-                    setApproveModal(true);
-                  },
+              {
+                name: "Approve Deposit",
+                icon: <BsCheck2Circle className="text-emerald-500" />,
+                action: () => {
+                  setSelectedDeposit(item);
+                  setApproveModal(true);
                 },
-                {
-                  name: "Decline Deposit",
-                  icon: <BsXCircle className="text-red-500" />,
-                  action: () => {
-                    setSelectedDeposit(item);
-                    setRejectionReason("");
-                    setRejectModal(true);
-                  },
+              },
+              {
+                name: "Decline Deposit",
+                icon: <BsXCircle className="text-red-500" />,
+                action: () => {
+                  setSelectedDeposit(item);
+                  setRejectionReason("");
+                  setRejectModal(true);
                 },
-              ]
+              },
+            ]
             : []),
         ];
 
@@ -322,8 +312,8 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
                 ? "Pending Deposits Verification"
                 : "Financial Deposits Management"
               : defaultFilter === "pending"
-              ? "Deposit Verification & Approvals"
-              : "Manage Deposits"}
+                ? "Deposit Verification & Approvals"
+                : "Manage Deposits"}
           </h2>
           <p className="text-xs text-textBlack/60">
             {role === "financial"
@@ -386,24 +376,22 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
                     setStatusFilter(tab.value);
                     setCurrentPage(1);
                   }}
-                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
-                    isActive
-                      ? "bg-primary text-white shadow-xs font-semibold"
-                      : "text-textBlack/60 hover:text-textBlack hover:bg-primary/5"
-                  }`}
+                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${isActive
+                    ? "bg-primary text-white shadow-xs font-semibold"
+                    : "text-textBlack/60 hover:text-textBlack hover:bg-primary/5"
+                    }`}
                 >
                   <span>{tab.label}</span>
                   {tab.count !== undefined && (
                     <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold ${
-                        isActive
-                          ? "bg-white/20 text-white"
-                          : tab.value === "pending" && tab.count > 0
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold ${isActive
+                        ? "bg-white/20 text-white"
+                        : tab.value === "pending" && tab.count > 0
                           ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
                           : tab.value === "failed" && tab.count > 0
-                          ? "bg-red-500/15 text-red-600 dark:text-red-400"
-                          : "bg-primary/10 text-textBlack/60"
-                      }`}
+                            ? "bg-red-500/15 text-red-600 dark:text-red-400"
+                            : "bg-primary/10 text-textBlack/60"
+                        }`}
                     >
                       {tab.count}
                     </span>
@@ -535,11 +523,10 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
                     key={preset}
                     type="button"
                     onClick={() => setRejectionReason(preset)}
-                    className={`w-full text-left p-2 rounded-lg text-xs transition border cursor-pointer ${
-                      rejectionReason === preset
-                        ? "bg-red-50 border-red-300 text-red-700 font-medium"
-                        : "bg-secondary/50 border-primary/10 text-textBlack/70 hover:bg-secondary"
-                    }`}
+                    className={`w-full text-left p-2 rounded-lg text-xs transition border cursor-pointer ${rejectionReason === preset
+                      ? "bg-red-50 border-red-300 text-red-700 font-medium"
+                      : "bg-secondary/50 border-primary/10 text-textBlack/70 hover:bg-secondary"
+                      }`}
                   >
                     {preset}
                   </button>

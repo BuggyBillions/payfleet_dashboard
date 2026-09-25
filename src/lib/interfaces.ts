@@ -202,6 +202,7 @@ export interface CompanyDetailsProps {
   name: string;
   email: string;
   phone?: string;
+  tier?: string | number;
   logo?: string | null;
   about?: string;
   address?: string;
@@ -555,6 +556,74 @@ export interface ReduceSalaryModalProps {
 export interface ReductionValues {
   amount: string | number;
   reason: string;
+}
+
+export type TierLevel =
+  | 1
+  | 2
+  | 3
+  | "1"
+  | "2"
+  | "3"
+  | "Starter"
+  | "Business"
+  | "Enterprise"
+  | "Standard"
+  | "Growth";
+
+export interface TierItem {
+  id: number | string;
+  name: string;
+  level: number;
+  no_of_staff: string | number;
+  requirements: string;
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: unknown;
+}
+
+export interface TierFormData {
+  name: string;
+  level: number;
+  no_of_staff: string;
+  requirements: string;
+}
+
+export interface TierConfig {
+  id: number;
+  name: string;
+  code: string;
+  badge: string;
+  description: string;
+  maxEmployees: number | "Unlimited";
+  monthlyVolumeLimit: number;
+  singleTransactionLimit: number;
+  dailyPayoutLimit: number;
+  maxBankAccounts: number | "Unlimited";
+  pricing: string;
+  isPopular?: boolean;
+  features: string[];
+  kycRequirements: string[];
+}
+
+export interface TierUpgradeRequest {
+  id: number | string;
+  companyId: number | string;
+  companyName: string;
+  companyEmail: string;
+  currentTier: number | string;
+  requestedTier: number | string;
+  rcNumber?: string;
+  tinNumber?: string;
+  directorName?: string;
+  directorPhone?: string;
+  documentUrl?: string;
+  documentName?: string;
+  reason?: string;
+  status: "pending" | "approved" | "rejected";
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export type VerificationStatus =

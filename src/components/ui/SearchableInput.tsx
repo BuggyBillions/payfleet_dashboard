@@ -123,7 +123,7 @@ const SearchableInput = <T extends object>({
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-textBlack/70 mb-1">
           {label}
         </label>
       )}
@@ -131,9 +131,9 @@ const SearchableInput = <T extends object>({
       <div className={`flex items-center h-12.5 px-2 ${inputContClassName}`}>
         <div className="pointer-events-none">
           {loading ? (
-            <FaSpinner className="animate-spin text-gray-400 ms-2" />
+            <FaSpinner className="animate-spin text-textBlack/40 ms-2" />
           ) : (
-            showIcon && <FaSearch className="text-gray-400" />
+            showIcon && <FaSearch className="text-textBlack/40" />
           )}
         </div>
 
@@ -156,7 +156,7 @@ const SearchableInput = <T extends object>({
         (results.length > 0 ||
           error ||
           (query && results.length === 0 && !loading)) && (
-          <div className="absolute z-10 index-50 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base border border-black/15 overflow-auto focus:outline-none sm:text-sm">
+          <div className="absolute z-10 index-50 mt-1 w-full bg-tertiary text-textBlack shadow-lg max-h-60 rounded-md py-1 text-base border border-black/15 overflow-auto focus:outline-none sm:text-sm">
             {error && (
               <div className="cursor-default select-none relative py-2 pl-3 pr-9 text-red-500">
                 {error}

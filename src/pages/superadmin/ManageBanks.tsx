@@ -56,7 +56,7 @@ const ManageBanks: React.FC = () => {
       ) : activeAccount ? (
         <div className="space-y-6">
           {/* Active Settlement Account Banner */}
-          <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-2xl p-6 shadow-xs">
+          <div className="bg-tertiary rounded-2xl p-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-primary text-white flex items-center justify-center shrink-0 shadow-sm">
@@ -67,7 +67,6 @@ const ManageBanks: React.FC = () => {
                     <span className="text-xs font-semibold uppercase tracking-wider text-primary">
                       Active Settlement Account
                     </span>
-                    <StatusBadge status="Active" />
                   </div>
                   <h3 className="text-lg font-bold text-textBlack">
                     {activeAccount.bank_name}

@@ -25,6 +25,7 @@ import ManageStaff from "./pages/superadmin/ManageStaff";
 import ManageBanks from "./pages/superadmin/ManageBanks";
 import ManageDeposit from "./pages/superadmin/ManageDeposit";
 import SuperAdminManagePayments from "./pages/superadmin/ManagePayments";
+import SuperAdminManageTier from "./pages/superadmin/ManageTier";
 import FinancialManageDeposit from "./pages/financial/ManageDeposit";
 import SupportManageCompany from "./pages/support/ManageCompany";
 import Communication from "./pages/chat/Communication";
@@ -135,6 +136,16 @@ function App() {
             <MainLayout
               pageName="Manage Company"
               children={<ManageCompany />}
+            />
+          }
+        />
+        <Route
+          index
+          path="/admin/dashboard/tier"
+          element={
+            <MainLayout
+              pageName="Manage Tiers"
+              children={<SuperAdminManageTier />}
             />
           }
         />

@@ -23,8 +23,8 @@ export const useStaffs = ({
   page = 1,
   searchTerm = "",
   per_page = 10,
-  role = "all",
-  status = "all",
+  role = "",
+  status = "",
 }: GetStaffsParams = {}) => {
   return useQuery<StaffListResponse>({
     queryKey: ["staffs", page, searchTerm, per_page, role, status],
@@ -40,7 +40,7 @@ export const useStaffs = ({
 export const useStaffStats = () => {
   return useQuery<StaffListResponse>({
     queryKey: ["staffs", "stats"],
-    queryFn: () => getStaffsService({ page: 1, per_page: 1000 }),
+    queryFn: () => getStaffsService({ page: 1, per_page: 1000, role: "" }),
     placeholderData: (prev) => prev,
   });
 };

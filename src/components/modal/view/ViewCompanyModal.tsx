@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { CompanyProps, TableColumnProps } from '../../../lib/interfaces';
 import Modal from '../Modal';
 import StatusBadge from '../../ui/StatusBadge';
+import { getTierConfig } from '../../../services/tierService';
 import { IoMdCall } from "react-icons/io";
 import { CiMail } from "react-icons/ci";
 import { LiaUserTagSolid } from "react-icons/lia";
@@ -15,11 +16,12 @@ const ViewCompanyModal: React.FC<{
      const [currentPage, setCurrentPage] = useState(1);
      const [itemsPerPage, setItemsPerPage] = useState(10);
 
+     const tierConfig = getTierConfig(selectedCompany?.tier);
      const compName = selectedCompany?.name || selectedCompany?.companyName || "Company";
      const compPhone = selectedCompany?.phone || selectedCompany?.phoneNumber || "N/A";
      const compEmail = selectedCompany?.email || "N/A";
      const compStaff = selectedCompany?.no_of_employee ?? selectedCompany?.staff ?? 0;
-     const compTier = selectedCompany?.tier || "Starter";
+     const compTier = `${tierConfig.badge} (${tierConfig.name})`;
      const compStatus = typeof selectedCompany?.status === "boolean"
           ? (selectedCompany.status ? "Active" : "Inactive")
           : (selectedCompany?.status || (selectedCompany?.is_active ? "Active" : "Inactive"));
