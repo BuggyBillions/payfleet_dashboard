@@ -12,8 +12,11 @@ import StepFour from "./registersteps/StepFour";
 import { assets } from "../../assets/assets";
 import { useMutation } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
-import type { ApiErrorResponse } from "../../lib/interfaces";
 import type { RegisterFormValues } from "../../lib/formTypes";
+
+interface ApiErrorResponse {
+  message?: string;
+}
 
 const lineVariants = {
   hidden: { opacity: 0, y: 10 },
@@ -67,7 +70,7 @@ const Register: React.FC = () => {
 
   const handleCompanyCreateMutation = useMutation({
     mutationFn: async (values: FormData) => {
-      await api.post(`/createcompanies`, values, {
+      await api.post(`/register`, values, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -76,7 +79,7 @@ const Register: React.FC = () => {
     onSuccess: () => {
       toast.success("Company profile created successfully.");
       setTimeout(() => {
-        navigate("/auth/login");
+        navigate("/login");
       }, 1000);
     },
     onError: (error: AxiosError<ApiErrorResponse>) => {

@@ -3,31 +3,22 @@ import { Link, useNavigate } from "react-router-dom";
 import { FaEyeSlash } from "react-icons/fa";
 import { FaEye } from "react-icons/fa6";
 import { assets } from "../../assets/assets";
-import * as Yup from "yup";
 import { toast } from "sonner";
 import api, { getErrorMessage } from "../../helpers/api";
 import { useFormik } from "formik";
 import { useUser } from "../../hooks/useUser";
+import { LoginFormSchema } from "../../lib/validationSchemas";
 
 const Login: React.FC = () => {
   const [passwordVisibility, setPasswordVisibility] = useState(false);
   const { login } = useUser();
-
-  const validationSchema = Yup.object({
-    email: Yup.string()
-      .email("Invalid email address")
-      .required("Email is required"),
-    password: Yup.string()
-      .min(8, "Password must be at least 8 characters")
-      .required("Password is required"),
-  });
 
   const formik = useFormik({
     initialValues: {
       email: "",
       password: "",
     },
-    validationSchema,
+    validationSchema: LoginFormSchema,
     onSubmit: async (values) => {
       console.log(values);
       try {
@@ -36,14 +27,13 @@ const Login: React.FC = () => {
         if (response.status === 200 || response.status === 201) {
           console.log();
           const { user, token } = response.data.data;
-          login(
-            token,
-            user,
-            user.role,
-          );
+          login(token, user, user.role);
           toast.success("login sussessful");
 
-          const finalRoute = user.role === "admin" ? "/admin/dashboard/overview" : "/dashboard/overview"
+          const finalRoute =
+            user.role === "admin"
+              ? "/admin/dashboard/overview"
+              : "/dashboard/overview";
           navigate(finalRoute);
         }
       } catch (error) {
@@ -91,6 +81,11 @@ const Login: React.FC = () => {
                 id="email"
                 className="w-full border h-12.5 border-primary/20 indent-3 rounded-md outline-0"
               />
+              {formik.touched.email && formik.errors.email && (
+                <span className="text-xs text-red-500">
+                  {formik.errors.email}
+                </span>
+              )}
             </div>
             <div className="flex flex-col gap-1">
               <label htmlFor="password">Password</label>
@@ -112,7 +107,23 @@ const Login: React.FC = () => {
                   {passwordVisibility ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>
+              {formik.touched.password && formik.errors.password && (
+                <span className="text-xs text-red-500">
+                  {formik.errors.password}
+                </span>
+              )}
             </div>
+
+            <div className="flex justify-end">
+              Forgot password?{" "}
+              <span
+                onClick={() => navigate("/forgotpassword")}
+                className="text-primary font-medium cursor-pointer hover:underline"
+              >
+                Rest Passeord
+              </span>
+            </div>
+
             <button
               type="submit"
               className="w-full px-6 h-12 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed bg-primary text-white rounded-lg shadow font-medium hover:bg-primary/90 transition-colors"
@@ -124,13 +135,15 @@ const Login: React.FC = () => {
             </button>
           </form>
           <div className="mt-6 text-center text-sm text-gray-600">
-            Don't have an account?{" "}
-            <span
-              onClick={() => navigate("/getstarted")}
-              className="text-primary font-medium cursor-pointer hover:underline"
-            >
-              Get Started
-            </span>
+            <div>
+              Don't have an account?{" "}
+              <span
+                onClick={() => navigate("/getstarted")}
+                className="text-primary font-medium cursor-pointer hover:underline"
+              >
+                Get Started
+              </span>
+            </div>
           </div>
         </div>
       </div>

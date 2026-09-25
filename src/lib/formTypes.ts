@@ -8,12 +8,11 @@ export type RegisterFormValues = {
   password: string;
 };
 
-export type Forgotpassword = {
-  name: string;
+export type ForgotPasswordValues = {
   email: string;
-  logo: File | null;
-  about: string;
-  address: string;
-  phone: string;
+  otp: string;
   password: string;
+  confirmPassword: string;
 };
+
+export type Forgotpassword = ForgotPasswordValues;
