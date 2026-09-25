@@ -2,24 +2,27 @@ import * as Yup from "yup";
 
 export const RegisterFormSchema = Yup.object({
   name: Yup.string().required("Company name is required."),
-  email: Yup.string().email("Please enter a valid email address.").required("Company email is required."),
+  email: Yup.string().required("Company email is required."),
   logo: Yup.mixed().nullable(),
   about: Yup.string().required("About company is required."),
   address: Yup.string().required("Company address is required."),
-  phone: Yup.string().required("Phone number is required."),
-  password: Yup.string().min(8, "Password must be at least 8 characters.").required("Password is required."),
+  password: Yup.string().required("password is required."),
 });
 
-export const ForgotPasswordSchema = Yup.object({
-  name: Yup.string().required("Name is required."),
+export const Forgotpassword = Yup.object({
+  name: Yup.string().required(" is required."),
   email: Yup.string().required("Email is required."),
 });
 
 export const Forgotpassword = ForgotPasswordSchema;
 
 export const LoginFormSchema = Yup.object({
-  email: Yup.string().required("Email Address is required."),
-  password: Yup.string().required("password is required."),
+  email: Yup.string()
+    .email("Enter a valid email address.")
+    .required("Email address is required."),
+  password: Yup.string()
+    .min(8, "Password must be at least 8 characters.")
+    .required("Password is required."),
 });
 
 export const AddEmployeeSchema = Yup.object({
@@ -36,4 +39,19 @@ export const AddEmployeeSchema = Yup.object({
     .min(10, "Account number must be 10 characters")
     .required("Account Number is required"),
   estimate_pay: Yup.string().required("Estimate Pay is required"),
+});
+
+export const Forgotpassword = Yup.object({
+  email: Yup.string()
+    .email("Enter a valid email address")
+    .required("Email is required"),
+  otp: Yup.string()
+    .matches(/^\d{6}$/, "Enter the 6-digit OTP")
+    .required("OTP is required"),
+  password: Yup.string()
+    .min(8, "Password must be at least 8 characters")
+    .required("New password is required"),
+  confirmPassword: Yup.string()
+    .oneOf([Yup.ref("password")], "Passwords must match")
+    .required("Please confirm your password"),
 });

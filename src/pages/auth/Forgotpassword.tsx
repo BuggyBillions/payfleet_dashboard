@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { useFormik } from "formik";
+import { RegisterFormSchema } from "../../lib/validationSchemas";
 import api from "../../helpers/api";
 import { toast } from "sonner";
 import StepOne from "./Forgotpassword/StepOne";
@@ -10,9 +11,9 @@ import StepThree from "./registersteps/StepThree";
 import StepFour from "./registersteps/StepFour";
 import { assets } from "../../assets/assets";
 import { useMutation } from "@tanstack/react-query";
-import { ForgotPasswordSchema } from "../../lib/validationSchemas";
 import type { AxiosError } from "axios";
-import type { ApiErrorResponse, ForgotPasswordFormValues } from "../../lib/interfaces";
+import type { ApiErrorResponse } from "../../lib/interfaces";
+import type { Forgotpassword, RegisterFormValues } from "../../lib/formTypes";
 
 const lineVariants = {
   hidden: { opacity: 0, y: 10 },
@@ -25,11 +26,26 @@ const lineVariants = {
 };
 
 const Forgotpassword: React.FC = () => {
-  const [index, setIndex] = useState(0);
   const [visible, setVisible] = useState(true);
-  const [currentStep, setCurrentStep] = useState(0);
+  const [index, setIndex] = useState(0);
+  const [currentScreen, setCurrentScreen] = useState(1);
 
-  const navigate = useNavigate();
+  const steps = [
+    { label: "Email address", component: StepOne, fields: ["email"] },
+    { label: "Verification code", component: StepTwo, fields: ["otp"] },
+    {
+      label: "New password",
+      component: StepThree,
+      fields: ["password", "confirmPassword"],
+    },
+  ];
+
+  const currentStep = Math.min(
+    Math.max(currentScreen - 1, 0),
+    steps.length - 1,
+  );
+  const CurrentStepComponent = steps[currentStep]?.component;
+  const progressWidth = (currentScreen / steps.length) * 100;
 
   const textSets = useMemo(
     () => [
@@ -82,12 +98,12 @@ const Forgotpassword: React.FC = () => {
       console.log("error", error);
       toast.error(
         error?.response?.data?.message ||
-        "An error occurred during registration.",
+          "An error occurred during registration.",
       );
     },
   });
 
-  const formik = useFormik<ForgotPasswordFormValues>({
+  const formik = useFormik<Forgotpassword>({
     initialValues: {
       name: "",
       email: "",
@@ -97,7 +113,7 @@ const Forgotpassword: React.FC = () => {
       phone: "",
       password: "",
     },
-    validationSchema: ForgotPasswordSchema,
+    validationSchema: Forgotpassword,
     onSubmit: async (values) => {
       const formData = new FormData();
       formData.append("name", values.name);
@@ -149,7 +165,7 @@ const Forgotpassword: React.FC = () => {
     <div className="w-screen h-screen flex md:flex-row flex-col items-start bg-primary">
       <div className="md:h-full h-[35vh] overflow-hidden bg-primary md:w-1/2 w-full flex flex-col gap-4 items-start justify-center lg:px-8 md:px-6 px-0 pb-8 md:pt-0 pt-15 relative">
         <Link
-          to={"/"}
+          to={"/login"}
           className="bg-white p-2 md:rounded-lg absolute md:top-8 md:h-auto h-15 top-0 md:left-8 left-0 lg:w-1/5 md:w-1/3 w-full"
         >
           <img
@@ -188,14 +204,16 @@ const Forgotpassword: React.FC = () => {
       <div className="md:w-1/2 w-full md:h-full h-[65vh] overflow-y-auto lg:p-12 p-8 flex flex-col md:justify-center bg-white md:rounded-none rounded-t-4xl">
         <div className="w-full">
           <h2 className="text-3xl text-start font-bold mb-6 text-gray-800">
-            Forgotpassword
+            Reset your password
           </h2>
+          <p className="text-gray-500 mb-6">
+            Follow the steps to create a new password for your account.
+          </p>
 
-          {/* Progress Bar */}
-          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-8">
+          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-8 overflow-hidden">
             <div
               className="bg-primary h-2.5 rounded-full transition-all duration-300 ease-in-out"
-              style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+              style={{ width: `${progressWidth}%` }}
             ></div>
           </div>
 
@@ -207,10 +225,11 @@ const Forgotpassword: React.FC = () => {
                 type="button"
                 onClick={handleBack}
                 disabled={currentStep === 0}
-                className={`px-6 h-12 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed rounded-lg shadow font-medium transition-colors ${currentStep === 0
+                className={`px-6 h-12 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed rounded-lg shadow font-medium transition-colors ${
+                  currentStep === 0
                     ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                     : "bg-gray-200 text-gray-700 hover:bg-gray-200"
-                  }`}
+                }`}
               >
                 Back
               </button>

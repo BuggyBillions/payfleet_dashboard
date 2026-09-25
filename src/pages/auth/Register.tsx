@@ -12,9 +12,7 @@ import StepFour from "./registersteps/StepFour";
 import { assets } from "../../assets/assets";
 import { useMutation } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
-import type { ApiErrorResponse } from "../../lib/interfaces";
 import type { RegisterFormValues } from "../../lib/formTypes";
-import { createCompanyService } from "../../services/authService";
 
 const lineVariants = {
   hidden: { opacity: 0, y: 10 },
@@ -66,15 +64,28 @@ const Register: React.FC = () => {
     return () => clearInterval(interval);
   }, [textSets]);
 
-  const steps = useMemo(
-    () => [
-      { component: StepOne, fields: ["name"] },
-      { component: StepTwo, fields: ["email", "password"] },
-      { component: StepThree, fields: ["logo"] },
-      { component: StepFour, fields: ["about", "address", "phone"] },
-    ],
-    [],
-  );
+  const handleCompanyCreateMutation = useMutation({
+    mutationFn: async (values: FormData) => {
+      await api.post(`/createcompanies`, values, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Company profile created successfully.");
+      setTimeout(() => {
+        navigate("/auth/login");
+      }, 1000);
+    },
+    onError: (error: AxiosError<ApiErrorResponse>) => {
+      console.log("error", error);
+      toast.error(
+        error?.response?.data?.message ||
+          "An error occurred during registration.",
+      );
+    },
+  });
 
   const formik = useFormik<RegisterFormValues>({
     initialValues: {
@@ -125,14 +136,17 @@ const Register: React.FC = () => {
 
         // Jump back to the step containing the invalid field
         const stepIndex = steps.findIndex((step) =>
-          step.fields.some((f) => fieldErrors[f])
+          step.fields.some((f) => fieldErrors[f]),
         );
         if (stepIndex !== -1) {
           setCurrentStep(stepIndex);
         }
       }
       toast.error(
-        getErrorMessage(error, "An error occurred during registration. Please try again.")
+        getErrorMessage(
+          error,
+          "An error occurred during registration. Please try again.",
+        ),
       );
     },
     onSettled: () => {
@@ -152,8 +166,8 @@ const Register: React.FC = () => {
     await formik.setTouched({ ...formik.touched, ...touchedFields });
 
     const errors = await formik.validateForm();
-    const hasErrors = fieldsToValidate.some(
-      (field) => Boolean(errors[field as keyof typeof errors]),
+    const hasErrors = fieldsToValidate.some((field) =>
+      Boolean(errors[field as keyof typeof errors]),
     );
 
     if (!hasErrors) {

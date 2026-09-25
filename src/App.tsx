@@ -31,7 +31,6 @@ import Communication from "./pages/chat/Communication";
 import Tier from "./pages/company/Tier";
 import Verifyemail from "./pages/auth/Verifyemail";
 
-
 function App() {
   return (
     <>
@@ -67,12 +66,22 @@ function App() {
         <Route
           index
           path="/dashboard/deposits"
-          element={<MainLayout pageName="All Deposits" children={<Deposits defaultFilter="all" />} />}
+          element={
+            <MainLayout
+              pageName="All Deposits"
+              children={<Deposits defaultFilter="all" />}
+            />
+          }
         />
         <Route
           index
           path="/dashboard/deposits/pending"
-          element={<MainLayout pageName="Pending Deposits" children={<Deposits defaultFilter="pending" />} />}
+          element={
+            <MainLayout
+              pageName="Pending Deposits"
+              children={<Deposits defaultFilter="pending" />}
+            />
+          }
         />
         <Route
           index
@@ -98,18 +107,13 @@ function App() {
           index
           path="/dashboard/tier"
           element={
-            <MainLayout
-              pageName="Tier Management"
-              children={<Tier />}
-            />
+            <MainLayout pageName="Tier Management" children={<Tier />} />
           }
         />
         <Route
           index
           path="/dashboard/settings"
-          element={
-            <MainLayout pageName="Settings" children={<Settings />} />
-          }
+          element={<MainLayout pageName="Settings" children={<Settings />} />}
         />
         <Route
           index
@@ -124,12 +128,19 @@ function App() {
         <Route
           index
           path="/admin/dashboard/company"
-          element={<MainLayout pageName="Manage Company" children={<ManageCompany />} />}
+          element={
+            <MainLayout
+              pageName="Manage Company"
+              children={<ManageCompany />}
+            />
+          }
         />
         <Route
           index
           path="/admin/dashboard/staff"
-          element={<MainLayout pageName="Manage Staff" children={<ManageStaff />} />}
+          element={
+            <MainLayout pageName="Manage Staff" children={<ManageStaff />} />
+          }
         />
         <Route
           index
@@ -139,22 +150,39 @@ function App() {
         <Route
           index
           path="/admin/dashboard/deposit"
-          element={<MainLayout pageName="All Deposits" children={<ManageDeposit defaultFilter="all" />} />}
+          element={
+            <MainLayout
+              pageName="All Deposits"
+              children={<ManageDeposit defaultFilter="all" />}
+            />
+          }
         />
         <Route
           index
           path="/admin/dashboard/deposit/pending"
-          element={<MainLayout pageName="Pending Deposits" children={<ManageDeposit defaultFilter="pending" />} />}
+          element={
+            <MainLayout
+              pageName="Pending Deposits"
+              children={<ManageDeposit defaultFilter="pending" />}
+            />
+          }
         />
         <Route
           index
           path="/admin/dashboard/payments"
-          element={<MainLayout pageName="Manage Payments" children={<SuperAdminManagePayments />} />}
+          element={
+            <MainLayout
+              pageName="Manage Payments"
+              children={<SuperAdminManagePayments />}
+            />
+          }
         />
         <Route
           index
           path="/admin/dashboard/chat"
-          element={<MainLayout pageName="Support Chat" children={<Communication />} />}
+          element={
+            <MainLayout pageName="Support Chat" children={<Communication />} />
+          }
         />
         <Route
           index
@@ -171,17 +199,32 @@ function App() {
         <Route
           index
           path="/financial/dashboard/deposit"
-          element={<MainLayout pageName="All Deposits" children={<FinancialManageDeposit defaultFilter="all" />} />}
+          element={
+            <MainLayout
+              pageName="All Deposits"
+              children={<FinancialManageDeposit defaultFilter="all" />}
+            />
+          }
         />
         <Route
           index
           path="/financial/dashboard/deposit/pending"
-          element={<MainLayout pageName="Pending Deposits" children={<FinancialManageDeposit defaultFilter="pending" />} />}
+          element={
+            <MainLayout
+              pageName="Pending Deposits"
+              children={<FinancialManageDeposit defaultFilter="pending" />}
+            />
+          }
         />
         <Route
           index
           path="/financial/dashboard/payments"
-          element={<MainLayout pageName="Manage Payments" children={<SuperAdminManagePayments />} />}
+          element={
+            <MainLayout
+              pageName="Manage Payments"
+              children={<SuperAdminManagePayments />}
+            />
+          }
         />
         <Route
           index
@@ -198,7 +241,12 @@ function App() {
         <Route
           index
           path="/support/dashboard/company"
-          element={<MainLayout pageName="Manage Company" children={<SupportManageCompany />} />}
+          element={
+            <MainLayout
+              pageName="Manage Company"
+              children={<SupportManageCompany />}
+            />
+          }
         />
         <Route
           index
@@ -208,12 +256,22 @@ function App() {
         <Route
           index
           path="/support/dashboard/chat"
-          element={<MainLayout pageName="Live Support Chat" children={<Communication />} />}
+          element={
+            <MainLayout
+              pageName="Live Support Chat"
+              children={<Communication />}
+            />
+          }
         />
         <Route
           index
           path="/financial/dashboard/chat"
-          element={<MainLayout pageName="Live Support Chat" children={<Communication />} />}
+          element={
+            <MainLayout
+              pageName="Live Support Chat"
+              children={<Communication />}
+            />
+          }
         />
       </Routes>
     </>

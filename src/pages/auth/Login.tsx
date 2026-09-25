@@ -4,25 +4,15 @@ import { FaEyeSlash } from "react-icons/fa";
 import { FaEye } from "react-icons/fa6";
 import { LuLoader } from "react-icons/lu";
 import { assets } from "../../assets/assets";
-import * as Yup from "yup";
 import { toast } from "sonner";
 import { getErrorMessage } from "../../helpers/api";
 import { useFormik } from "formik";
 import { useUser } from "../../hooks/useUser";
-import { useAuth } from "../../hooks/useAuth";
-import OtpModal from "../../components/modal/OtpModal";
-import type { UserProps } from "../../lib/interfaces";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const [passwordVisibility, setPasswordVisibility] = useState(false);
-  const [showOtp, setShowOtp] = useState(false);
-  const [pendingLogin, setPendingLogin] = useState<{
-    email: string;
-    password: string;
-  } | null>(null);
-  const { login, refreshUser } = useUser();
-  const { loginMutation } = useAuth();
+  const { login } = useUser();
 
   const validationSchema = Yup.object({
     email: Yup.string()
@@ -33,113 +23,29 @@ const Login: React.FC = () => {
       .required("Password is required"),
   });
 
-  const completeLogin = (
-    token: string,
-    user: UserProps,
-    message = "Login successful"
-  ) => {
-    login(token, user, user.role || "company");
-    toast.success(message);
-
-    // Pull latest profile details from /me
-    refreshUser(token).catch(() => undefined);
-
-    let finalRoute = "/dashboard/overview";
-    const userRole = (user?.role || "").toLowerCase();
-
-    switch (userRole) {
-      case "admin":
-        finalRoute = "/admin/dashboard/overview";
-        break;
-
-      case "finance":
-        finalRoute = "/financial/dashboard/overview";
-        break;
-
-      case "support":
-        finalRoute = "/support/dashboard/overview";
-        break;
-
-      case "company":
-      default:
-        finalRoute = "/dashboard/overview";
-        break;
-    }
-
-    navigate(finalRoute);
-  };
-
   const formik = useFormik({
     initialValues: {
       email: "",
       password: "",
     },
     validationSchema,
-    onSubmit: (values, { setSubmitting }) => {
-      loginMutation.mutate(values, {
-        onSuccess: (response) => {
-          const resData = response?.data || response;
-          const token =
-            resData?.token ||
-            resData?.access_token ||
-            response?.token ||
-            response?.access_token;
-          const user = resData?.user || response?.user;
+    onSubmit: async (values) => {
+      console.log(values);
+      try {
+        const response = await api.post("/login", values);
+        console.log(response);
+        if (response.status === 200 || response.status === 201) {
+          console.log();
+          const { user, token } = response.data.data;
+          login(
+            token,
+            user,
+            user.role,
+          );
+          toast.success("login sussessful");
 
-          if (token && user) {
-            completeLogin(token, user);
-          } else {
-            toast.error("Invalid response from server");
-          }
-        },
-        onError: (error: unknown) => {
-          console.error("Login error:", error);
-          const message = getErrorMessage(error);
-
-          // Company account must verify OTP before logging in
-          if (
-            message.toLowerCase().includes("verify your email") ||
-            message.toLowerCase().includes("otp") ||
-            message.toLowerCase().includes("unverified")
-          ) {
-            setPendingLogin({ email: values.email, password: values.password });
-            setShowOtp(true);
-            return;
-          }
-          toast.error(message);
-        },
-        onSettled: () => {
-          setSubmitting(false);
-        },
-      });
-    },
-  });
-
-  const handleOtpVerified = async (data?: unknown) => {
-    setShowOtp(false);
-
-    // If /verify-otp already returns auth data, use it directly
-    const authData = (data as { data?: { token?: string; user?: UserProps } })
-      ?.data;
-    if (authData?.token && authData?.user) {
-      completeLogin(authData.token, authData.user);
-      return;
-    }
-
-    // Otherwise re-attempt login with the stored credentials using loginMutation
-    if (!pendingLogin) return;
-    loginMutation.mutate(pendingLogin, {
-      onSuccess: (response) => {
-        const resData = response?.data || response;
-        const token =
-          resData?.token ||
-          resData?.access_token ||
-          response?.token ||
-          response?.access_token;
-        const user = resData?.user || response?.user;
-
-        if (token && user) {
-          completeLogin(token, user);
+          const finalRoute = user.role === "admin" ? "/admin/dashboard/overview" : "/dashboard/overview"
+          navigate(finalRoute);
         }
       },
       onError: (error: unknown) => {
@@ -197,11 +103,6 @@ const Login: React.FC = () => {
                     : "border-primary/20 focus:border-primary"
                   }`}
               />
-              {formik.touched.email && formik.errors.email && (
-                <span className="text-red-500 text-xs mt-0.5">
-                  {formik.errors.email}
-                </span>
-              )}
             </div>
 
             {/* Password Field */}
@@ -241,14 +142,7 @@ const Login: React.FC = () => {
                   {passwordVisibility ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
                 </button>
               </div>
-              {formik.touched.password && formik.errors.password && (
-                <span className="text-red-500 text-xs mt-0.5">
-                  {formik.errors.password}
-                </span>
-              )}
             </div>
-
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={isLoggingIn}
@@ -267,12 +161,12 @@ const Login: React.FC = () => {
 
           <div className="mt-6 text-center text-sm text-gray-600">
             Don't have an account?{" "}
-            <Link
-              to="/getstarted"
-              className="text-primary font-semibold cursor-pointer hover:underline"
+            <span
+              onClick={() => navigate("/getstarted")}
+              className="text-primary font-medium cursor-pointer hover:underline"
             >
               Get Started
-            </Link>
+            </span>
           </div>
         </div>
       </div>

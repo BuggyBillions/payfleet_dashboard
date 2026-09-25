@@ -77,6 +77,15 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     setIsAuthenticated(true);
   };
 
+  const saveVerificationToken = (token: string) => {
+    localStorage.setItem("verification_token", JSON.stringify(token))
+  }
+
+  const getVerificationToken = () => {
+    const V_TOKEN = localStorage.getItem("verification_token") ?? "";
+    return JSON.parse(V_TOKEN);
+  }
+
   useEffect(() => {
     setupInterceptors(logout);
   }, [logout]);
@@ -92,6 +101,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         isLoggedIn: isAuthenticated,
         refreshUser,
         loading,
+        saveVerificationToken,
+        getVerificationToken,
       }}
     >
       {children}
