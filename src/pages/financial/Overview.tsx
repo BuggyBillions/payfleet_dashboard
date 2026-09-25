@@ -7,7 +7,8 @@ import StatusBadge from "../../components/ui/StatusBadge";
 import ActionButton from "../../components/ui/ActionButton";
 import { useUser } from "../../hooks/useUser";
 import { formatterUtility, formatShortDate } from "../../helpers/formatterUtility";
-import { INITIAL_DEPOSIT_DATA, type DepositItemProps } from "../superadmin/ManageDeposit";
+import type { DepositItemProps } from "../../lib/interfaces";
+import { useDeposits, useDepositStats } from "../../hooks/useDeposit";
 import { getInitialCompanyPayments, type CompanyPaymentItem } from "../../services/adminPaymentService";
 import type { TableColumnProps } from "../../lib/interfaces";
 import {
@@ -26,12 +27,19 @@ const FinancialOverview: React.FC = () => {
   const { user } = useUser();
   const navigate = useNavigate();
 
-  const [deposits] = useState<DepositItemProps[]>(INITIAL_DEPOSIT_DATA);
+  const { data: pendingData, isLoading: loadingPending } = useDeposits({
+    status: "pending",
+    per_page: 5,
+  });
+  const { data: statsData } = useDepositStats();
   const [payments] = useState<CompanyPaymentItem[]>(() => getInitialCompanyPayments());
+
+  const deposits = statsData?.items ?? [];
+  const pendingDepositsList = pendingData?.items ?? [];
 
   // Metrics calculations
   const pendingDeposits = deposits.filter((d) => d.status === "pending");
-  const pendingDepositsCount = pendingDeposits.length;
+  const pendingDepositsCount = statsData ? pendingDeposits.length : (pendingData?.totalItems ?? pendingDepositsList.length);
   const pendingDepositsAmount = pendingDeposits.reduce((sum, d) => sum + d.amount, 0);
 
   const approvedDeposits = deposits.filter((d) => d.status === "successful");
@@ -52,15 +60,6 @@ const FinancialOverview: React.FC = () => {
         <div className="flex flex-col">
           <span className="font-semibold text-textBlack text-xs">{item.companyName}</span>
           <span className="text-[11px] text-textBlack/50 font-mono">{item.reference}</span>
-        </div>
-      ),
-    },
-    {
-      label: "Bank Account",
-      render: (item) => (
-        <div className="flex flex-col">
-          <span className="text-xs text-textBlack/80 font-medium">{item.bankName}</span>
-          <span className="text-[11px] text-textBlack/50 font-mono">{item.accountNumber}</span>
         </div>
       ),
     },
@@ -229,12 +228,12 @@ const FinancialOverview: React.FC = () => {
 
         <ReusableTable
           columns={depositColumns}
-          data={pendingDeposits}
-          isLoading={false}
+          data={pendingDepositsList}
+          isLoading={loadingPending}
           error={null}
           currentPage={1}
           totalPages={1}
-          totalItems={pendingDeposits.length}
+          totalItems={pendingDepositsList.length}
           itemsPerPage={5}
           setCurrentPage={() => {}}
           setItemsPerPage={() => {}}

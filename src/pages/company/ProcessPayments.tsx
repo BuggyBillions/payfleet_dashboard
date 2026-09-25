@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ReusableTable from "../../utility/ReusableTable";
-import type { TableColumnProps } from "../../lib/interfaces";
+import type { TableColumnProps, Employee, EmployeeListResponse } from "../../lib/interfaces";
 import { formatterUtility } from "../../helpers/formatterUtility";
 import { toast } from "sonner";
 import { IoSearchOutline } from "react-icons/io5";
@@ -8,47 +9,50 @@ import { FaMoneyBillWave } from "react-icons/fa6";
 import { FiMinusCircle } from "react-icons/fi";
 import ActionCell from "../../components/ui/ActionCell";
 import ReduceSalaryModal from "../../components/modal/ReduceSalaryModal";
-import {
-  getDemoEmployees,
-  type DemoEmployee,
-} from "../../services/demoEmployeeService";
+import { useUser } from "../../hooks/useUser";
+import { getEmployees } from "../../services/employeeService";
 
 const ProcessPayments: React.FC = () => {
-  const [employees, setEmployees] = useState<DemoEmployee[]>(() =>
-    getDemoEmployees(),
-  );
+  const queryClient = useQueryClient();
+  const { user } = useUser();
+  const companyId = user?.company_details?.id;
   const [reduceModalEmployee, setReduceModalEmployee] =
-    useState<DemoEmployee | null>(null);
+    useState<Employee | null>(null);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedRowIds, setSelectedRowIds] = useState<
     Array<number | string>
   >([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
 
-  const filtered = useMemo(() => {
-    let list = employees;
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (emp) =>
-          `${emp.first_name} ${emp.last_name}`.toLowerCase().includes(q) ||
-          emp.email.toLowerCase().includes(q) ||
-          emp.job_title.toLowerCase().includes(q),
-      );
-    }
+  const { data, isLoading, isError, error } = useQuery<EmployeeListResponse>({
+    queryKey: [
+      "employees",
+      "process-payments",
+      companyId,
+      debouncedSearch,
+      currentPage,
+      itemsPerPage,
+    ],
+    queryFn: () =>
+      getEmployees({
+        company_id: companyId,
+        search: debouncedSearch,
+        page: currentPage,
+        per_page: itemsPerPage,
+      }),
+    enabled: Boolean(companyId),
+    placeholderData: (prev) => prev,
+  });
 
-    return list;
-  }, [employees, search]);
-
-  const totalItems = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
-
-  const paginatedData = filtered.slice(
-    (currentPage - 1) * itemsPerPage,
-    (currentPage - 1) * itemsPerPage + itemsPerPage,
-  );
+  const employees = data?.items ?? [];
+  const totalItems = data?.totalItems ?? employees.length;
 
   const handleToggleRow = (id: number | string) => {
     setSelectedRowIds((prev) =>
@@ -57,12 +61,12 @@ const ProcessPayments: React.FC = () => {
   };
 
   const handleToggleAll = (checked: boolean) => {
-    setSelectedRowIds(checked ? paginatedData.map((emp) => emp.id) : []);
+    setSelectedRowIds(checked ? employees.map((emp) => emp.id) : []);
   };
 
-  const handlePay = (emp: DemoEmployee) => {
+  const handlePay = (emp: Employee) => {
     toast.success(
-      `Payment of ${formatterUtility(emp.estimate_pay)} for ${emp.first_name} ${emp.last_name} initiated `,
+      `Payment of ${formatterUtility(Number(emp.estimate_pay))} for ${emp.first_name} ${emp.last_name} initiated `,
     );
   };
 
@@ -71,14 +75,12 @@ const ProcessPayments: React.FC = () => {
     setSelectedRowIds([]);
   };
 
-  const handleDeductSaved = (updated: DemoEmployee) => {
-    setEmployees((prev) =>
-      prev.map((e) => (e.id === updated.id ? updated : e)),
-    );
+  const handleDeductSaved = () => {
     setReduceModalEmployee(null);
+    queryClient.invalidateQueries({ queryKey: ["employees"] });
   };
 
-  const columns: TableColumnProps<DemoEmployee>[] = [
+  const columns: TableColumnProps<Employee>[] = [
     {
       label: "Full Name",
       render: (item) => (
@@ -104,7 +106,7 @@ const ProcessPayments: React.FC = () => {
       label: "Pay",
       render: (item) => (
         <span className="font-semibold text-primary">
-          {formatterUtility(item.estimate_pay)}
+          {formatterUtility(Number(item.estimate_pay))}
         </span>
       ),
     },
@@ -141,7 +143,7 @@ const ProcessPayments: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl p-4">
+      <div className="bg-tertiary rounded-lg p-4">
         <div className="flex items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2 border border-black/10 rounded-md px-3 h-10 w-full sm:w-72 bg-secondary">
             <IoSearchOutline className="text-gray-400 shrink-0" />
@@ -171,11 +173,11 @@ const ProcessPayments: React.FC = () => {
 
         <ReusableTable
           columns={columns}
-          data={paginatedData}
-          isLoading={false}
-          error={null}
+          data={employees}
+          isLoading={isLoading}
+          error={isError ? error : null}
           currentPage={currentPage}
-          totalPages={totalPages}
+          totalPages={data?.totalPages ?? 1}
           totalItems={totalItems}
           itemsPerPage={itemsPerPage}
           setCurrentPage={setCurrentPage}

@@ -1,38 +1,26 @@
 import api from "../helpers/api";
-import type {
-  ForgottenPasswordValues,
-  LoginValues,
-  OTPVerifyValues,
-  RegisterValues,
-  ResetPasswordValues,
-} from "../lib/interfaces";
+import type { LoginValues, RegisterValues, sendEmailVerificationValues } from "../lib/interfaces";
 
-export const registerService = async (values: RegisterValues) => {
-  const response = await api.post(`/auth/register`, values);
-  return response.data;
+export const createCompanyService = async (values: FormData | RegisterValues) => {
+    const response = await api.post(`/createcompanies`, values, {
+        headers: values instanceof FormData ? { "Content-Type": "multipart/form-data" } : undefined,
+    });
+    return response.data;
 };
 
+export const registerService = createCompanyService;
+
 export const loginService = async (values: LoginValues) => {
-  const response = await api.post(`/auth/login`, values);
-  return response.data;
+    const response = await api.post(`/login`, values);
+    return response.data;
 };
 
 export const getUserService = async () => {
-  const response = await api.get(`/auth/me`);
-  return response.data;
+    const response = await api.get(`/me`);
+    return response.data?.data ?? response.data;
 };
 
-export const forgotPasswordService = async (data: ForgottenPasswordValues) => {
-  const response = await api.post(`/forgot-password`, data);
-  return response.data;
-};
-
-export const OTPVerificationService = async (data: OTPVerifyValues) => {
-  const response = await api.post(`/verify-forgot-otp`, data);
-  return response.data;
-};
-
-export const ResetPasswordService = async (data: ResetPasswordValues) => {
-  const response = await api.post(`/reset-password`, data);
-  return response.data;
-};
+export const sendEmailVerificationCodeService = async (values: sendEmailVerificationValues) => {
+    const response = await api.post(`/resend-otp`, values);
+    return response.data;
+}

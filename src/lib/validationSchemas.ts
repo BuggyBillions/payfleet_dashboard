@@ -2,17 +2,19 @@ import * as Yup from "yup";
 
 export const RegisterFormSchema = Yup.object({
   name: Yup.string().required("Company name is required."),
-  email: Yup.string()
-    .email("Enter a valid company email address.")
-    .required("Company email is required."),
+  email: Yup.string().required("Company email is required."),
   logo: Yup.mixed().nullable(),
   about: Yup.string().required("About company is required."),
   address: Yup.string().required("Company address is required."),
-  phone: Yup.string().required("Company phone number is required."),
-  password: Yup.string()
-    .min(8, "Password must be at least 8 characters.")
-    .required("Password is required."),
+  password: Yup.string().required("password is required."),
 });
+
+export const Forgotpassword = Yup.object({
+  name: Yup.string().required(" is required."),
+  email: Yup.string().required("Email is required."),
+});
+
+export const Forgotpassword = ForgotPasswordSchema;
 
 export const LoginFormSchema = Yup.object({
   email: Yup.string()

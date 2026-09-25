@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import api, { setupInterceptors } from "../helpers/api";
+import { setupInterceptors } from "../helpers/api";
 import axios from "axios";
 import type { UserProps, UserProviderProps } from "../lib/interfaces";
 import { UserContext } from "./UserContext";
+import { getUserService } from "../services/authService";
 
 export const UserProvider = ({ children }: UserProviderProps) => {
   const [user, setUser] = useState<UserProps | null>(null);
@@ -27,10 +28,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const refreshUser = useCallback(async (token: string) => {
     if (!token) throw new Error("No token");
     try {
-      const response = await api.get("/user", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const { data } = response.data;
+      const data = await getUserService();
       setUser(data);
       setRole(data?.role);
       localStorage.setItem("user", JSON.stringify(data));

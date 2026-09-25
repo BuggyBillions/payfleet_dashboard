@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { FiEye, FiEyeOff } from "react-icons/fi";
-import { LuUser, LuLock, LuShieldCheck, LuBuilding2 } from "react-icons/lu";
+import { LuUser, LuLock, LuShieldCheck } from "react-icons/lu";
 import { useUser } from "../../hooks/useUser";
 import type { SettingsTab, PasswordFieldProps } from "../../lib/interfaces";
 
@@ -12,7 +12,7 @@ interface TabConfig {
   roles?: string[];
 }
 
-const ALL_ROLES = ["company", "user", "superadmin", "super_admin", "admin", "financial", "finance", "support"];
+const ALL_ROLES = ["company", "admin", "finance", "support", "superadmin", "super_admin"];
 
 const TABS: TabConfig[] = [
   {
@@ -31,13 +31,7 @@ const TABS: TabConfig[] = [
     key: "pin",
     label: "Transaction PIN",
     icon: LuShieldCheck,
-    roles: ["company", "user", "financial", "finance", "superadmin", "super_admin", "admin"],
-  },
-  {
-    key: "bank",
-    label: "Settlement Bank Details",
-    icon: LuBuilding2,
-    roles: ["company", "user", "financial", "finance", "superadmin", "super_admin", "admin"],
+    roles: ["company", "admin", "superadmin", "super_admin"],
   },
 ];
 
@@ -45,7 +39,7 @@ const inputClass =
   "w-full text-textBlack border border-primary/10 bg-secondary rounded-lg px-4 h-11 text-xs outline-0 placeholder:text-textBlack/40 focus:border-primary/40 transition";
 
 const submitClass =
-  "bg-primary hover:bg-primary/90 text-textWhite text-xs rounded-lg font-medium px-6 h-10 cursor-pointer shadow-xs transition";
+  "bg-primary hover:bg-primary/90 text-textWhite text-xs rounded-lg font-medium px-6 h-10 cursor-pointer shadow-xs transition disabled:opacity-60 disabled:cursor-not-allowed";
 
 const PasswordField: React.FC<PasswordFieldProps> = ({
   label,
@@ -92,7 +86,6 @@ const Settings: React.FC = () => {
   }, [currentRole]);
 
   const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
-
   const [hiddenFields, setHiddenFields] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -117,13 +110,6 @@ const Settings: React.FC = () => {
     confirm_pin: "",
   });
 
-  // Bank Form State
-  const [bank, setBank] = useState({
-    bank_name: "Wema Bank",
-    account_number: "9817625028",
-    account_name: "WELLTHRIXINTE/COMPANY TICKETPENTY",
-  });
-
   // Password Form State
   const [passwords, setPasswords] = useState({
     current_password: "",
@@ -135,10 +121,6 @@ const Settings: React.FC = () => {
 
   const toggleField = (key: string) =>
     setHiddenFields((prev) => ({ ...prev, [key]: !prev[key] }));
-
-  const handleBankChange = (key: keyof typeof bank, value: string) => {
-    setBank((prev) => ({ ...prev, [key]: value }));
-  };
 
   const handleProfileChange = (key: keyof typeof profile, value: string) => {
     setProfile((prev) => ({ ...prev, [key]: value }));
@@ -295,59 +277,6 @@ const Settings: React.FC = () => {
           </div>
         );
 
-      case "bank":
-        return (
-          <div className="flex flex-col gap-6 max-w-3xl">
-            <div className="flex flex-col">
-              <h3 className="font-semibold text-base text-textBlack">Settlement Bank Details</h3>
-              <p className="text-xs text-textBlack/60">
-                Configure primary destination bank account for settlements, refunds, and corporate deposits
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <label className="flex flex-col space-y-1.5">
-                <span className="font-medium text-xs text-textBlack">Bank Name</span>
-                <input
-                  type="text"
-                  value={bank.bank_name}
-                  onChange={(e) => handleBankChange("bank_name", e.target.value)}
-                  className={inputClass}
-                />
-              </label>
-              <label className="flex flex-col space-y-1.5">
-                <span className="font-medium text-xs text-textBlack">Account Number</span>
-                <input
-                  type="text"
-                  value={bank.account_number}
-                  onChange={(e) =>
-                    handleBankChange("account_number", e.target.value)
-                  }
-                  className={inputClass}
-                />
-              </label>
-              <label className="flex flex-col space-y-1.5">
-                <span className="font-medium text-xs text-textBlack">Account Name</span>
-                <input
-                  type="text"
-                  value={bank.account_name}
-                  onChange={(e) =>
-                    handleBankChange("account_name", e.target.value)
-                  }
-                  className={inputClass}
-                />
-              </label>
-            </div>
-            <button
-              type="button"
-              onClick={() => toast.success("Bank details saved successfully")}
-              className={`${submitClass} self-start`}
-            >
-              Save Bank Details
-            </button>
-          </div>
-        );
-
       case "password":
         return (
           <div className="flex flex-col gap-6 max-w-xl">
@@ -420,7 +349,7 @@ const Settings: React.FC = () => {
       <div className="flex flex-col">
         <h2 className="text-lg font-semibold text-textBlack">Settings & Security</h2>
         <p className="text-xs text-textBlack/60">
-          Manage your account profile, credentials, security, and settlement preferences
+          Manage your account profile, credentials, security, and transaction PIN
         </p>
       </div>
 

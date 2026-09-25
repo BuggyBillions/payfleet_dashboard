@@ -35,6 +35,13 @@ export interface TableColumnProps<T = unknown> {
   tableHeadingClassName?: string;
 }
 
+export interface EmployeeListResponse {
+  items: Employee[];
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+}
+
 export interface PaginationControlProps {
   currentPage: number;
   totalPages: number;
@@ -133,10 +140,10 @@ export interface OtherActionProps {
 }
 
 export interface ActionCellProps {
-  rowId: number;
-  onEdit?: (id: number) => void;
-  onDelete?: (id: number) => void;
-  onView?: (id: number) => void;
+  rowId: number | string;
+  onEdit?: (id: number | string) => void;
+  onDelete?: (id: number | string) => void;
+  onView?: (id: number | string) => void;
   toggleAction?: () => void;
   canView?: boolean;
   otherActions?: OtherActionProps[];
@@ -183,39 +190,76 @@ export interface NavItem {
 // 3. AUTHENTICATION & USER TYPES
 // ==========================================
 
-export interface UserProps {
+export interface CompanyDetailsProps {
   id: number;
-  username: string;
-  first_name: string;
-  full_name: string;
-  last_name: string;
+  name: string;
   email: string;
-  is_admin: number;
-  role: string;
-  enabled: number;
-  created_at: string;
-  updated_at: string;
+  phone?: string;
+  logo?: string | null;
+  about?: string;
+  address?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
+export interface UserProps {
+  id?: number | string;
+  username?: string;
+  first_name?: string;
+  full_name?: string;
+  last_name?: string;
+  name?: string;
+  email?: string;
+  is_admin?: number;
+  role?: string;
+  tier?: string;
+  company_name?: string;
+  enabled?: number;
+  avatar?: string;
+  company_details?: CompanyDetailsProps;
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: unknown;
+}
+
+export interface sendEmailVerificationValues {
+  email: string;
+}
+export interface PendingVerification {
+  flow: "email_verification" | string;
+  email: string;
+  savedAt: number;
+}
 export interface LoginValues {
   email: string;
   password: string;
 }
 
-export interface ForgottenPasswordValues {
+export interface ApiErrorResponse {
+  message?: string;
+  error?: string;
+  errors?: Record<string, string[]>;
+}
+
+export type RegisterFormValues = {
+  name: string;
   email: string;
-}
-
-export interface OTPVerifyValues {
-  reset_otp: string;
-  token: string;
-}
-
-export interface ResetPasswordValues {
-  token: string;
+  logo: File | null;
+  about: string;
+  address: string;
+  phone: string;
   password: string;
-  confirmPassword?: string;
-}
+};
+
+export type ForgotPasswordFormValues = {
+  name: string;
+  email: string;
+  logo: File | null;
+  about: string;
+  address: string;
+  phone: string;
+  password: string;
+};
 
 export interface RegisterValues {
   name: string;
@@ -263,63 +307,210 @@ export interface BankProps {
 }
 
 export interface CompanyProps {
-  id?: number;
-  companyName: string;
+  id?: number | string;
+  name?: string;
+  companyName?: string;
   email: string;
-  phoneNumber: string;
-  staff: number;
-  tier: string;
-  status: string;
+  phone?: string;
+  phoneNumber?: string;
+  no_of_employee?: number;
+  staff?: number | string;
+  tier?: string | number;
+  status?: boolean | string;
+  is_active?: boolean | number;
+  created_at?: string;
+  address?: string;
+  registeredAddress?: string;
+  rc_number?: string;
+  rcNumber?: string;
+  tin_number?: string;
+  tinNumber?: string;
+  industry?: string;
+  staffCount?: number;
+  verificationStatus?: VerificationStatus;
+  documents?: {
+    cacCertificate?: string;
+    statusReport?: string;
+    proofOfAddress?: string;
+    directorId?: string;
+  };
+  rejectionReason?: string;
+  directorName?: string;
+  directorPhone?: string;
+}
+
+export interface GetCompaniesParams {
+  page?: number;
+  searchTerm?: string;
+  search?: string;
+  per_page?: number;
+  status?: string;
+}
+
+export interface CompanyListResponse {
+  items: CompanyProps[];
+  totalItems: number;
+  currentPage: number;
+  totalPages: number;
+  perPage: number;
 }
 
 export interface StaffProps {
-  id?: number;
-  name: string;
+  id?: number | string;
+  name?: string;
+  first_name?: string;
+  last_name?: string;
+  full_name?: string;
+  username?: string;
   email: string;
-  phoneNumber: string;
+  phone?: string;
+  phoneNumber?: string;
   role: string;
-  status: string;
+  status: string | boolean | number;
+  is_active?: boolean | number;
+  enabled?: number | boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
-export interface DemoEmployee {
+export interface GetStaffsParams {
+  page?: number;
+  searchTerm?: string;
+  search?: string;
+  per_page?: number;
+  role?: string;
+  status?: string;
+}
+
+export interface StaffListResponse {
+  items: StaffProps[];
+  totalItems: number;
+  currentPage: number;
+  totalPages: number;
+  perPage: number;
+}
+
+export interface CreateStaffPayload {
+  name: string;
+  first_name?: string;
+  last_name?: string;
+  email: string;
+  phoneNumber?: string;
+  phone?: string;
+  role: "Finance" | "Support" | string;
+  password?: string;
+  [key: string]: unknown;
+}
+
+export interface Bank {
+  name: string;
+  code: string;
+}
+
+export interface BankItem {
+  id?: number | string;
+  name: string;
+  code?: string;
+  slug?: string;
+  bank_name?: string;
+  bank_code?: string;
+  logo?: string;
+}
+
+export interface BankAccountDetails {
+  id?: number | string;
+  bank_name?: string;
+  account_number?: string;
+  account_name?: string;
+  bank_code?: string;
+  currency?: string;
+  recipient_code?: string;
+  is_active?: boolean | number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CreateAccountPayload {
+  bank_name: string;
+  account_number: string;
+  account_name: string;
+  bank_code?: string;
+  [key: string]: unknown;
+}
+
+export interface AddBankModalProps {
+  onClose: () => void;
+  defaultBank?: BankItem | null;
+  onSuccess?: () => void;
+}
+
+export interface ResolvedAccount {
+  account_name?: string;
+  account_number?: string;
+  bank_code?: string;
+}
+
+export interface EmployeeCompanyProps {
   id: number;
+  name: string;
+  email?: string;
+  phone?: string;
+  logo?: string | null;
+  about?: string;
+  address?: string;
+  user_id?: number;
+  balance?: string | number;
+  tier?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Employee {
+  id: number | string;
+  company_id?: number | string;
   first_name: string;
   last_name: string;
   email: string;
-  phone_number: string;
+  phone: string;
   address: string;
   job_title: string;
   employment_type: string;
   bank_name: string;
+  bank_code?: string;
+  account_name: string;
   account_number: string;
-  estimate_pay: number;
-  status: "Active" | "Inactive";
-  is_payroll: boolean;
-  addedAt: string;
+  estimate_pay: number | string;
+  paying?: string | number;
+  deduction_amount?: number | string | null;
+  company?: EmployeeCompanyProps;
+  created_at?: string;
+  updated_at?: string;
 }
 
-export type DemoEmployeeInput = Omit<
-  DemoEmployee,
-  "id" | "status" | "is_payroll" | "addedAt"
+export type EmployeeInput = Omit<
+  Employee,
+  "id" | "status" | "created_at" | "updated_at"
 >;
 
 export interface EmployeeFormValues {
   first_name: string;
   last_name: string;
   email: string;
-  phone_number: string;
+  phone: string;
   address: string;
   job_title: string;
   employment_type: string;
   bank_name: string;
+  bank_code: string;
+  account_name: string;
   account_number: string;
   estimate_pay: number | string;
 }
 
 export interface EditEmployeeModalProps {
-  employee: DemoEmployee;
+  employee: Employee;
   onClose: () => void;
-  onSaved: (updated: DemoEmployee) => void;
+  onSaved: (updated: Employee) => void;
 }
 
 export interface EditStaffModalProps {
@@ -329,10 +520,17 @@ export interface EditStaffModalProps {
   onSuccess?: (staff: Partial<StaffProps>) => void;
 }
 
-export interface ReduceSalaryModalProps {
-  employee: DemoEmployee;
+export interface ViewStaffModalProps {
+  staff: StaffProps | null;
   onClose: () => void;
-  onSaved: (updated: DemoEmployee) => void;
+  onStatusChange?: () => void;
+  onDelete?: () => void;
+}
+
+export interface ReduceSalaryModalProps {
+  employee: Employee;
+  onClose: () => void;
+  onSaved: (updated: Employee) => void;
 }
 
 export interface ReductionValues {
@@ -350,7 +548,8 @@ export interface CompanyVerificationItem {
   id: number;
   companyName: string;
   email: string;
-  phoneNumber: string;
+  phone?: string;
+  phoneNumber?: string;
   rcNumber: string;
   tinNumber: string;
   industry: string;
@@ -443,7 +642,9 @@ export interface DemoPayment {
 }
 
 export interface DepositItemProps {
-  id: number;
+  id: number | string;
+  company_id?: number | string;
+  companyId?: number | string;
   companyName: string;
   email: string;
   reference: string;
@@ -455,11 +656,28 @@ export interface DepositItemProps {
   date: string;
   rejectionReason?: string;
   approvedAt?: string;
+  [key: string]: unknown;
+}
+
+export interface DepositListResponse {
+  items: DepositItemProps[];
+  totalItems: number;
+  currentPage: number;
+  totalPages: number;
+  perPage: number;
+}
+
+export interface GetDepositsParams {
+  page?: number;
+  per_page?: number;
+  search?: string;
+  searchTerm?: string;
+  status?: string;
 }
 
 export interface ManageDepositProps {
   defaultFilter?: "all" | "pending";
-  role?: "superadmin" | "financial";
+  role?: "superadmin" | "financial" | string;
 }
 
 export interface DepositsProps {
@@ -484,6 +702,7 @@ export interface DepositModalProps {
   onClose: () => void;
   onDepositSuccess?: (deposit: DemoDeposit) => void;
   defaultAmount?: number;
+  companyId?: number | string;
 }
 
 // ==========================================
@@ -534,7 +753,7 @@ export interface FloatingWidgetMessage {
 // 7. SETTINGS & PROFILE
 // ==========================================
 
-export type SettingsTab = "profile" | "pin" | "bank" | "password";
+export type SettingsTab = "profile" | "pin" | "password";
 
 export interface PasswordFieldProps {
   label: string;

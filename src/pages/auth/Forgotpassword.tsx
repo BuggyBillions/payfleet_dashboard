@@ -1,10 +1,19 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { assets } from "../../assets/assets";
+import { useFormik } from "formik";
+import { RegisterFormSchema } from "../../lib/validationSchemas";
+import api from "../../helpers/api";
+import { toast } from "sonner";
 import StepOne from "./Forgotpassword/StepOne";
-import StepTwo from "./Forgotpassword/StepTwo";
-import StepThree from "./Forgotpassword/StepThree";
+import StepTwo from "./registersteps/StepTwo";
+import StepThree from "./registersteps/StepThree";
+import StepFour from "./registersteps/StepFour";
+import { assets } from "../../assets/assets";
+import { useMutation } from "@tanstack/react-query";
+import type { AxiosError } from "axios";
+import type { ApiErrorResponse } from "../../lib/interfaces";
+import type { Forgotpassword, RegisterFormValues } from "../../lib/formTypes";
 
 const lineVariants = {
   hidden: { opacity: 0, y: 10 },
@@ -71,6 +80,87 @@ const Forgotpassword: React.FC = () => {
     return () => clearInterval(interval);
   }, [textSets]);
 
+  const handleCompanyCreateMutation = useMutation({
+    mutationFn: async (values: FormData) => {
+      await api.post(`/api/createcompanies`, values, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Company profile created successfully.");
+      setTimeout(() => {
+        navigate("/auth/login");
+      }, 1000);
+    },
+    onError: (error: AxiosError<ApiErrorResponse>) => {
+      console.log("error", error);
+      toast.error(
+        error?.response?.data?.message ||
+          "An error occurred during registration.",
+      );
+    },
+  });
+
+  const formik = useFormik<Forgotpassword>({
+    initialValues: {
+      name: "",
+      email: "",
+      logo: null,
+      about: "",
+      address: "",
+      phone: "",
+      password: "",
+    },
+    validationSchema: Forgotpassword,
+    onSubmit: async (values) => {
+      const formData = new FormData();
+      formData.append("name", values.name);
+      formData.append("password", values.password);
+      formData.append("about", values.about);
+      formData.append("address", values.address);
+      formData.append("phone", values.phone);
+      if (values.logo) {
+        formData.append("logo", values.logo);
+      }
+
+      handleCompanyCreateMutation.mutate(formData);
+    },
+  });
+
+  const steps = [
+    { component: StepOne, fields: ["email"] },
+    { component: StepTwo, fields: ["email", "password"] },
+    { component: StepThree, fields: ["logo"] },
+    { component: StepFour, fields: ["about", "address", "phone"] },
+  ];
+
+  const CurrentStepComponent = steps[currentStep].component;
+
+  const handleNext = async () => {
+    const fieldsToValidate = steps[currentStep].fields;
+    const touchedFields: { [key: string]: boolean } = {};
+    fieldsToValidate.forEach((field) => {
+      touchedFields[field] = true;
+    });
+
+    await formik.setTouched({ ...formik.touched, ...touchedFields });
+
+    const errors = await formik.validateForm();
+    const hasErrors = fieldsToValidate.some(
+      (field) => errors[field as keyof typeof errors],
+    );
+
+    if (!hasErrors) {
+      setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+    }
+  };
+
+  const handleBack = () => {
+    setCurrentStep((prev) => Math.max(prev - 1, 0));
+  };
+
   return (
     <div className="w-screen h-screen flex md:flex-row flex-col items-start bg-primary">
       <div className="md:h-full h-[35vh] overflow-hidden bg-primary md:w-1/2 w-full flex flex-col gap-4 items-start justify-center lg:px-8 md:px-6 px-0 pb-8 md:pt-0 pt-15 relative">
@@ -127,14 +217,46 @@ const Forgotpassword: React.FC = () => {
             ></div>
           </div>
 
-          <div>
-            {CurrentStepComponent ? (
-              <CurrentStepComponent
-                setCurrentPage={setCurrentScreen}
-                currentPage={currentScreen}
-              />
-            ) : null}
-          </div>
+          <form onSubmit={formik.handleSubmit}>
+            <CurrentStepComponent formik={formik} />
+
+            <div className="flex justify-between mt-8">
+              <button
+                type="button"
+                onClick={handleBack}
+                disabled={currentStep === 0}
+                className={`px-6 h-12 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed rounded-lg shadow font-medium transition-colors ${
+                  currentStep === 0
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                Back
+              </button>
+
+              {currentStep === steps.length - 1 ? (
+                <button
+                  type="submit"
+                  disabled={
+                    handleCompanyCreateMutation.isPending || formik.isSubmitting
+                  }
+                  className="px-6 h-12 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed bg-primary text-white rounded-lg shadow font-medium hover:bg-primary/90 transition-colors"
+                >
+                  {handleCompanyCreateMutation.isPending || formik.isSubmitting
+                    ? "Creating..."
+                    : "Create Account"}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  className="px-6 h-12 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed bg-primary text-white rounded-lg shadow font-medium hover:bg-primary/90 transition-colors"
+                >
+                  Next
+                </button>
+              )}
+            </div>
+          </form>
         </div>
       </div>
     </div>

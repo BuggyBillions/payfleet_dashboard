@@ -492,11 +492,8 @@ const SuperAdminManagePayments: React.FC = () => {
       label: "Company",
       render: (item) => (
         <div className="flex items-center gap-2.5 min-w-[170px]">
-          <div className="size-8 rounded-lg bg-primary/10 text-primary font-bold flex items-center justify-center text-xs shrink-0">
-            {item.companyName.charAt(0)}
-          </div>
           <div className="flex flex-col">
-            <span className="font-semibold text-textBlack text-xs truncate max-w-[150px]">
+            <span className="font-semibold text-textBlack text-xs truncate max-w-37.5">
               {item.companyName}
             </span>
             <span className="text-[11px] text-textBlack/50 lowercase truncate max-w-[150px]">
