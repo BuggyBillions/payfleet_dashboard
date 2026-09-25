@@ -21,11 +21,14 @@ const StepTwo: React.FC<{
     enableReinitialize: true,
     onSubmit: async (values) => {
       try {
-        OTPVerificationMutation.mutate(values, {
-          onSuccess: () => {
-            setCurrentPage(currentPage + 1);
+        OTPVerificationMutation.mutate(
+          { token: values.token, reset_otp: String(values.reset_otp) },
+          {
+            onSuccess: () => {
+              setCurrentPage(currentPage + 1);
+            },
           },
-        });
+        );
       } catch (error) {
         console.error(error);
       }
@@ -50,7 +53,7 @@ const StepTwo: React.FC<{
               inputMode="numeric"
               onBlur={formik.handleBlur}
               // onChange={formik.handleChange}
-              // value={formik.values.otp}
+              // value={formik.values.reset_otp}
               maxLength={1}
               value={formik.values.reset_otp[otpIndex] || ""}
               onChange={(event) => {
@@ -72,7 +75,7 @@ const StepTwo: React.FC<{
                 }
               }}
               className="w-12 h-12 text-center text-xl font-semibold rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
-              aria-label={`OTP digit ${otpIndex + 1}`}
+              aria-label={`reset_otp digit ${otpIndex + 1}`}
             />
           ))}
         </div>

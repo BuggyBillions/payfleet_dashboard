@@ -2,7 +2,7 @@ import api from "../helpers/api";
 import type { LoginValues, RegisterValues, sendEmailVerificationValues } from "../lib/interfaces";
 
 export const createCompanyService = async (values: FormData | RegisterValues) => {
-    const response = await api.post(`/createcompanies`, values, {
+    const response = await api.post(`/register`, values, {
         headers: values instanceof FormData ? { "Content-Type": "multipart/form-data" } : undefined,
     });
     return response.data;
@@ -26,12 +26,12 @@ export const sendEmailVerificationCodeService = async (values: sendEmailVerifica
 };
 
 export const forgotPasswordService = async (values: { email: string }) => {
-    const response = await api.post(`/forgotpassword`, values);
+    const response = await api.post(`/forgot-password`, values);
     return response.data;
 };
 
 export const verifyOtpService = async (values: { token?: string; reset_otp?: string; otp?: string | number }) => {
-    const response = await api.post(`/verify-otp`, values);
+    const response = await api.post(`/verify-forgot-otp`, values);
     return response.data;
 };
 

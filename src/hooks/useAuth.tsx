@@ -1,50 +1,71 @@
 import { useMutation } from "@tanstack/react-query";
 import {
-  loginService,
-  registerService,
   forgotPasswordService,
+  loginService,
   verifyOtpService,
+  registerService,
   resetPasswordService,
 } from "../services/authService";
-import type { LoginValues, RegisterValues } from "../lib/interfaces";
 import { toast } from "sonner";
 import { getErrorMessage } from "../helpers/api";
+import type {
+  ForgotPasswordFormValues,
+  OTPVerifyValues,
+  ResetPasswordValues,
+} from "../lib/interfaces";
+import { useUser } from "./useUser";
 
 export const useAuth = () => {
+  const { saveVerificationToken } = useUser();
+
   const registerMutation = useMutation({
-    mutationFn: (values: RegisterValues) => registerService(values),
-    onError: (error) => {
-      toast.error(getErrorMessage(error, "Registration failed"));
+    mutationFn: registerService,
+    onError: (error: unknown) => {
+      console.error("Register failed:", error);
+      toast.error(getErrorMessage(error));
     },
   });
 
   const loginMutation = useMutation({
-    mutationFn: (values: LoginValues) => loginService(values),
-    onError: (error) => {
-      toast.error(getErrorMessage(error, "Login failed"));
+    mutationFn: loginService,
+    onSuccess: () => {},
+    onError: (error: unknown) => {
+      console.error("Login failed:", error);
+      toast.error(getErrorMessage(error));
     },
   });
 
   const forgotPasswordMutation = useMutation({
-    mutationFn: (values: { email: string }) => forgotPasswordService(values),
-    onError: (error) => {
-      toast.error(getErrorMessage(error, "Failed to send reset code"));
+    mutationFn: (data: ForgotPasswordFormValues) => forgotPasswordService(data),
+    onSuccess: (data) => {
+      toast.success(data.message ?? "Reset code sent successfully");
+      saveVerificationToken(data.data.token);
+    },
+    onError: (error: unknown) => {
+      console.error("Failed to forget password:", error);
+      toast.error(getErrorMessage(error));
     },
   });
 
   const OTPVerificationMutation = useMutation({
-    mutationFn: (values: { token?: string; reset_otp?: string; otp?: string | number }) =>
-      verifyOtpService(values),
-    onError: (error) => {
-      toast.error(getErrorMessage(error, "Invalid verification code"));
+    mutationFn: (data: OTPVerifyValues) => verifyOtpService(data),
+    onSuccess: (data) => {
+      toast.success(data.message ?? "OTP verified successfully");
+    },
+    onError: (error: unknown) => {
+      console.error("Failed to verify otp:", error);
+      toast.error(getErrorMessage(error));
     },
   });
 
   const resetPasswordMutation = useMutation({
-    mutationFn: (values: { token?: string; password?: string; confirmPassword?: string }) =>
-      resetPasswordService(values),
-    onError: (error) => {
-      toast.error(getErrorMessage(error, "Failed to reset password"));
+    mutationFn: (data: ResetPasswordValues) => resetPasswordService(data),
+    onSuccess: (data) => {
+      toast.success(data.message ?? "Password reset successfully");
+    },
+    onError: (error: unknown) => {
+      console.error("Failed to reset password:", error);
+      toast.error(getErrorMessage(error));
     },
   });
 
