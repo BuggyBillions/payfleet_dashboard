@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getStaffsService,
+  getStaffStatsService,
   getStaffByIdService,
   createStaffService,
   createFinanceOfficerService,
@@ -10,6 +11,7 @@ import {
   deleteUserService,
   type GetStaffsParams,
   type StaffListResponse,
+  type StaffStatsResponse,
   type CreateStaffPayload,
 } from "../services/staffService";
 import { toast } from "sonner";
@@ -35,12 +37,12 @@ export const useStaffs = ({
 };
 
 /**
- * Full staff stats query for calculating accurate aggregate cards
+ * Full staff stats query for calculating accurate aggregate cards (/staff-stats)
  */
 export const useStaffStats = () => {
-  return useQuery<StaffListResponse>({
+  return useQuery<StaffStatsResponse>({
     queryKey: ["staffs", "stats"],
-    queryFn: () => getStaffsService({ page: 1, per_page: 1000, role: "" }),
+    queryFn: () => getStaffStatsService(),
     placeholderData: (prev) => prev,
   });
 };

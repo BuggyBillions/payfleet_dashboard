@@ -51,11 +51,14 @@ const ManageCompany: React.FC = () => {
      const totalItems = data?.totalItems ?? companies.length;
      const totalPages = data?.totalPages ?? Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
-     // Compute metrics dynamically from statsData
-     const allCompanies = statsData?.items ?? companies;
-     const totalCompaniesCount = statsData?.totalItems ?? totalItems;
+     // Compute metrics dynamically from /company-stats or companies list
+     const allCompanies = statsData?.items && statsData.items.length > 0 ? statsData.items : companies;
+     const totalCompaniesCount = statsData?.totalCompanies || statsData?.totalItems || totalItems;
 
      const activeCount = useMemo(() => {
+          if (statsData?.activeCompanies !== undefined && statsData.activeCompanies > 0) {
+               return statsData.activeCompanies;
+          }
           return allCompanies.filter((c) => {
                const s =
                     typeof c.status === "boolean"
@@ -65,20 +68,26 @@ const ManageCompany: React.FC = () => {
                          : String(c.status || (c.is_active ? "active" : "inactive")).toLowerCase();
                return s === "active" || s === "successful" || s === "verified";
           }).length;
-     }, [allCompanies]);
+     }, [allCompanies, statsData?.activeCompanies]);
 
      const totalStaffCount = useMemo(() => {
+          if (statsData?.totalStaff !== undefined && statsData.totalStaff > 0) {
+               return statsData.totalStaff;
+          }
           return allCompanies.reduce(
                (sum, c) => sum + Number(c.no_of_employee ?? c.staff ?? c.staffCount ?? 0),
                0
           );
-     }, [allCompanies]);
+     }, [allCompanies, statsData?.totalStaff]);
 
      const enterpriseCount = useMemo(() => {
+          if (statsData?.enterpriseCompanies !== undefined && statsData.enterpriseCompanies > 0) {
+               return statsData.enterpriseCompanies;
+          }
           return allCompanies.filter(
                (c) => String(c.tier || "").toLowerCase() === "enterprise"
           ).length;
-     }, [allCompanies]);
+     }, [allCompanies, statsData?.enterpriseCompanies]);
 
      // Delete mutation hook
      const deleteCompanyMutation = useDeleteCompany();

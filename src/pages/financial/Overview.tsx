@@ -17,10 +17,9 @@ import {
   TbArrowUpRight,
   TbFileInvoice,
   TbBuildingBank,
-  TbShieldCheck,
 } from "react-icons/tb";
 import { FaMoneyBillWave } from "react-icons/fa6";
-import { LuArrowDownToLine, LuCheckCheck } from "react-icons/lu";
+import { LuArrowDownToLine } from "react-icons/lu";
 import { BsChatText } from "react-icons/bs";
 
 const FinancialOverview: React.FC = () => {
@@ -39,15 +38,14 @@ const FinancialOverview: React.FC = () => {
 
   // Metrics calculations
   const pendingDeposits = deposits.filter((d) => d.status === "pending");
-  const pendingDepositsCount = statsData ? pendingDeposits.length : (pendingData?.totalItems ?? pendingDepositsList.length);
-  const pendingDepositsAmount = pendingDeposits.reduce((sum, d) => sum + d.amount, 0);
+  const pendingDepositsCount = statsData?.pendingCount ?? (pendingData?.totalItems ?? pendingDepositsList.length);
+  const pendingDepositsAmount = statsData?.pendingVolume ?? pendingDeposits.reduce((sum, d) => sum + d.amount, 0);
 
   const approvedDeposits = deposits.filter((d) => d.status === "successful");
-  const approvedDepositsAmount = approvedDeposits.reduce((sum, d) => sum + d.amount, 0);
+  const approvedDepositsAmount = statsData?.successfulVolume ?? approvedDeposits.reduce((sum, d) => sum + d.amount, 0);
 
   const successfulPayments = payments.filter((p) => p.status === "successful");
   const totalPaidOut = successfulPayments.reduce((sum, p) => sum + p.amount, 0);
-  const totalFeesAccrued = payments.reduce((sum, p) => sum + p.fee, 0);
 
   // Recent disbursements (top 5)
   const recentPayments = payments.slice(0, 5);
@@ -82,19 +80,7 @@ const FinancialOverview: React.FC = () => {
           {formatShortDate(item.date)}
         </span>
       ),
-    },
-    {
-      label: "Action",
-      render: () => (
-        <button
-          type="button"
-          onClick={() => navigate("/financial/dashboard/deposit/pending")}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline cursor-pointer"
-        >
-          Verify <TbArrowUpRight size={14} />
-        </button>
-      ),
-    },
+    }
   ];
 
   // Recent payouts columns
@@ -111,7 +97,7 @@ const FinancialOverview: React.FC = () => {
     {
       label: "Company",
       render: (item) => (
-        <span className="text-xs text-textBlack/70 truncate max-w-[120px] block">
+        <span className="text-xs text-textBlack/70 truncate max-w-30 block">
           {item.companyName}
         </span>
       ),
@@ -149,28 +135,28 @@ const FinancialOverview: React.FC = () => {
           heading={`Welcome, ${user?.first_name || "Finance Team"}`}
           value="Financial controller dashboard, treasury reconciliation, and payout disbursement audit"
         />
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center justify-end gap-2 shrink-0 flex-wrap">
+          <div className="flex items-center gap-2 shrink-0">
+            <ActionButton
+              text="Pending Deposits"
+              onClick={() => navigate("/financial/dashboard/deposit/pending")}
+              icon={<LuArrowDownToLine size={16} />}
+            />
+            <ActionButton
+              onClick={() => navigate("/financial/dashboard/payments")}
+              overideBg={true}
+              buttonStyle=" border border-primary/20 bg-secondary text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+              icon={<FaMoneyBillWave size={14} />}
+              text="Manage Payouts"
+            />
+          </div>
           <ActionButton
-            text="Pending Deposits"
-            onClick={() => navigate("/financial/dashboard/deposit/pending")}
-            icon={<LuArrowDownToLine size={16} />}
-          />
-          <button
-            type="button"
-            onClick={() => navigate("/financial/dashboard/payments")}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-primary/20 bg-secondary text-primary hover:bg-primary/10 transition-colors text-xs font-semibold cursor-pointer"
-          >
-            <FaMoneyBillWave size={14} />
-            Manage Payouts
-          </button>
-          <button
-            type="button"
             onClick={() => navigate("/financial/dashboard/chat")}
-            className="inline-flex items-center gap-2 px-3 py-2.5 rounded-lg border border-primary/20 bg-secondary text-primary hover:bg-primary/10 transition-colors text-xs font-semibold cursor-pointer"
+            buttonStyle=" border border-primary/20 bg-secondary text-primary hover:bg-primary/10 transition-colors cursor-pointer"
             title="Finance Chat Support"
-          >
-            <BsChatText size={15} />
-          </button>
+            icon={<BsChatText size={15} />}
+            overideBg={true}
+          />
         </div>
       </div>
 
@@ -207,7 +193,7 @@ const FinancialOverview: React.FC = () => {
 
       {/* Pending Deposits Actionable Queue */}
       <div className="bg-tertiary rounded-2xl p-5 border border-primary/10 shadow-sm space-y-4">
-        <div className="flex items-center justify-between border-b border-primary/10 pb-3">
+        <div className="flex items-center flex-wrap lg:justify-between justify-end border-b border-primary/10 pb-3">
           <div>
             <h3 className="font-semibold text-base text-textBlack flex items-center gap-2">
               <TbFileInvoice className="text-primary" size={18} />
@@ -235,17 +221,15 @@ const FinancialOverview: React.FC = () => {
           totalPages={1}
           totalItems={pendingDepositsList.length}
           itemsPerPage={5}
-          setCurrentPage={() => {}}
-          setItemsPerPage={() => {}}
+          setCurrentPage={() => { }}
+          setItemsPerPage={() => { }}
           hasSerialNo={true}
         />
       </div>
 
-      {/* Grid: Recent Disbursements & Treasury Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Disbursements Table (2 Columns) */}
-        <div className="lg:col-span-2 bg-tertiary rounded-2xl p-5 border border-primary/10 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-primary/10 pb-3">
+      {/* Recent Disbursements & Treasury Summary */}
+      <div className="bg-tertiary rounded-2xl p-5 border border-primary/10 shadow-sm space-y-4">
+          <div className="flex items-center flex-wrap lg:justify-between justify-end border-b border-primary/10 pb-3">
             <div>
               <h3 className="font-semibold text-base text-textBlack flex items-center gap-2">
                 <FaMoneyBillWave className="text-primary" size={16} />
@@ -273,79 +257,10 @@ const FinancialOverview: React.FC = () => {
             totalPages={1}
             totalItems={recentPayments.length}
             itemsPerPage={5}
-            setCurrentPage={() => {}}
-            setItemsPerPage={() => {}}
+            setCurrentPage={() => { }}
+            setItemsPerPage={() => { }}
             hasSerialNo={true}
           />
-        </div>
-
-        {/* Treasury & Settlement Health Card (1 Column) */}
-        <div className="flex flex-col gap-6">
-          <div className="bg-tertiary rounded-2xl p-5 border border-primary/10 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-primary/10 pb-3">
-              <div>
-                <h3 className="font-semibold text-sm text-textBlack flex items-center gap-2">
-                  <TbBuildingBank className="text-primary" size={16} />
-                  Treasury Summary
-                </h3>
-                <p className="text-[11px] text-textBlack/60">
-                  Float balance & settlement liquidity metrics
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="p-3.5 rounded-xl bg-secondary/70 border border-primary/10">
-                <span className="text-[11px] text-textBlack/60 block">
-                  Total Processing Fees Collected
-                </span>
-                <span className="text-base font-bold text-primary mt-0.5 block font-mono">
-                  {formatterUtility(totalFeesAccrued)}
-                </span>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-secondary/70 border border-primary/10">
-                <span className="text-[11px] text-textBlack/60 block">
-                  Net Disbursal Throughput
-                </span>
-                <span className="text-base font-bold text-textBlack mt-0.5 block font-mono">
-                  {formatterUtility(totalPaidOut)}
-                </span>
-              </div>
-
-              <div className="p-3 rounded-xl bg-green-500/5 border border-green-500/15 space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-green-700 dark:text-green-400 font-semibold flex items-center gap-1.5">
-                    <TbShieldCheck size={16} /> Settlement Rails
-                  </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 border border-green-500/20">
-                    Online (99.9%)
-                  </span>
-                </div>
-                <p className="text-[11px] text-textBlack/60">
-                  Direct NIBSS / NIP bank switches and clearing engines active.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-tertiary rounded-2xl p-5 border border-primary/10 shadow-sm space-y-3">
-            <h4 className="font-semibold text-xs text-textBlack flex items-center gap-1.5">
-              <LuCheckCheck className="text-green-600" size={15} />
-              Clearance & Settlement SLA
-            </h4>
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <div className="p-3 rounded-xl bg-secondary/60 border border-primary/10">
-                <span className="text-[10px] text-textBlack/60 block">Deposit Clearance</span>
-                <span className="text-sm font-bold text-textBlack mt-0.5 block">&lt; 10 mins</span>
-              </div>
-              <div className="p-3 rounded-xl bg-secondary/60 border border-primary/10">
-                <span className="text-[10px] text-textBlack/60 block">Disbursal Success</span>
-                <span className="text-sm font-bold text-textBlack mt-0.5 block">99.8%</span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

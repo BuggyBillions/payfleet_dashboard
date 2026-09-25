@@ -8,7 +8,7 @@ import ActionButton from "../../components/ui/ActionButton";
 import { useUser } from "../../hooks/useUser";
 import { formatShortDate } from "../../helpers/formatterUtility";
 import { SEED_COMPANIES } from "./ManageCompany";
-import { INITIAL_CONVERSATIONS } from "../chat/Communication";
+import { useAdminSupportConversations } from "../../hooks/useSupportChat";
 import type { CompanyVerificationItem, TableColumnProps } from "../../lib/interfaces";
 import {
   LuShieldAlert,
@@ -27,6 +27,7 @@ const SupportOverview: React.FC = () => {
   const { user } = useUser();
   const navigate = useNavigate();
   const [companies] = useState<CompanyVerificationItem[]>(SEED_COMPANIES);
+  const { data: recentConversations = [] } = useAdminSupportConversations();
 
   // Metrics derived from company verifications
   const pendingCount = companies.filter(
@@ -209,40 +210,46 @@ const SupportOverview: React.FC = () => {
             </div>
 
             <div className="space-y-3">
-              {INITIAL_CONVERSATIONS.slice(0, 3).map((conv) => (
-                <div
-                  key={conv.id}
-                  onClick={() => navigate("/support/dashboard/chat")}
-                  className="p-3 rounded-xl border border-primary/10 bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors flex items-start gap-3"
-                >
-                  <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center shrink-0">
-                    {conv.name.slice(0, 2).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-textBlack truncate">
-                        {conv.name}
-                      </span>
-                      <span className="text-[10px] text-textBlack/40 whitespace-nowrap">
-                        {conv.lastMessageTime}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-textBlack/70 truncate mt-0.5">
-                      {conv.lastMessage}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-primary/10 text-primary font-medium">
-                        {conv.role}
-                      </span>
-                      {conv.unread > 0 && (
-                        <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-600 font-semibold">
-                          {conv.unread} unread
-                        </span>
-                      )}
-                    </div>
-                  </div>
+              {recentConversations.length === 0 ? (
+                <div className="p-6 text-center text-textBlack/50 text-xs">
+                  No active support conversations
                 </div>
-              ))}
+              ) : (
+                recentConversations.slice(0, 3).map((conv) => (
+                  <div
+                    key={conv.id}
+                    onClick={() => navigate("/support/dashboard/chat")}
+                    className="p-3 rounded-xl border border-primary/10 bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors flex items-start gap-3"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center shrink-0">
+                      {conv.name.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-textBlack truncate">
+                          {conv.name}
+                        </span>
+                        <span className="text-[10px] text-textBlack/40 whitespace-nowrap">
+                          {conv.lastMessageTime}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-textBlack/70 truncate mt-0.5">
+                        {conv.lastMessage}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-primary/10 text-primary font-medium">
+                          {conv.role}
+                        </span>
+                        {conv.unread > 0 && (
+                          <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-600 font-semibold">
+                            {conv.unread} unread
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 

@@ -5,7 +5,6 @@ import { useCreateAccount, useResolveAccount } from "../../hooks/useBank";
 import SearchableInput from "../ui/SearchableInput";
 import ActionButton from "../ui/ActionButton";
 import { toast } from "sonner";
-import { LuBuilding2, LuCheck } from "react-icons/lu";
 
 const inputClass =
   "w-full text-textBlack border border-primary/10 bg-secondary rounded-lg px-4 h-11 text-xs outline-0 placeholder:text-textBlack/40 focus:border-primary/40 transition";

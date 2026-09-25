@@ -1,10 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getCompaniesService,
+  getCompanyStatsService,
   deleteCompanyService,
   verifyCompanyService,
   type GetCompaniesParams,
   type CompanyListResponse,
+  type CompanyStatsResponse,
 } from "../services/companyService";
 import { toast } from "sonner";
 import { getErrorMessage } from "../helpers/api";
@@ -22,10 +24,13 @@ export const useCompanies = ({
   });
 };
 
+/**
+ * Full company stats hook for calculating KPI overview metrics (/company-stats)
+ */
 export const useCompanyStats = () => {
-  return useQuery<CompanyListResponse>({
+  return useQuery<CompanyStatsResponse>({
     queryKey: ["companies", "stats"],
-    queryFn: () => getCompaniesService({ page: 1, per_page: 1000 }),
+    queryFn: () => getCompanyStatsService(),
     placeholderData: (prev) => prev,
   });
 };

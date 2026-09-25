@@ -173,16 +173,6 @@ function App() {
         />
         <Route
           index
-          path="/admin/dashboard/deposit/pending"
-          element={
-            <MainLayout
-              pageName="Pending Deposits"
-              children={<ManageDeposit defaultFilter="pending" />}
-            />
-          }
-        />
-        <Route
-          index
           path="/admin/dashboard/payments"
           element={
             <MainLayout
@@ -225,7 +215,7 @@ function App() {
           path="/financial/dashboard/deposit/pending"
           element={
             <MainLayout
-              pageName="Pending Deposits"
+              pageName="All Deposits"
               children={<FinancialManageDeposit defaultFilter="pending" />}
             />
           }

@@ -90,7 +90,7 @@ export interface SearchableInputProps<T> {
 }
 
 export interface ActionButtonProps {
-  text: string;
+  text?: string;
   loadingText?: string;
   icon?: React.ReactNode;
   loading?: boolean;
@@ -99,6 +99,7 @@ export interface ActionButtonProps {
   disabled?: boolean;
   buttonStyle?: string;
   overideBg?: boolean;
+  title?: string;
 }
 
 export interface FormattedInputProps extends Omit<
@@ -226,6 +227,8 @@ export interface UserProps {
   company_name?: string;
   enabled?: number;
   avatar?: string;
+  phone?: string;
+  phone_number?: string;
   company_details?: CompanyDetailsProps;
   created_at?: string;
   updated_at?: string;
@@ -261,13 +264,13 @@ export type RegisterFormValues = {
 };
 
 export type ForgotPasswordFormValues = {
-  name: string;
   email: string;
-  logo: File | null;
-  about: string;
-  address: string;
-  phone: string;
-  password: string;
+  name?: string;
+  logo?: File | null;
+  about?: string;
+  address?: string;
+  phone?: string;
+  password?: string;
 };
 
 export interface RegisterValues {
@@ -547,6 +550,11 @@ export interface ViewStaffModalProps {
   onDelete?: () => void;
 }
 
+export interface ViewProfileModalProps {
+  conversation: Conversation | null;
+  onClose: () => void;
+}
+
 export interface ReduceSalaryModalProps {
   employee: Employee;
   onClose: () => void;
@@ -807,7 +815,7 @@ export interface ChatUser {
 }
 
 export interface ChatMessage {
-  id: number;
+  id: number | string;
   senderId: number;
   senderName: string;
   text: string;
@@ -825,13 +833,19 @@ export interface Conversation {
   unread: number;
   online?: boolean;
   avatar?: string;
+  email?: string;
+  phone?: string;
+  phoneNumber?: string;
   role?: string;
+  department?: string;
+  status?: string | boolean;
+  created_at?: string;
   membersCount?: number;
   messages: ChatMessage[];
 }
 
 export interface FloatingWidgetMessage {
-  id: number;
+  id: number | string;
   sender: "user" | "support";
   text: string;
   time: string;

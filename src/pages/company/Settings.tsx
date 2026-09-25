@@ -19,25 +19,25 @@ interface TabConfig {
   roles?: string[];
 }
 
-const ALL_ROLES = ["company", "admin", "finance", "support", "superadmin", "super_admin"];
+const ALL_ROLES = ["company", "admin", "finance", "support"];
 
 const TABS: TabConfig[] = [
   {
     key: "profile",
     label: "Profile Details",
     icon: LuUser,
+    roles: ["company"],
+  },
+  {
+    key: "password",
+    label: "Security & Password",
+    icon: LuLock,
     roles: ALL_ROLES,
   },
   {
     key: "pin",
     label: "Transaction PIN",
     icon: LuShieldCheck,
-    roles: ["company", "admin", "superadmin", "super_admin"],
-  },
-  {
-    key: "tier",
-    label: "Plan & Tier",
-    icon: LuCrown,
     roles: ["company"],
   },
 ];
@@ -104,9 +104,9 @@ const Settings: React.FC = () => {
   const [profile, setProfile] = useState({
     firstName: user?.first_name || "",
     lastName: user?.last_name || "",
-    profileName: user?.company_details?.name || user?.name || "",
-    email: user?.company_details?.email || user?.email || "",
-    phoneNumber: user?.company_details?.phone || "",
+    email: user?.email || "",
+    phoneNumber: "",
+    department: currentRole.toUpperCase(),
     address: user?.company_details?.address ?? "",
     about: user?.company_details?.about ?? "",
     bvn: user?.company_details?.bvn ?? "",

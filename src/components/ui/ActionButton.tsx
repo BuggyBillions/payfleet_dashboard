@@ -10,6 +10,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
   disabled,
   buttonStyle,
   overideBg,
+  title
 }) => {
   return (
     <button
@@ -17,6 +18,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
       type="button"
       onClick={onClick || action}
       disabled={disabled || loading}
+      title={title ? title : ""}
     >
       {icon && !loading && icon}
       {loading && (

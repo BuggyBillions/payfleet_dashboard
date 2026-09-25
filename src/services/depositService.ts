@@ -332,6 +332,7 @@ export const getAllDepositsService = async ({
 export interface DeclineDepositPayload {
   amount?: number;
   company_id?: number | string;
+  description?: string;
   reason?: string;
   rejection_reason?: string;
 }
@@ -346,7 +347,7 @@ export const approveDepositService = async (id: number | string) => {
 
 /**
  * Decline/Reject deposit: POST /decline-deposit/{id}
- * Accepts payload: { amount, company_id, reason? }
+ * Accepts payload: { description: "fraudulent", amount?, company_id?, reason? }
  */
 export const declineDepositService = async (
   id: number | string,
@@ -354,15 +355,20 @@ export const declineDepositService = async (
 ) => {
   let body: Record<string, unknown> = {};
   if (typeof payload === "string") {
-    body = { reason: payload, rejection_reason: payload };
-  } else if (payload && typeof payload === "object") {
     body = {
+      description: payload,
+      reason: payload,
+      rejection_reason: payload,
+    };
+  } else if (payload && typeof payload === "object") {
+    const desc = payload.description || payload.reason || payload.rejection_reason;
+    body = {
+      ...(desc ? { description: desc, reason: desc, rejection_reason: desc } : {}),
       ...(payload.amount !== undefined ? { amount: payload.amount } : {}),
       ...(payload.company_id !== undefined ? { company_id: payload.company_id } : {}),
-      ...(payload.reason ? { reason: payload.reason, rejection_reason: payload.reason } : {}),
     };
   }
-  const response = await api.post(`/decline-deposit/${id}`, body);
+  const response = await api.put(`/decline-deposit/${id}`, body);
   return response.data;
 };
 
@@ -378,5 +384,153 @@ export const deleteDepositService = async (id: number | string) => {
   } catch {
     const response = await api.delete(`/all-deposit/${id}`);
     return response.data;
+  }
+};
+
+export interface DepositStatsResponse {
+  totalDeposits: number;
+  totalVolume: number;
+  successfulCount: number;
+  successfulVolume: number;
+  pendingCount: number;
+  pendingVolume: number;
+  failedCount: number;
+  failedVolume: number;
+  items: DepositItemProps[];
+  totalItems: number;
+  currentPage: number;
+  totalPages: number;
+  perPage: number;
+  raw?: Record<string, unknown>;
+}
+
+/**
+ * Deposit statistics: GET /deposit-stats
+ */
+export const getDepositStatsService = async (): Promise<DepositStatsResponse> => {
+  try {
+    const response = await api.get("/deposit-stats");
+    const resData = response.data;
+    const data = resData?.data ?? resData ?? {};
+
+    const totalDeposits = Number(
+      data.total_deposits ??
+      data.totalDeposits ??
+      data.total_count ??
+      data.total ??
+      data.count ??
+      0
+    );
+
+    const totalVolume = Number(
+      data.total_volume ??
+      data.totalVolume ??
+      data.total_amount ??
+      data.totalAmount ??
+      data.volume ??
+      0
+    );
+
+    const successfulCount = Number(
+      data.successful_deposits ??
+      data.successful_count ??
+      data.successfulCount ??
+      data.approved_deposits ??
+      data.approved_count ??
+      data.completed_deposits ??
+      data.success_count ??
+      0
+    );
+
+    const successfulVolume = Number(
+      data.successful_volume ??
+      data.successfulVolume ??
+      data.successful_amount ??
+      data.successfulAmount ??
+      data.approved_amount ??
+      data.cleared_amount ??
+      0
+    );
+
+    const pendingCount = Number(
+      data.pending_deposits ??
+      data.pending_count ??
+      data.pendingCount ??
+      data.pending ??
+      0
+    );
+
+    const pendingVolume = Number(
+      data.pending_volume ??
+      data.pendingVolume ??
+      data.pending_amount ??
+      data.pendingAmount ??
+      0
+    );
+
+    const failedCount = Number(
+      data.failed_deposits ??
+      data.failed_count ??
+      data.failedCount ??
+      data.declined_deposits ??
+      data.declined_count ??
+      data.rejected_count ??
+      data.failed ??
+      0
+    );
+
+    const failedVolume = Number(
+      data.failed_volume ??
+      data.failedVolume ??
+      data.failed_amount ??
+      data.failedAmount ??
+      0
+    );
+
+    const rawList =
+      data.items ||
+      data.deposits ||
+      (Array.isArray(data) ? data : []);
+
+    const items: DepositItemProps[] = Array.isArray(rawList) ? rawList : [];
+
+    return {
+      totalDeposits: totalDeposits || items.length,
+      totalVolume: totalVolume || items.filter((d) => d.status === "successful").reduce((s, d) => s + (d.amount || 0), 0),
+      successfulCount: successfulCount || items.filter((d) => d.status === "successful").length,
+      successfulVolume: successfulVolume || items.filter((d) => d.status === "successful").reduce((s, d) => s + (d.amount || 0), 0),
+      pendingCount: pendingCount || items.filter((d) => d.status === "pending").length,
+      pendingVolume: pendingVolume || items.filter((d) => d.status === "pending").reduce((s, d) => s + (d.amount || 0), 0),
+      failedCount: failedCount || items.filter((d) => d.status === "failed").length,
+      failedVolume: failedVolume || items.filter((d) => d.status === "failed").reduce((s, d) => s + (d.amount || 0), 0),
+      items,
+      totalItems: totalDeposits || items.length,
+      currentPage: 1,
+      totalPages: 1,
+      perPage: items.length || 10,
+      raw: data,
+    };
+  } catch {
+    // Graceful fallback to all deposits list aggregation
+    const fallback = await getAllDepositsService({ page: 1, per_page: 1000 });
+    const successfulItems = fallback.items.filter((d) => d.status === "successful");
+    const pendingItems = fallback.items.filter((d) => d.status === "pending");
+    const failedItems = fallback.items.filter((d) => d.status === "failed");
+
+    return {
+      totalDeposits: fallback.totalItems || fallback.items.length,
+      totalVolume: successfulItems.reduce((sum, d) => sum + d.amount, 0),
+      successfulCount: successfulItems.length,
+      successfulVolume: successfulItems.reduce((sum, d) => sum + d.amount, 0),
+      pendingCount: pendingItems.length,
+      pendingVolume: pendingItems.reduce((sum, d) => sum + d.amount, 0),
+      failedCount: failedItems.length,
+      failedVolume: failedItems.reduce((sum, d) => sum + d.amount, 0),
+      items: fallback.items,
+      totalItems: fallback.totalItems,
+      currentPage: fallback.currentPage,
+      totalPages: fallback.totalPages,
+      perPage: fallback.perPage,
+    };
   }
 };

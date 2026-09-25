@@ -222,19 +222,23 @@ const SupportManageCompany: React.FC = () => {
   const totalItems = data?.totalItems ?? companies.length;
   const totalPages = data?.totalPages ?? Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
-  // Dynamic KPI Stats from live API
-  const allCompanies = statsData?.items ?? companies;
+  // Dynamic KPI Stats from live API (/company-stats)
+  const allCompanies = statsData?.items && statsData.items.length > 0 ? statsData.items : companies;
   const stats = useMemo(() => {
-    const total = statsData?.totalItems ?? allCompanies.length;
-    const verified = allCompanies.filter((c) => {
-      const v = String(c.verificationStatus || c.status || "").toLowerCase();
-      return v === "verified" || v === "successful";
-    }).length;
+    const total = statsData?.totalCompanies || statsData?.totalItems || allCompanies.length;
+    const verified = statsData?.verifiedCompanies !== undefined && statsData.verifiedCompanies > 0
+      ? statsData.verifiedCompanies
+      : allCompanies.filter((c) => {
+          const v = String(c.verificationStatus || c.status || "").toLowerCase();
+          return v === "verified" || v === "successful";
+        }).length;
 
-    const pending = allCompanies.filter((c) => {
-      const v = String(c.verificationStatus || c.status || "").toLowerCase();
-      return v === "pending_verification" || v === "pending" || v === "under_review";
-    }).length;
+    const pending = statsData?.pendingCompanies !== undefined && statsData.pendingCompanies > 0
+      ? statsData.pendingCompanies
+      : allCompanies.filter((c) => {
+          const v = String(c.verificationStatus || c.status || "").toLowerCase();
+          return v === "pending_verification" || v === "pending" || v === "under_review";
+        }).length;
 
     const actionRequired = allCompanies.filter((c) => {
       const v = String(c.verificationStatus || c.status || "").toLowerCase();

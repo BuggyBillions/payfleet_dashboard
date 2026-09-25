@@ -1,9 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAllDepositsService,
+  getDepositStatsService,
   approveDepositService,
   declineDepositService,
   deleteDepositService,
+  type DepositStatsResponse,
 } from "../services/depositService";
 import type { GetDepositsParams, DepositListResponse } from "../lib/interfaces";
 import { toast } from "sonner";
@@ -28,12 +30,12 @@ export const useDeposits = ({
 };
 
 /**
- * Full deposit stats hook for calculating KPI overview metrics
+ * Full deposit stats hook for calculating KPI overview metrics (/deposit-stats)
  */
 export const useDepositStats = () => {
-  return useQuery<DepositListResponse>({
+  return useQuery<DepositStatsResponse>({
     queryKey: ["deposits", "stats"],
-    queryFn: () => getAllDepositsService({ page: 1, per_page: 1000 }),
+    queryFn: () => getDepositStatsService(),
     placeholderData: (prev) => prev,
   });
 };
@@ -64,17 +66,20 @@ export const useDeclineDeposit = () => {
       id,
       amount,
       company_id,
+      description,
       reason,
     }: {
       id: number | string;
       amount?: number;
       company_id?: number | string;
+      description?: string;
       reason?: string;
     }) =>
       declineDepositService(id, {
         amount,
         company_id,
-        reason,
+        description: description || reason,
+        reason: reason || description,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["deposits"] });

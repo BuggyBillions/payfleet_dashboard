@@ -93,8 +93,8 @@ const ReusableTable = <T extends { id?: number | string }>({
 
   return (
     <div className="">
-      <div className="overflow-x-auto no-scrollbar w-full lg:p-0 pe-4 rounded-lg">
-        <table className="w-full min-w-250 bg-secondary">
+      <div className="overflow-x-auto styled-scrollbar w-full lg:p-0 pe-4 rounded-lg">
+        <table className="w-full min-w-250 bg-tertiary">
           <thead>
             <tr className="bg-secondary h-11 rounded-xl">
               {columnsWithSN.map((col, idx) => (

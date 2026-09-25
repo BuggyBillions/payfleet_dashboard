@@ -7,6 +7,8 @@ import { HiBars3 } from "react-icons/hi2";
 import Sidebar from "../components/navs/Sidebar";
 import FloatingContactWidget from "../components/ui/FloatingContactWidget";
 import type { LayoutProps } from "../lib/interfaces";
+import { assets } from "../assets/assets";
+import { FaXmark } from "react-icons/fa6";
 
 const MainLayout = ({
   children,
@@ -110,23 +112,31 @@ const MainLayout = ({
         </button>
         <TopNav />
       </div>
-      <div className="relative flex items-start h-[calc(100vh-90px)]">
-        {/* Mobile overlay backdrop (does not slide) */}
+      <div className="flex items-start h-[calc(100vh-90px)]">
         <div
-          onClick={() => setIsOpen(false)}
-          aria-hidden="true"
-          className={`lg:hidden fixed inset-0 z-[100] bg-black/60 transition-opacity duration-500 ${
-            isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-          }`}
-        />
-
-        {/* Left Navigation drawer */}
-        <div
-          className={`w-[85%] md:w-[70%] lg:w-[20%] h-dvh lg:h-full rounded-none lg:rounded-2xl overflow-hidden fixed top-0 left-0 lg:static z-[110] transition-transform duration-500 ${
-            isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-          }`}
+          className={`lg:w-[20%] z-100 bg-black/80 overflow-hidden h-full w-full lg:sticky absolute top-0 transition-all duration-500 lg:rounded-2xl ${isOpen ? "left-0" : "-left-full"
+            }`}
         >
-          <Sidebar setIsOpen={setIsOpen} />
+          <div className="bg-tertiary lg:w-full md:w-3/5 w-4/5 h-full px-2 py-4 lg:pt-0 pt-3 flex flex-col justify-between ">
+
+            <div className="lg:hidden flex items-center border-b border-b-secondary justify-between p-4 w-full ">
+
+              <img
+                src={assets.logo}
+                alt="Payfleet Logo"
+                className="w-1/3 md:hidden inline"
+              />
+              {/* Left Navigation */}
+              <button
+                type="button"
+                className="lg:hidden rounded-full block"
+                onClick={() => setIsOpen(false)}
+              >
+                <FaXmark size={21} />
+              </button>
+            </div>
+            <Sidebar setIsOpen={setIsOpen} />
+          </div>
         </div>
         <div className={`lg:w-[80%] w-full h-full overflow-hidden`}>
           <div
@@ -159,9 +169,12 @@ const MainLayout = ({
         </div>
 
         {/* Floating contact support icon for company users */}
-        {!location.pathname.startsWith("/admin") && !location.pathname.startsWith("/support") && !location.pathname.startsWith("/financial") && (
-          <FloatingContactWidget />
-        )}
+        {!location.pathname.startsWith("/superadmin") &&
+          !location.pathname.startsWith("/admin") &&
+          !location.pathname.startsWith("/support") &&
+          !location.pathname.startsWith("/financial") && (
+            <FloatingContactWidget />
+          )}
       </div>
     </div>
   );

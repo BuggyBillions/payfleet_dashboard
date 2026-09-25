@@ -114,13 +114,13 @@ const ActionCell: React.FC<ActionCellProps> = ({
             )}
             {onDelete && (
               <button
-                className="flex items-center gap-2 px-3 py-2 hover:bg-secondary cursor-pointer text-red-600 border-b border-primary/10 text-xs"
+                className="flex items-center gap-2 px-3 py-2 hover:bg-secondary cursor-pointer border-b border-primary/10 text-xs"
                 onClick={() => {
                   onDelete(rowId);
                   setOpen(false);
                 }}
               >
-                <FiTrash2 /> Delete
+                <FiTrash2 className=" text-red-600" /> Delete
               </button>
             )}
             {otherActions.map((action, index) => (

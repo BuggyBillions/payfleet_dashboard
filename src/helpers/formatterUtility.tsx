@@ -1,4 +1,4 @@
-export const formatterUtility = (amount: number, noSign=false) => {
+export const formatterUtility = (amount: number, noSign = false) => {
   if (amount === null || amount === undefined) {
     return '';
   }
@@ -6,36 +6,36 @@ export const formatterUtility = (amount: number, noSign=false) => {
   return `${sign}${amount.toLocaleString("en-NG")}`
 };
 
-export const formatCompactAmount = (amount: number, noSign=false) => {
-    if (amount === null || amount === undefined) {
-        return '';
-    }
+export const formatCompactAmount = (amount: number, noSign = false) => {
+  if (amount === null || amount === undefined) {
+    return '';
+  }
 
-    const absAmount = Math.abs(amount);
+  const absAmount = Math.abs(amount);
 
-    if (absAmount < 1_000_000) {
-        return formatterUtility(amount, noSign);
-    }
+  if (absAmount < 1_000_000) {
+    return formatterUtility(amount, noSign);
+  }
 
-    const SI_SUFFIXES = [
-        { value: 1E6, symbol: "M" }, // 1,000,000
-        { value: 1E9, symbol: "B" }, // 1,000,000,000
-        { value: 1E12, symbol: "T" }, // 1,000,000,000,000
-    ];
+  const SI_SUFFIXES = [
+    { value: 1E6, symbol: "M" }, // 1,000,000
+    { value: 1E9, symbol: "B" }, // 1,000,000,000
+    { value: 1E12, symbol: "T" }, // 1,000,000,000,000
+  ];
 
-    const tier = SI_SUFFIXES.filter(t => absAmount >= t.value).pop();
+  const tier = SI_SUFFIXES.filter(t => absAmount >= t.value).pop();
 
-    if (!tier) {
-        return formatterUtility(amount);
-    }
+  if (!tier) {
+    return formatterUtility(amount);
+  }
 
-    const scaledValue = absAmount / tier.value;
+  const scaledValue = absAmount / tier.value;
 
-    const formatted = parseFloat(scaledValue.toFixed(2)).toString();
+  const formatted = parseFloat(scaledValue.toFixed(2)).toString();
 
-    const sign = amount < 0 ? '-' : '';
+  const sign = amount < 0 ? '-' : '';
 
-    return `${sign}${formatted}${tier.symbol}`;
+  return `${sign}${formatted}${tier.symbol}`;
 };
 
 export const formatISODateToCustom = (isoString: string) => {
@@ -98,7 +98,7 @@ export const getDateDifference = (startDate: string, endDate: string) => {
   }
 };
 
-export function formatPrettyDate(dateString:string) {
+export function formatPrettyDate(dateString: string) {
   const date = new Date(dateString);
 
   const day = date.getDate();
@@ -107,9 +107,9 @@ export function formatPrettyDate(dateString:string) {
 
   const suffix =
     day % 10 === 1 && day !== 11 ? "st" :
-    day % 10 === 2 && day !== 12 ? "nd" :
-    day % 10 === 3 && day !== 13 ? "rd" :
-    "th";
+      day % 10 === 2 && day !== 12 ? "nd" :
+        day % 10 === 3 && day !== 13 ? "rd" :
+          "th";
 
   return `${day}${suffix} ${month}, ${year}`;
 }
@@ -128,7 +128,7 @@ export const formatShortDate = (dateInput: string | Date) => {
   // Check if the date object is valid (handles invalid input strings)
   if (isNaN(dateObj.getTime())) {
     console.error("Invalid date input provided to formatShortDate:", dateInput);
-    return "Invalid Date"; 
+    return "Invalid Date";
   }
 
   // Use Intl.DateTimeFormat for reliable and localized formatting
@@ -209,7 +209,11 @@ export const formatISODateToYYYYMMDD = (isoString: string): string => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+    const hour = String(date.getHours()).padStart(2, "0");
+    const minute = String(date.getMinutes()).padStart(2, "0");
+    const second = String(date.getSeconds()).padStart(2, "0");
+    const amPm = Number(hour) >= 12 ? "PM" : "AM";
+    return `${year}-${month}-${day} ${hour}:${minute}:${second} ${amPm}`;
   } catch (error) {
     console.error("Error formatting date to YYYY-MM-DD:", error);
     return "";

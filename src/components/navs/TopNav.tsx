@@ -6,30 +6,13 @@ import ThemeToggle from "../ThemeToggle";
 import { useUser } from "../../hooks/useUser";
 import { getUserService } from "../../services/authService";
 import type { UserProps } from "../../lib/interfaces";
-import {
-  getCompanyNotifications,
-  isNotificationRead,
-} from "../../services/notificationService";
+import { useUnreadNotificationsCount } from "../../hooks/useNotifications";
 
 const TopNav: React.FC = () => {
   const { user, role, token, refreshUser } = useUser();
   const [fetchedUser, setFetchedUser] = useState<UserProps | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  useEffect(() => {
-    let mounted = true;
-    getCompanyNotifications()
-      .then((items) => {
-        if (mounted) {
-          setUnreadCount(items.filter((n) => !isNotificationRead(n)).length);
-        }
-      })
-      .catch(() => undefined);
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const unreadCount = useUnreadNotificationsCount({ refetchInterval: 15000 });
 
   // Fetch user details on mount
   useEffect(() => {
@@ -106,7 +89,7 @@ const TopNav: React.FC = () => {
         alt="Payfleet Logo"
         className="w-18 md:visible invisible"
       />
-      <div className="flex gap-6 items-center">
+      <div className="flex lg:gap-6 gap-2 items-center">
         <Link
           to="/dashboard/notifications"
           className="relative flex items-center justify-center hover:opacity-80 transition"
@@ -139,8 +122,8 @@ const TopNav: React.FC = () => {
               <img src={assets.favicon} alt="Payfleet Logo" className="w-8" />
             )}
           </div>
-          <div className="leading-tight text-textBlack">
-            <h3 className="truncate m-0 font-medium text-sm max-w-[150px] md:max-w-[200px]">
+          <div className="leading-tight text-textBlack md:flex flex-col hidden ">
+            <h3 className="truncate m-0 font-medium text-sm max-w-37.5 md:max-w-50">
               {loading && !currentUser ? "Loading..." : displayName}
             </h3>
             <small className="uppercase font-medium text-[10px] text-gray-500 dark:text-gray-400">

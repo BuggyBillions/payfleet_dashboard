@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import ActionButton from "../../components/ui/ActionButton";
-import StatusBadge from "../../components/ui/StatusBadge";
 import AddBankModal from "../../components/modal/AddBankModal";
 import { useAccount } from "../../hooks/useBank";
 import { FaPlus, FaBuildingColumns } from "react-icons/fa6";
@@ -64,7 +63,7 @@ const ManageBanks: React.FC = () => {
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-white/50">
                       Active Settlement Account
                     </span>
                   </div>

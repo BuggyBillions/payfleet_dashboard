@@ -149,20 +149,47 @@ export const createStaffService = async (payload: CreateStaffPayload) => {
 };
 
 /**
- * Deactivate User: POST /deactivate-users/{id} (fallback PUT/PATCH)
+ * Deactivate User: POST /deactivate-users/{id} (fallback PATCH/PUT)
  */
 export const deactivateUserService = async (id: number | string) => {
-  // Try PUT as fallback if POST is not used by backend
-  const response = await api.patch(`/deactivate-users/${id}`);
-  return response.data;
+  try {
+    const response = await api.post(`/deactivate-users/${id}`);
+    return response.data;
+  } catch (err: unknown) {
+    try {
+      const response = await api.patch(`/deactivate-users/${id}`);
+      return response.data;
+    } catch {
+      try {
+        const response = await api.put(`/deactivate-users/${id}`);
+        return response.data;
+      } catch {
+        throw err;
+      }
+    }
+  }
 };
 
 /**
- * Activate User: POST /activate-users/{id} (fallback PUT/PATCH)
+ * Activate User: POST /activate-users/{id} (fallback PATCH/PUT)
  */
 export const activateUserService = async (id: number | string) => {
-    const response = await api.patch(`/activate-users/${id}`);
+  try {
+    const response = await api.post(`/activate-users/${id}`);
     return response.data;
+  } catch (err: unknown) {
+    try {
+      const response = await api.patch(`/activate-users/${id}`);
+      return response.data;
+    } catch {
+      try {
+        const response = await api.put(`/activate-users/${id}`);
+        return response.data;
+      } catch {
+        throw err;
+      }
+    }
+  }
 };
 
 /**
@@ -176,5 +203,152 @@ export const deleteUserService = async (id: number | string) => {
     // Try POST as fallback if DELETE is method-constrained
     const response = await api.post(`/delete-users/${id}`);
     return response.data;
+  }
+};
+
+export interface StaffStatsResponse {
+  totalStaff: number;
+  activeStaff: number;
+  inactiveStaff: number;
+  financeStaff: number;
+  supportStaff: number;
+  items: StaffProps[];
+  totalItems: number;
+  currentPage: number;
+  totalPages: number;
+  perPage: number;
+  raw?: Record<string, unknown>;
+}
+
+/**
+ * Staff statistics: GET /staff-stats
+ */
+export const getStaffStatsService = async (): Promise<StaffStatsResponse> => {
+  try {
+    const response = await api.get("/staff-stats");
+    const resData = response.data;
+    const data = resData?.data ?? resData ?? {};
+
+    const totalStaff = Number(
+      data.total_staff ??
+      data.totalStaff ??
+      data.total_users ??
+      data.totalUsers ??
+      data.total ??
+      data.count ??
+      0
+    );
+
+    const activeStaff = Number(
+      data.active_staff ??
+      data.activeStaff ??
+      data.active_users ??
+      data.activeUsers ??
+      data.active ??
+      0
+    );
+
+    const inactiveStaff = Number(
+      data.inactive_staff ??
+      data.inactiveStaff ??
+      data.inactive_users ??
+      data.inactiveUsers ??
+      data.inactive ??
+      0
+    );
+
+    const financeStaff = Number(
+      data.finance_staff ??
+      data.financeStaff ??
+      data.financial_officers ??
+      data.financialOfficers ??
+      data.finance ??
+      data.finance_count ??
+      0
+    );
+
+    const supportStaff = Number(
+      data.support_staff ??
+      data.supportStaff ??
+      data.support_officers ??
+      data.supportOfficers ??
+      data.support ??
+      data.support_count ??
+      0
+    );
+
+    const rawList =
+      data.items ||
+      data.staffs ||
+      data.users ||
+      (Array.isArray(data) ? data : []);
+
+    const items: StaffProps[] = Array.isArray(rawList) ? rawList : [];
+
+    const isStaffActive = (s: StaffProps) => {
+      const st = String(s.status ?? s.is_active ?? s.enabled ?? "").toLowerCase();
+      return st === "active" || st === "1" || st === "true" || st === "successful";
+    };
+
+    return {
+      totalStaff: totalStaff || items.length,
+      activeStaff:
+        activeStaff ||
+        (items.length > 0 ? items.filter(isStaffActive).length : 0),
+      inactiveStaff:
+        inactiveStaff ||
+        (items.length > 0
+          ? items.filter((s) => !isStaffActive(s)).length
+          : Math.max(0, (totalStaff || items.length) - (activeStaff || 0))),
+      financeStaff:
+        financeStaff ||
+        (items.length > 0
+          ? items.filter((s) =>
+              String(s.role || "").toLowerCase().includes("finance")
+            ).length
+          : 0),
+      supportStaff:
+        supportStaff ||
+        (items.length > 0
+          ? items.filter((s) =>
+              String(s.role || "").toLowerCase().includes("support")
+            ).length
+          : 0),
+      items,
+      totalItems: totalStaff || items.length,
+      currentPage: 1,
+      totalPages: 1,
+      perPage: items.length || 10,
+      raw: data,
+    };
+  } catch {
+    // Fallback to fetching all staff
+    const fallback = await getStaffsService({ page: 1, per_page: 1000, role: "all" });
+    const items = fallback.items;
+    const isStaffActive = (s: StaffProps) => {
+      const st = String(s.status ?? s.is_active ?? s.enabled ?? "").toLowerCase();
+      return st === "active" || st === "1" || st === "true" || st === "successful";
+    };
+
+    const activeStaff = items.filter(isStaffActive).length;
+    const financeStaff = items.filter((s) =>
+      String(s.role || "").toLowerCase().includes("finance")
+    ).length;
+    const supportStaff = items.filter((s) =>
+      String(s.role || "").toLowerCase().includes("support")
+    ).length;
+
+    return {
+      totalStaff: fallback.totalItems || items.length,
+      activeStaff,
+      inactiveStaff: Math.max(0, (fallback.totalItems || items.length) - activeStaff),
+      financeStaff,
+      supportStaff,
+      items,
+      totalItems: fallback.totalItems,
+      currentPage: fallback.currentPage,
+      totalPages: fallback.totalPages,
+      perPage: fallback.perPage,
+    };
   }
 };

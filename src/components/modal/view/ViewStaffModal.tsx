@@ -3,8 +3,9 @@ import Modal from "../Modal";
 import type { ViewStaffModalProps } from "../../../lib/interfaces";
 import { useStaffById } from "../../../hooks/useStaff";
 import StatusBadge from "../../ui/StatusBadge";
-import { FiMail, FiPhone, FiCalendar, FiShield, FiUser } from "react-icons/fi";
+import { FiMail, FiPhone, FiCalendar, FiShield } from "react-icons/fi";
 import { FaSpinner } from "react-icons/fa6";
+import { formatShortDate } from "../../../helpers/formatterUtility";
 
 const ViewStaffModal: React.FC<ViewStaffModalProps> = ({
   staff,
@@ -38,10 +39,10 @@ const ViewStaffModal: React.FC<ViewStaffModalProps> = ({
         ? "Active"
         : "Inactive"
       : displayStaff?.status !== undefined && displayStaff?.status !== null
-      ? String(displayStaff.status)
-      : displayStaff?.is_active ?? displayStaff?.enabled
-      ? "Active"
-      : "Inactive";
+        ? String(displayStaff.status)
+        : displayStaff?.is_active ?? displayStaff?.enabled
+          ? "Active"
+          : "Inactive";
 
   return (
     <Modal onClose={onClose}>
@@ -60,7 +61,7 @@ const ViewStaffModal: React.FC<ViewStaffModalProps> = ({
         </div>
 
         {/* Profile Header */}
-        <div className="flex items-center gap-4 bg-secondary p-4 rounded-xl border border-primary/10">
+        <div className="flex items-center gap-4 bg-secondary/50 p-4 rounded-xl border border-primary/10">
           <div className="w-16 h-16 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold text-xl shrink-0">
             {getInitials(displayName)}
           </div>
@@ -116,26 +117,12 @@ const ViewStaffModal: React.FC<ViewStaffModalProps> = ({
             </div>
             <p className="text-sm font-medium text-textBlack">
               {displayStaff?.created_at
-                ? new Date(displayStaff.created_at).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })
+                ? formatShortDate(displayStaff.created_at)
                 : "N/A"}
             </p>
           </div>
 
-          {displayStaff?.id && (
-            <div className="bg-secondary/50 p-3 rounded-lg border border-primary/10 space-y-1 sm:col-span-2">
-              <div className="flex items-center gap-2 text-textBlack/60 text-xs font-medium">
-                <FiUser className="text-primary text-sm" />
-                <span>Account ID</span>
-              </div>
-              <p className="text-xs font-mono text-textBlack/80">
-                #{displayStaff.id}
-              </p>
-            </div>
-          )}
+
         </div>
 
         {/* Footer */}

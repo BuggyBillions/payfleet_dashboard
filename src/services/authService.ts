@@ -25,12 +25,12 @@ export const sendEmailVerificationCodeService = async (values: sendEmailVerifica
     return response.data;
 };
 
-export const forgotPasswordService = async (values: { email: string }) => {
+export const forgotPasswordService = async (values: { email: string } | Record<string, unknown>) => {
     const response = await api.post(`/forgot-password`, values);
     return response.data;
 };
 
-export const verifyOtpService = async (values: { token?: string; reset_otp?: string; otp?: string | number }) => {
+export const verifyOtpService = async (values: { token?: string; reset_otp?: string | number; otp?: string | number }) => {
     const response = await api.post(`/verify-forgot-otp`, values);
     return response.data;
 };
