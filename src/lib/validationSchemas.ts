@@ -11,15 +11,29 @@ export const RegisterFormSchema = Yup.object({
 });
 
 export const ForgotPasswordSchema = Yup.object({
-  name: Yup.string().required("Name is required."),
-  email: Yup.string().required("Email is required."),
+  email: Yup.string()
+    .email("Enter a valid email address")
+    .required("Email is required"),
+  otp: Yup.string()
+    .matches(/^\d{6}$/, "Enter the 6-digit OTP")
+    .optional(),
+  password: Yup.string()
+    .min(8, "Password must be at least 8 characters")
+    .optional(),
+  confirmPassword: Yup.string()
+    .oneOf([Yup.ref("password")], "Passwords must match")
+    .optional(),
 });
 
 export const Forgotpassword = ForgotPasswordSchema;
 
 export const LoginFormSchema = Yup.object({
-  email: Yup.string().required("Email Address is required."),
-  password: Yup.string().required("password is required."),
+  email: Yup.string()
+    .email("Enter a valid email address.")
+    .required("Email address is required."),
+  password: Yup.string()
+    .min(8, "Password must be at least 8 characters.")
+    .required("Password is required."),
 });
 
 export const AddEmployeeSchema = Yup.object({

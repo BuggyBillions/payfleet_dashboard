@@ -23,4 +23,19 @@ export const getUserService = async () => {
 export const sendEmailVerificationCodeService = async (values: sendEmailVerificationValues) => {
     const response = await api.post(`/resend-otp`, values);
     return response.data;
-}
+};
+
+export const forgotPasswordService = async (values: { email: string }) => {
+    const response = await api.post(`/forgotpassword`, values);
+    return response.data;
+};
+
+export const verifyOtpService = async (values: { token?: string; reset_otp?: string; otp?: string | number }) => {
+    const response = await api.post(`/verify-otp`, values);
+    return response.data;
+};
+
+export const resetPasswordService = async (values: { token?: string; password?: string; confirmPassword?: string }) => {
+    const response = await api.post(`/reset-password`, values);
+    return response.data;
+};

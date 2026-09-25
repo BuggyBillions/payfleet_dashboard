@@ -3,24 +3,22 @@ import { Link, useNavigate } from "react-router-dom";
 import { FaEyeSlash } from "react-icons/fa";
 import { FaEye } from "react-icons/fa6";
 import { LuLoader } from "react-icons/lu";
-import { assets } from "../../assets/assets";
 import * as Yup from "yup";
+import { assets } from "../../assets/assets";
 import { toast } from "sonner";
 import { getErrorMessage } from "../../helpers/api";
 import { useFormik } from "formik";
 import { useUser } from "../../hooks/useUser";
 import { useAuth } from "../../hooks/useAuth";
 import OtpModal from "../../components/modal/OtpModal";
-import type { UserProps } from "../../lib/interfaces";
+import type { LoginValues, UserProps } from "../../lib/interfaces";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const [passwordVisibility, setPasswordVisibility] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
-  const [pendingLogin, setPendingLogin] = useState<{
-    email: string;
-    password: string;
-  } | null>(null);
+  const [pendingLogin, setPendingLogin] = useState<LoginValues | null>(null);
+
   const { login, refreshUser } = useUser();
   const { loginMutation } = useAuth();
 
@@ -49,17 +47,16 @@ const Login: React.FC = () => {
 
     switch (userRole) {
       case "admin":
+      case "superadmin":
         finalRoute = "/admin/dashboard/overview";
         break;
-
+      case "financial":
       case "finance":
         finalRoute = "/financial/dashboard/overview";
         break;
-
       case "support":
         finalRoute = "/support/dashboard/overview";
         break;
-
       case "company":
       default:
         finalRoute = "/dashboard/overview";
@@ -69,7 +66,7 @@ const Login: React.FC = () => {
     navigate(finalRoute);
   };
 
-  const formik = useFormik({
+  const formik = useFormik<LoginValues>({
     initialValues: {
       email: "",
       password: "",
@@ -155,7 +152,7 @@ const Login: React.FC = () => {
     <div className="w-screen h-screen flex md:flex-row flex-col items-start bg-primary">
       <div className="md:h-full h-[35vh] overflow-hidden bg-primary md:w-1/2 w-full flex flex-col gap-4 items-start justify-center lg:px-8 md:px-6 px-0 pb-8 md:pt-0 pt-15 relative">
         <h1 className="text-white text-xl px-10 lg:px-0 lg:text-4xl lg:leading-12 lg:max-w-100 font-semibold">
-          Welcome Back! Securely access your dashboard Manage.
+          Welcome Back! Securely access your dashboard.
         </h1>
         <Link
           to={"/"}
@@ -192,10 +189,11 @@ const Login: React.FC = () => {
                 onBlur={formik.handleBlur}
                 name="email"
                 id="email"
-                className={`w-full border h-12 px-3 text-sm rounded-md outline-0 transition ${formik.touched.email && formik.errors.email
+                className={`w-full border h-12 px-3 text-sm rounded-md outline-0 transition ${
+                  formik.touched.email && formik.errors.email
                     ? "border-red-500 bg-red-50/20 focus:border-red-500"
                     : "border-primary/20 focus:border-primary"
-                  }`}
+                }`}
               />
               {formik.touched.email && formik.errors.email && (
                 <span className="text-red-500 text-xs mt-0.5">
@@ -218,10 +216,11 @@ const Login: React.FC = () => {
                 </Link>
               </div>
               <div
-                className={`flex items-center border h-12 px-3 rounded-md transition ${formik.touched.password && formik.errors.password
+                className={`flex items-center border h-12 px-3 rounded-md transition ${
+                  formik.touched.password && formik.errors.password
                     ? "border-red-500 bg-red-50/20"
                     : "border-primary/20 focus-within:border-primary"
-                  }`}
+                }`}
               >
                 <input
                   type={passwordVisibility ? "text" : "password"}

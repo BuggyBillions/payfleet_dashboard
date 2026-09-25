@@ -1,18 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { useFormik } from "formik";
-import api from "../../helpers/api";
-import { toast } from "sonner";
 import StepOne from "./Forgotpassword/StepOne";
-import StepTwo from "./registersteps/StepTwo";
-import StepThree from "./registersteps/StepThree";
-import StepFour from "./registersteps/StepFour";
+import StepTwo from "./Forgotpassword/StepTwo";
+import StepThree from "./Forgotpassword/StepThree";
 import { assets } from "../../assets/assets";
-import { useMutation } from "@tanstack/react-query";
-import { ForgotPasswordSchema } from "../../lib/validationSchemas";
-import type { AxiosError } from "axios";
-import type { ApiErrorResponse, ForgotPasswordFormValues } from "../../lib/interfaces";
 
 const lineVariants = {
   hidden: { opacity: 0, y: 10 },
@@ -25,11 +17,21 @@ const lineVariants = {
 };
 
 const Forgotpassword: React.FC = () => {
-  const [index, setIndex] = useState(0);
   const [visible, setVisible] = useState(true);
-  const [currentStep, setCurrentStep] = useState(0);
+  const [index, setIndex] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
 
   const navigate = useNavigate();
+
+  const steps = [
+    { label: "Email address", component: StepOne },
+    { label: "Verification code", component: StepTwo },
+    { label: "New password", component: StepThree },
+  ];
+
+  const currentStep = Math.min(Math.max(currentPage, 0), steps.length - 1);
+  const CurrentStepComponent = steps[currentStep]?.component;
+  const progressWidth = ((currentStep + 1) / steps.length) * 100;
 
   const textSets = useMemo(
     () => [
@@ -63,87 +65,6 @@ const Forgotpassword: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [textSets]);
-
-  const handleCompanyCreateMutation = useMutation({
-    mutationFn: async (values: FormData) => {
-      await api.post(`/api/createcompanies`, values, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-    },
-    onSuccess: () => {
-      toast.success("Company profile created successfully.");
-      setTimeout(() => {
-        navigate("/auth/login");
-      }, 1000);
-    },
-    onError: (error: AxiosError<ApiErrorResponse>) => {
-      console.log("error", error);
-      toast.error(
-        error?.response?.data?.message ||
-        "An error occurred during registration.",
-      );
-    },
-  });
-
-  const formik = useFormik<ForgotPasswordFormValues>({
-    initialValues: {
-      name: "",
-      email: "",
-      logo: null,
-      about: "",
-      address: "",
-      phone: "",
-      password: "",
-    },
-    validationSchema: ForgotPasswordSchema,
-    onSubmit: async (values) => {
-      const formData = new FormData();
-      formData.append("name", values.name);
-      formData.append("password", values.password);
-      formData.append("about", values.about);
-      formData.append("address", values.address);
-      formData.append("phone", values.phone);
-      if (values.logo) {
-        formData.append("logo", values.logo);
-      }
-
-      handleCompanyCreateMutation.mutate(formData);
-    },
-  });
-
-  const steps = [
-    { component: StepOne, fields: ["email"] },
-    { component: StepTwo, fields: ["email", "password"] },
-    { component: StepThree, fields: ["logo"] },
-    { component: StepFour, fields: ["about", "address", "phone"] },
-  ];
-
-  const CurrentStepComponent = steps[currentStep].component;
-
-  const handleNext = async () => {
-    const fieldsToValidate = steps[currentStep].fields;
-    const touchedFields: { [key: string]: boolean } = {};
-    fieldsToValidate.forEach((field) => {
-      touchedFields[field] = true;
-    });
-
-    await formik.setTouched({ ...formik.touched, ...touchedFields });
-
-    const errors = await formik.validateForm();
-    const hasErrors = fieldsToValidate.some(
-      (field) => errors[field as keyof typeof errors],
-    );
-
-    if (!hasErrors) {
-      setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
-    }
-  };
-
-  const handleBack = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 0));
-  };
 
   return (
     <div className="w-screen h-screen flex md:flex-row flex-col items-start bg-primary">
@@ -188,56 +109,35 @@ const Forgotpassword: React.FC = () => {
       <div className="md:w-1/2 w-full md:h-full h-[65vh] overflow-y-auto lg:p-12 p-8 flex flex-col md:justify-center bg-white md:rounded-none rounded-t-4xl">
         <div className="w-full">
           <h2 className="text-3xl text-start font-bold mb-6 text-gray-800">
-            Forgotpassword
+            Reset your password
           </h2>
+          <p className="text-gray-500 mb-6">
+            Follow the steps to create a new password for your account.
+          </p>
 
-          {/* Progress Bar */}
-          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-8">
+          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-8 overflow-hidden">
             <div
               className="bg-primary h-2.5 rounded-full transition-all duration-300 ease-in-out"
-              style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+              style={{ width: `${progressWidth}%` }}
             ></div>
           </div>
 
-          <form onSubmit={formik.handleSubmit}>
-            <CurrentStepComponent formik={formik} />
+          {CurrentStepComponent && (
+            <CurrentStepComponent
+              currentPage={currentStep}
+              setCurrentPage={setCurrentPage}
+            />
+          )}
 
-            <div className="flex justify-between mt-8">
-              <button
-                type="button"
-                onClick={handleBack}
-                disabled={currentStep === 0}
-                className={`px-6 h-12 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed rounded-lg shadow font-medium transition-colors ${currentStep === 0
-                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-200"
-                  }`}
-              >
-                Back
-              </button>
-
-              {currentStep === steps.length - 1 ? (
-                <button
-                  type="submit"
-                  disabled={
-                    handleCompanyCreateMutation.isPending || formik.isSubmitting
-                  }
-                  className="px-6 h-12 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed bg-primary text-white rounded-lg shadow font-medium hover:bg-primary/90 transition-colors"
-                >
-                  {handleCompanyCreateMutation.isPending || formik.isSubmitting
-                    ? "Creating..."
-                    : "Create Account"}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className="px-6 h-12 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed bg-primary text-white rounded-lg shadow font-medium hover:bg-primary/90 transition-colors"
-                >
-                  Next
-                </button>
-              )}
-            </div>
-          </form>
+          <div className="mt-6 text-center text-sm text-gray-600">
+            Remember your password?{" "}
+            <span
+              onClick={() => navigate("/")}
+              className="text-primary font-medium cursor-pointer hover:underline"
+            >
+              Log in
+            </span>
+          </div>
         </div>
       </div>
     </div>

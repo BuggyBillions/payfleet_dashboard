@@ -101,8 +101,10 @@ export interface ActionButtonProps {
   overideBg?: boolean;
 }
 
-export interface FormattedInputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "value"> {
+export interface FormattedInputProps extends Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  "onChange" | "value"
+> {
   value: string | number;
   onChange: (e: { target: { name: string; value: number } }) => void;
   name: string;
@@ -271,6 +273,8 @@ export interface UserContextType {
   token: string | null;
   role: string | null;
   login: (token: string, user: UserProps, role: string) => void;
+  saveVerificationToken: (token: string) => void;
+  getVerificationToken: () => void;
   logout: () => void;
   isLoggedIn: boolean;
   refreshUser: (token: string) => Promise<void>;
