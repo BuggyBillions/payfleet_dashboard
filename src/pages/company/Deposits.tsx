@@ -21,7 +21,7 @@ import {
   type CompanyDeposit,
 } from "../../services/depositService";
 
-interface DepositRow extends DemoDeposit {
+interface DepositRow extends Omit<DemoDeposit, "id"> {
   id: number | string;
 }
 
@@ -177,7 +177,7 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-6">
         <OverviewCards
           icon={LuWallet}
           title="Available Account Balance"

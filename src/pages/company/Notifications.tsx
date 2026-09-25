@@ -163,10 +163,10 @@ const Notifications: React.FC = () => {
       label: "Action",
       render: (n) => {
         const read = isNotificationRead(n);
-        const marking = markingIds.has(n.id);
+        const marking = markingIds.has(n.id ?? -1);
         return (
           <ActionCell
-            rowId={n.id}
+            rowId={n.id ?? -1}
             onView={handleView}
             otherActions={
               read
@@ -218,7 +218,7 @@ const Notifications: React.FC = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6">
+      <div className="grid grid-cols-2  gap-x-4 gap-y-6">
         <OverviewCards
           icon={LuBellRing}
           title="Total Notifications"
