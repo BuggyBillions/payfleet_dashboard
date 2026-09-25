@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAllDepositsService,
   approveDepositService,
-  rejectDepositService,
+  declineDepositService,
   deleteDepositService,
 } from "../services/depositService";
 import type { GetDepositsParams, DepositListResponse } from "../lib/interfaces";
@@ -55,21 +55,37 @@ export const useApproveDeposit = () => {
 };
 
 /**
- * Reject deposit mutation hook
+ * Decline / Reject deposit mutation hook
  */
-export const useRejectDeposit = () => {
+export const useDeclineDeposit = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, reason }: { id: number | string; reason?: string }) =>
-      rejectDepositService(id, reason),
+    mutationFn: ({
+      id,
+      amount,
+      company_id,
+      reason,
+    }: {
+      id: number | string;
+      amount?: number;
+      company_id?: number | string;
+      reason?: string;
+    }) =>
+      declineDepositService(id, {
+        amount,
+        company_id,
+        reason,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["deposits"] });
     },
     onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, "Failed to reject deposit"));
+      toast.error(getErrorMessage(error, "Failed to decline deposit"));
     },
   });
 };
+
+export const useRejectDeposit = useDeclineDeposit;
 
 /**
  * Delete deposit mutation hook

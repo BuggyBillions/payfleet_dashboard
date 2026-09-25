@@ -64,15 +64,6 @@ const FinancialOverview: React.FC = () => {
       ),
     },
     {
-      label: "Bank Account",
-      render: (item) => (
-        <div className="flex flex-col">
-          <span className="text-xs text-textBlack/80 font-medium">{item.bankName}</span>
-          <span className="text-[11px] text-textBlack/50 font-mono">{item.accountNumber}</span>
-        </div>
-      ),
-    },
-    {
       label: "Amount",
       render: (item) => (
         <span className="font-bold text-primary text-xs">

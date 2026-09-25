@@ -48,7 +48,6 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
   const [rejectModal, setRejectModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
-  const [copied, setCopied] = useState(false);
 
   // Debounce search input
   useEffect(() => {
@@ -108,6 +107,19 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
     return allDeposits.filter((d) => d.status === "pending").length;
   }, [allDeposits]);
 
+  const failedCount = useMemo(() => {
+    return allDeposits.filter((d) => d.status === "failed").length;
+  }, [allDeposits]);
+
+  const statusTabs = useMemo(() => {
+    return [
+      { label: "All", value: "all", count: allDeposits.length },
+      { label: "Pending", value: "pending", count: pendingCount },
+      { label: "Successful", value: "successful", count: successfulCount },
+      { label: "Failed", value: "failed", count: failedCount },
+    ];
+  }, [allDeposits.length, pendingCount, successfulCount, failedCount]);
+
   // Mutations
   const approveMutation = useApproveDeposit();
   const rejectMutation = useRejectDeposit();
@@ -130,19 +142,18 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
   };
 
   const handleReject = async () => {
-    if (!selectedDeposit || !rejectionReason.trim()) {
-      toast.error("Please provide a rejection reason");
-      return;
-    }
+    if (!selectedDeposit) return;
     rejectMutation.mutate(
       {
         id: selectedDeposit.id,
+        amount: Number(selectedDeposit.amount),
+        company_id: selectedDeposit.company_id || selectedDeposit.companyId,
         reason: rejectionReason.trim(),
       },
       {
         onSuccess: () => {
           toast.success(
-            `Deposit ${selectedDeposit.reference} for ${selectedDeposit.companyName} has been rejected.`
+            `Deposit ${selectedDeposit.reference} for ${selectedDeposit.companyName} has been declined.`
           );
           setRejectModal(false);
           setSelectedDeposit(null);
@@ -164,11 +175,14 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
     });
   };
 
+  const [copiedRef, setCopiedRef] = useState<string | null>(null);
+
   const handleCopyRef = (ref: string) => {
+    if (!ref || ref === "—") return;
     navigator.clipboard.writeText(ref);
-    setCopied(true);
+    setCopiedRef(ref);
     toast.success("Reference copied to clipboard");
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopiedRef(null), 2000);
   };
 
   const getInitials = (name?: string) => {
@@ -191,17 +205,23 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
             <span className="font-semibold text-textBlack text-xs">{item.companyName}</span>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="text-[10px] text-textBlack/50 font-mono">{item.reference}</span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleCopyRef(item.reference);
-                }}
-                className="text-textBlack/40 hover:text-primary transition cursor-pointer"
-                title="Copy reference"
-              >
-                <LuCopy size={11} />
-              </button>
+              {item.reference && item.reference !== "—" && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCopyRef(item.reference);
+                  }}
+                  className="text-textBlack/40 hover:text-primary transition cursor-pointer"
+                  title="Copy reference"
+                >
+                  {copiedRef === item.reference ? (
+                    <LuCheck size={11} className="text-emerald-500" />
+                  ) : (
+                    <LuCopy size={11} />
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -249,24 +269,19 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
       key: "actions",
       render: (item: DepositItemProps) => {
         const otherActions = [
-          {
-            name: "View Details",
-            action: () => {
-              setSelectedDeposit(item);
-              setViewModal(true);
-            },
-          },
           ...(item.status === "pending"
             ? [
                 {
                   name: "Approve Deposit",
+                  icon: <BsCheck2Circle className="text-emerald-500" />,
                   action: () => {
                     setSelectedDeposit(item);
                     setApproveModal(true);
                   },
                 },
                 {
-                  name: "Reject Deposit",
+                  name: "Decline Deposit",
+                  icon: <BsXCircle className="text-red-500" />,
                   action: () => {
                     setSelectedDeposit(item);
                     setRejectionReason("");
@@ -275,13 +290,6 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
                 },
               ]
             : []),
-          {
-            name: "Delete Record",
-            action: () => {
-              setSelectedDeposit(item);
-              setDeleteModal(true);
-            },
-          },
         ];
 
         return (
@@ -291,6 +299,10 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
             onView={() => {
               setSelectedDeposit(item);
               setViewModal(true);
+            }}
+            onDelete={() => {
+              setSelectedDeposit(item);
+              setDeleteModal(true);
             }}
             otherActions={otherActions}
           />
@@ -363,29 +375,42 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
           </div>
 
           {/* Status Filter Tabs (all, pending, successful, failed) */}
-          <div className="flex items-center gap-1 bg-secondary p-1 rounded-lg border border-primary/10 self-start sm:self-auto">
-            {[
-              { label: "All", value: "all" },
-              { label: "Pending", value: "pending" },
-              { label: "Successful", value: "successful" },
-              { label: "Failed", value: "failed" },
-            ].map((tab) => (
-              <button
-                key={tab.value}
-                type="button"
-                onClick={() => {
-                  setStatusFilter(tab.value);
-                  setCurrentPage(1);
-                }}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${
-                  statusFilter === tab.value
-                    ? "bg-primary text-white shadow-sm"
-                    : "text-textBlack/60 hover:text-textBlack hover:bg-primary/5"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-1.5 bg-secondary p-1 rounded-xl border border-primary/10 self-start sm:self-auto">
+            {statusTabs.map((tab) => {
+              const isActive = statusFilter === tab.value;
+              return (
+                <button
+                  key={tab.value}
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter(tab.value);
+                    setCurrentPage(1);
+                  }}
+                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
+                    isActive
+                      ? "bg-primary text-white shadow-xs font-semibold"
+                      : "text-textBlack/60 hover:text-textBlack hover:bg-primary/5"
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  {tab.count !== undefined && (
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold ${
+                        isActive
+                          ? "bg-white/20 text-white"
+                          : tab.value === "pending" && tab.count > 0
+                          ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                          : tab.value === "failed" && tab.count > 0
+                          ? "bg-red-500/15 text-red-600 dark:text-red-400"
+                          : "bg-primary/10 text-textBlack/60"
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -479,7 +504,7 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
                   <BsXCircle size={22} />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-textBlack">Reject Deposit</h3>
+                  <h3 className="text-base font-bold text-textBlack">Decline Deposit</h3>
                   <p className="text-xs text-textBlack/60">Decline unverified bank transaction</p>
                 </div>
               </div>
@@ -502,7 +527,7 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
 
             <div className="space-y-2">
               <label className="text-xs font-semibold text-textBlack block">
-                Select Rejection Reason
+                Select Reason for Declining
               </label>
               <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
                 {REJECTION_PRESETS.map((preset) => (
@@ -539,11 +564,11 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
               </button>
               <button
                 type="button"
-                disabled={rejectMutation.isPending || !rejectionReason.trim()}
+                disabled={rejectMutation.isPending}
                 onClick={handleReject}
                 className="px-5 py-2 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition cursor-pointer shadow-sm disabled:opacity-50"
               >
-                {rejectMutation.isPending ? "Rejecting..." : "Reject Deposit"}
+                {rejectMutation.isPending ? "Declining..." : "Decline Deposit"}
               </button>
             </div>
           </div>
@@ -591,7 +616,11 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
                     onClick={() => handleCopyRef(selectedDeposit.reference)}
                     className="text-textBlack/40 hover:text-primary transition p-0.5 cursor-pointer"
                   >
-                    {copied ? <LuCheck size={12} className="text-primary" /> : <LuCopy size={12} />}
+                    {copiedRef === selectedDeposit.reference ? (
+                      <LuCheck size={12} className="text-emerald-500" />
+                    ) : (
+                      <LuCopy size={12} />
+                    )}
                   </button>
                 </div>
               </div>

@@ -38,7 +38,7 @@ const Login: React.FC = () => {
     user: UserProps,
     message = "Login successful"
   ) => {
-    login(token, user, user.role);
+    login(token, user, user.role || "company");
     toast.success(message);
 
     // Pull latest profile details from /me
@@ -49,19 +49,14 @@ const Login: React.FC = () => {
 
     switch (userRole) {
       case "admin":
-      case "superadmin":
-      case "super_admin":
         finalRoute = "/admin/dashboard/overview";
         break;
 
       case "finance":
-      case "financial":
-      case "finance_officer":
-        finalRoute = "/finance/dashboard/overview";
+        finalRoute = "/financial/dashboard/overview";
         break;
 
       case "support":
-      case "support_officer":
         finalRoute = "/support/dashboard/overview";
         break;
 

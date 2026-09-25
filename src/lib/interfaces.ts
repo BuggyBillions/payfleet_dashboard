@@ -201,18 +201,23 @@ export interface CompanyDetailsProps {
 }
 
 export interface UserProps {
-  id: number;
-  username: string;
-  first_name: string;
-  full_name: string;
-  last_name: string;
-  email: string;
-  is_admin: number;
-  role: string;
-  enabled: number;
+  id?: number | string;
+  username?: string;
+  first_name?: string;
+  full_name?: string;
+  last_name?: string;
+  name?: string;
+  email?: string;
+  is_admin?: number;
+  role?: string;
+  tier?: string;
+  company_name?: string;
+  enabled?: number;
+  avatar?: string;
   company_details?: CompanyDetailsProps;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: unknown;
 }
 
 export interface sendEmailVerificationValues {
@@ -634,6 +639,8 @@ export interface DemoPayment {
 
 export interface DepositItemProps {
   id: number | string;
+  company_id?: number | string;
+  companyId?: number | string;
   companyName: string;
   email: string;
   reference: string;
@@ -645,6 +652,7 @@ export interface DepositItemProps {
   date: string;
   rejectionReason?: string;
   approvedAt?: string;
+  [key: string]: unknown;
 }
 
 export interface DepositListResponse {
