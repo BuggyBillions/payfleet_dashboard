@@ -1,8 +1,10 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { LuUser, LuLock, LuShieldCheck, LuBuilding2 } from "react-icons/lu";
 import { useUser } from "../../hooks/useUser";
+import { updateCompanyDetails } from "../../services/companyService";
+import { getErrorMessage } from "../../helpers/api";
 import type { SettingsTab, PasswordFieldProps } from "../../lib/interfaces";
 
 interface TabConfig {
@@ -80,7 +82,7 @@ const PasswordField: React.FC<PasswordFieldProps> = ({
 );
 
 const Settings: React.FC = () => {
-  const { user, role } = useUser();
+  const { user, role, token, refreshUser } = useUser();
   const currentRole = (role || user?.role || "company").toLowerCase().trim();
 
   // Filter allowed tabs based on user's active role
@@ -93,13 +95,11 @@ const Settings: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
 
-  const [hiddenFields, setHiddenFields] = useState<Record<string, boolean>>({});
+  const effectiveTab = allowedTabs.some((t) => t.key === activeTab)
+    ? activeTab
+    : (allowedTabs[0]?.key ?? "profile");
 
-  useEffect(() => {
-    if (allowedTabs.length > 0 && !allowedTabs.some((t) => t.key === activeTab)) {
-      setActiveTab(allowedTabs[0].key);
-    }
-  }, [allowedTabs, activeTab]);
+  const [hiddenFields, setHiddenFields] = useState<Record<string, boolean>>({});
 
   // Profile Form State
   const [profile, setProfile] = useState({
@@ -108,7 +108,11 @@ const Settings: React.FC = () => {
     email: user?.email || "damola@payfleet.io",
     phoneNumber: "+234 801 234 5678",
     department: currentRole.toUpperCase(),
+    address: user?.company_details?.address ?? "",
   });
+
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPin, setSavingPin] = useState(false);
 
   // PIN Form State
   const [pin, setPin] = useState({
@@ -144,8 +148,42 @@ const Settings: React.FC = () => {
     setProfile((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    try {
+      await updateCompanyDetails({ address: profile.address });
+      toast.success("Company address updated successfully");
+      if (token) refreshUser(token).catch(() => undefined);
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to update company details"));
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleUpdatePin = async () => {
+    if (!pin.new_pin || pin.new_pin.length !== 4) {
+      toast.error("PIN must be exactly 4 digits");
+      return;
+    }
+    if (pin.new_pin !== pin.confirm_pin) {
+      toast.error("New PIN and Confirm PIN do not match");
+      return;
+    }
+    setSavingPin(true);
+    try {
+      await updateCompanyDetails({ pin: pin.new_pin });
+      toast.success("Transaction PIN updated successfully");
+      setPin({ current_pin: "", new_pin: "", confirm_pin: "" });
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to update transaction PIN"));
+    } finally {
+      setSavingPin(false);
+    }
+  };
+
   const renderTabContent = () => {
-    if (!allowedTabs.some((t) => t.key === activeTab)) {
+    if (!allowedTabs.some((t) => t.key === effectiveTab)) {
       return (
         <div className="p-8 text-center text-xs text-textBlack/60">
           You do not have administrative permission to view or configure this section.
@@ -153,7 +191,7 @@ const Settings: React.FC = () => {
       );
     }
 
-    switch (activeTab) {
+    switch (effectiveTab) {
       case "profile":
         return (
           <div className="flex flex-col gap-6 max-w-2xl">
@@ -219,12 +257,24 @@ const Settings: React.FC = () => {
               </label>
             </div>
 
+            <label className="flex flex-col space-y-1.5">
+              <span className="font-medium text-xs text-textBlack">Company Address</span>
+              <input
+                type="text"
+                value={profile.address}
+                onChange={(e) => handleProfileChange("address", e.target.value)}
+                placeholder="e.g. Tanke Estates Ilorin"
+                className={inputClass}
+              />
+            </label>
+
             <button
               type="button"
-              onClick={() => toast.success("Profile information updated successfully")}
-              className={`${submitClass} self-start`}
+              onClick={handleSaveProfile}
+              disabled={savingProfile}
+              className={`${submitClass} self-start disabled:opacity-60 disabled:cursor-not-allowed`}
             >
-              Save Profile Changes
+              {savingProfile ? "Saving..." : "Save Profile Changes"}
             </button>
           </div>
         );
@@ -276,21 +326,11 @@ const Settings: React.FC = () => {
             </div>
             <button
               type="button"
-              onClick={() => {
-                if (!pin.new_pin || pin.new_pin.length !== 4) {
-                  toast.error("PIN must be exactly 4 digits");
-                  return;
-                }
-                if (pin.new_pin !== pin.confirm_pin) {
-                  toast.error("New PIN and Confirm PIN do not match");
-                  return;
-                }
-                toast.success("Transaction PIN updated successfully");
-                setPin({ current_pin: "", new_pin: "", confirm_pin: "" });
-              }}
-              className={`${submitClass} self-start`}
+              onClick={handleUpdatePin}
+              disabled={savingPin}
+              className={`${submitClass} self-start disabled:opacity-60 disabled:cursor-not-allowed`}
             >
-              Update Transaction PIN
+              {savingPin ? "Updating..." : "Update Transaction PIN"}
             </button>
           </div>
         );
@@ -433,7 +473,7 @@ const Settings: React.FC = () => {
               type="button"
               onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-2 px-4 h-9 rounded-lg text-xs font-medium transition cursor-pointer ${
-                activeTab === tab.key
+                effectiveTab === tab.key
                   ? "bg-primary text-white shadow-xs"
                   : "border border-textBlack/10 text-textBlack/70 hover:bg-secondary hover:text-textBlack"
               }`}
