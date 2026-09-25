@@ -34,7 +34,7 @@ const Register: React.FC = () => {
   const textSets = useMemo(
     () => [
       [
-        "Welcome to PayFleet",
+        "Welcome to PayFleets",
         "We can't wait to have you onboard",
         "Start paying salaries smarter today.",
       ],
