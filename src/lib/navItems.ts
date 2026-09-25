@@ -149,7 +149,16 @@ export const navItems: NavItem[] = [
   {
     name: "Manage Company",
     icon: FaUsers,
-    path: "/support/dashboard/company",
+    children: [
+      {
+        name: "All Companies",
+        path: "/support/dashboard/company",
+      },
+      {
+        name: "Company Verification",
+        path: "/support/dashboard/company-verification",
+      },
+    ],
     role: ["support"],
   },
   {

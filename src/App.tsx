@@ -28,6 +28,7 @@ import SuperAdminManagePayments from "./pages/superadmin/ManagePayments";
 import SuperAdminManageTier from "./pages/superadmin/ManageTier";
 import FinancialManageDeposit from "./pages/financial/ManageDeposit";
 import SupportManageCompany from "./pages/support/ManageCompany";
+import SupportManageCompanyVerification from "./pages/support/ManageCompanyVerification";
 import Communication from "./pages/chat/Communication";
 import Verifyemail from "./pages/auth/Verifyemail";
 import Notifications from "./pages/company/Notifications";
@@ -260,6 +261,16 @@ function App() {
             <MainLayout
               pageName="Manage Company"
               children={<SupportManageCompany />}
+            />
+          }
+        />
+        <Route
+          index
+          path="/support/dashboard/company-verification"
+          element={
+            <MainLayout
+              pageName="Companies Verification"
+              children={<SupportManageCompanyVerification />}
             />
           }
         />

@@ -79,10 +79,6 @@ const CreateEditTierModal: React.FC<CreateEditTierModalProps> = ({ tier, onClose
     <Modal onClose={onClose}>
       <div className="space-y-4 max-h-[85vh] overflow-y-auto pr-1">
         <div>
-          <div className="flex items-center gap-2 text-primary font-medium text-xs">
-            <LuShieldCheck className="text-base" />
-            <span>{isEdit ? "Update Platform Tier" : "Configure New Tier"}</span>
-          </div>
           <h2 className="text-lg font-bold text-textBlack mt-1">
             {isEdit ? `Edit Tier: ${tier?.name}` : "Create Subscription Tier"}
           </h2>

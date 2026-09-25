@@ -138,17 +138,54 @@ const ReviewTierRequestModal: React.FC<ReviewTierRequestModalProps> = ({ request
             </div>
           )}
 
-          {/* Attached Document */}
-          <div className="p-3 rounded-lg bg-secondary border border-primary/10 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <LuFileText className="text-primary text-base" />
-              <span className="font-medium text-textBlack">
-                {request.documentName || "CAC_Certificate_Document.pdf"}
+          {/* Tier Required Documents Checklist */}
+          {requestedPlan.requirements && (
+            <div className="p-3.5 rounded-xl bg-secondary border border-primary/10 space-y-2">
+              <span className="text-[11px] font-semibold text-textBlack/70 uppercase tracking-wider flex items-center gap-1.5">
+                <LuFileText className="text-primary text-xs" /> Tier Compliance Requirements Checklist
               </span>
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                {requestedPlan.requirements.split(",").map((req, idx) => (
+                  <span
+                    key={idx}
+                    className="px-2.5 py-1 rounded-lg bg-tertiary border border-primary/10 text-xs font-medium text-textBlack"
+                  >
+                    {req.trim()}
+                  </span>
+                ))}
+              </div>
             </div>
-            <span className="text-[10px] px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
-              Verified Attachment
-            </span>
+          )}
+
+          {/* Attached Document */}
+          <div className="p-3.5 rounded-xl bg-secondary border border-primary/10 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                <LuFileText size={18} />
+              </div>
+              <div>
+                <span className="font-semibold text-textBlack block">
+                  {request.documentName || "Uploaded CAC & Verification Proof.pdf"}
+                </span>
+                <span className="text-[10px] text-textBlack/50">
+                  Uploaded document attached by company
+                </span>
+              </div>
+            </div>
+            {request.documentUrl ? (
+              <a
+                href={request.documentUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold flex items-center gap-1 hover:bg-primary/90 transition shadow-xs"
+              >
+                <span>View Document</span>
+              </a>
+            ) : (
+              <span className="text-[10px] px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">
+                Document Attached
+              </span>
+            )}
           </div>
         </div>
 

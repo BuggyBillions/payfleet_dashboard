@@ -197,7 +197,7 @@ const ManageCompany: React.FC = () => {
       render: (item: CompanyProps) => {
         const t = getTierConfig(item.tier);
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">
+          <span className="text-xs font-semibold text-primary">
             {t.badge} ({t.name})
           </span>
         );
