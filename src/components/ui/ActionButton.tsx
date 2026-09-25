@@ -1,7 +1,5 @@
 import React from "react";
 import type { ActionButtonProps } from "../../lib/interfaces";
-import { useTheme } from "../../hooks/useTheme";
-
 const ActionButton: React.FC<ActionButtonProps> = ({
   text,
   loadingText,
@@ -13,10 +11,9 @@ const ActionButton: React.FC<ActionButtonProps> = ({
   buttonStyle,
   overideBg,
 }) => {
-  const { theme } = useTheme();
   return (
     <button
-      className={`${overideBg ? "" : `action-btn ${theme === "light" ? "text-white" : "text-black"}`} h-10 px-4 min-w-25 rounded-md text-sm flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${buttonStyle}`}
+      className={`${overideBg ? "" : `action-btn text-white`} h-10 px-4 min-w-25 rounded-md text-sm flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${buttonStyle}`}
       type="button"
       onClick={onClick || action}
       disabled={disabled || loading}

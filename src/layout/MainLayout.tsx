@@ -105,7 +105,7 @@ const MainLayout = ({
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="lg:hidden block"
+          className="lg:hidden block text-textBlack"
         >
           <HiBars3 size={20} />
         </button>
@@ -113,14 +113,14 @@ const MainLayout = ({
       </div>
       <div className="flex items-start h-[calc(100vh-90px)]">
         <div
-          className={`lg:w-[20%] z-100 bg-black/50 rounded-2xl overflow-hidden h-full w-full lg:sticky absolute top-0 transition-all duration-500 ${
+          className={`lg:w-[20%] z-100 bg-black/80 rounded-2xl overflow-hidden h-full w-full lg:sticky absolute top-0 transition-all duration-500 ${
             isOpen ? "left-0" : "-left-full"
           }`}
         >
           {/* Left Navigation */}
           <button
             type="button"
-            className="lg:hidden top-4 lg:left-[70%] md:left-[53%] left-[70%] block absolute"
+            className="lg:hidden top-4 lg:left-[70%] md:left-[53%] left-[7l,l,,0%] block absolute bg-red-400"
             onClick={() => setIsOpen(false)}
           >
             <FaXmark size={30} />

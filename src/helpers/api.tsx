@@ -23,9 +23,19 @@ export const setupInterceptors = (logout: () => void) => {
   api.interceptors.response.use(
     (res) => res,
     (error) => {
+      const url = error.config?.url || "";
+      const isAuthEndpoint =
+        url.includes("/login") ||
+        url.includes("/register") ||
+        url.includes("/createcompanies") ||
+        url.includes("/verify-otp") ||
+        url.includes("/resend-otp") ||
+        url.includes("/forgotpassword") ||
+        url.includes("/reset-password");
+
       if (error.code === "ERR_NETWORK") {
         toast.error("No internet or server down");
-      } else if (error.response?.status === 401) {
+      } else if (error.response?.status === 401 && !isAuthEndpoint) {
         toast.error("Session expired. Logging out...");
         logout();
       }
@@ -40,7 +50,22 @@ export function getErrorMessage(
   fallback = "Something went wrong"
 ): string {
   if (axios.isAxiosError(error)) {
-    return error.response?.data?.message || error.message || fallback;
+    const data = error.response?.data;
+    if (data) {
+      if (data.errors && typeof data.errors === "object") {
+        const errorValues = Object.values(data.errors).flat();
+        if (errorValues.length > 0 && typeof errorValues[0] === "string") {
+          return errorValues[0];
+        }
+      }
+      if (typeof data.message === "string" && data.message.trim()) {
+        return data.message;
+      }
+      if (typeof data.error === "string" && data.error.trim()) {
+        return data.error;
+      }
+    }
+    return error.message || fallback;
   }
 
   if (error instanceof Error) {

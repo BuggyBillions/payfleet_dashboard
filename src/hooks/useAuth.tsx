@@ -1,30 +1,18 @@
-import { useMutation } from "@tanstack/react-query"
-import { loginService, registerService } from "../services/authService"
-import { toast } from "sonner";
-import { getErrorMessage } from "../helpers/api";
+import { useMutation } from "@tanstack/react-query";
+import { loginService, registerService } from "../services/authService";
+import type { LoginValues, RegisterValues } from "../lib/interfaces";
 
 export const useAuth = () => {
-    const registerMutation = useMutation({
-        mutationFn: registerService,
-        onSuccess: () => {},
-        onError: (error: unknown) => {
-            console.error("Register failed:", error);
-            toast.error(getErrorMessage(error))
-        },
-    });
+  const registerMutation = useMutation({
+    mutationFn: (values: RegisterValues) => registerService(values),
+  });
 
-    const loginMutation = useMutation({
-        mutationFn: loginService,
-        onSuccess: () => {},
-        onError: (error: unknown) => {
-            console.error("Login failed:", error);
-            toast.error(getErrorMessage(error))
-        },
-    });
+  const loginMutation = useMutation({
+    mutationFn: (values: LoginValues) => loginService(values),
+  });
 
-
-    return {
-        registerMutation,
-        loginMutation,
-    }
-}
+  return {
+    registerMutation,
+    loginMutation,
+  };
+};
