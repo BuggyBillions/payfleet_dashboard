@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useFormik } from "formik";
 import { RegisterFormSchema } from "../../lib/validationSchemas";
-import api from "../../helpers/api";
+import { getErrorMessage } from "../../helpers/api";
 import { toast } from "sonner";
 import StepOne from "./registersteps/StepOne";
 import StepTwo from "./registersteps/StepTwo";
@@ -14,6 +14,7 @@ import { useMutation } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import type { ApiErrorResponse } from "../../lib/interfaces";
 import type { RegisterFormValues } from "../../lib/formTypes";
+import { createCompanyService } from "../../services/authService";
 
 const lineVariants = {
   hidden: { opacity: 0, y: 10 },
@@ -65,28 +66,15 @@ const Register: React.FC = () => {
     return () => clearInterval(interval);
   }, [textSets]);
 
-  const handleCompanyCreateMutation = useMutation({
-    mutationFn: async (values: FormData) => {
-      await api.post(`/createcompanies`, values, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-    },
-    onSuccess: () => {
-      toast.success("Company profile created successfully.");
-      setTimeout(() => {
-        navigate("/auth/login");
-      }, 1000);
-    },
-    onError: (error: AxiosError<ApiErrorResponse>) => {
-      console.log("error", error);
-      toast.error(
-        error?.response?.data?.message ||
-          "An error occurred during registration.",
-      );
-    },
-  });
+  const steps = useMemo(
+    () => [
+      { component: StepOne, fields: ["name"] },
+      { component: StepTwo, fields: ["email", "password"] },
+      { component: StepThree, fields: ["logo"] },
+      { component: StepFour, fields: ["about", "address", "phone"] },
+    ],
+    [],
+  );
 
   const formik = useFormik<RegisterFormValues>({
     initialValues: {
@@ -115,12 +103,42 @@ const Register: React.FC = () => {
     },
   });
 
-  const steps = [
-    { component: StepOne, fields: ["name"] },
-    { component: StepTwo, fields: ["email", "password"] },
-    { component: StepThree, fields: ["logo"] },
-    { component: StepFour, fields: ["about", "address", "phone"] },
-  ];
+  const handleCompanyCreateMutation = useMutation({
+    mutationFn: async (values: FormData) => {
+      return await createCompanyService(values);
+    },
+    onSuccess: () => {
+      toast.success("Company profile created successfully.");
+      setTimeout(() => {
+        navigate("/auth/login");
+      }, 1000);
+    },
+    onError: (error: AxiosError<ApiErrorResponse>) => {
+      formik.setSubmitting(false);
+      const data = error?.response?.data;
+      if (data?.errors && typeof data.errors === "object") {
+        const fieldErrors: { [key: string]: string } = {};
+        Object.entries(data.errors).forEach(([field, msgs]) => {
+          fieldErrors[field] = Array.isArray(msgs) ? msgs[0] : String(msgs);
+        });
+        formik.setErrors(fieldErrors);
+
+        // Jump back to the step containing the invalid field
+        const stepIndex = steps.findIndex((step) =>
+          step.fields.some((f) => fieldErrors[f])
+        );
+        if (stepIndex !== -1) {
+          setCurrentStep(stepIndex);
+        }
+      }
+      toast.error(
+        getErrorMessage(error, "An error occurred during registration. Please try again.")
+      );
+    },
+    onSettled: () => {
+      formik.setSubmitting(false);
+    },
+  });
 
   const CurrentStepComponent = steps[currentStep].component;
 
@@ -135,7 +153,7 @@ const Register: React.FC = () => {
 
     const errors = await formik.validateForm();
     const hasErrors = fieldsToValidate.some(
-      (field) => errors[field as keyof typeof errors],
+      (field) => Boolean(errors[field as keyof typeof errors]),
     );
 
     if (!hasErrors) {
