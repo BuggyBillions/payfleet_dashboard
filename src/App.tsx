@@ -30,6 +30,7 @@ import SupportManageCompany from "./pages/support/ManageCompany";
 import Communication from "./pages/chat/Communication";
 import Tier from "./pages/company/Tier";
 import Verifyemail from "./pages/auth/Verifyemail";
+import Notifications from "./pages/company/Notifications";
 
 
 function App() {
@@ -101,6 +102,16 @@ function App() {
             <MainLayout
               pageName="Tier Management"
               children={<Tier />}
+            />
+          }
+        />
+        <Route
+          index
+          path="/dashboard/notifications"
+          element={
+            <MainLayout
+              pageName="Notifications"
+              children={<Notifications />}
             />
           }
         />

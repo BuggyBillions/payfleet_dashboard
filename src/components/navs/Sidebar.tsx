@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { FiLogOut } from "react-icons/fi";
 import { MdSettings } from "react-icons/md";
+import { FaXmark } from "react-icons/fa6";
 import { HiChevronDown } from "react-icons/hi2";
 import { navItems, type NavItem } from "../../lib/navItems";
 import Modal from "../modal/Modal";
@@ -153,7 +154,15 @@ const Sidebar = ({
   };
 
   return (
-    <div className="bg-tertiary lg:w-full md:w-3/5 w-4/5 h-full px-2 py-4 md:pt-0 pt-8 flex flex-col justify-between">
+    <div className="relative bg-tertiary w-full h-full px-2 py-4 md:pt-0 pt-8 flex flex-col justify-between">
+      <button
+        type="button"
+        aria-label="Close sidebar"
+        className="lg:hidden absolute top-4 right-4 z-10 flex items-center justify-center w-8 h-8 rounded-full bg-primary/15 text-primary hover:bg-primary/25 transition cursor-pointer"
+        onClick={() => setIsOpen(false)}
+      >
+        <FaXmark size={18} />
+      </button>
       <div className="flex flex-col h-full overflow-hidden">
         <img
           src={assets.logo}

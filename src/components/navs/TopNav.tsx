@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { PiBellSimple } from "react-icons/pi";
 import { assets } from "../../assets/assets";
@@ -6,33 +6,55 @@ import ThemeToggle from "../ThemeToggle";
 import { useUser } from "../../hooks/useUser";
 import { getUserService } from "../../services/authService";
 import type { UserProps } from "../../lib/interfaces";
+import {
+  getCompanyNotifications,
+  isNotificationRead,
+} from "../../services/notificationService";
 
 const TopNav: React.FC = () => {
   const { user, role, token, refreshUser } = useUser();
   const [fetchedUser, setFetchedUser] = useState<UserProps | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-
-  // Fetch user details function
-  const fetchUserDetails = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await getUserService();
-      if (data) {
-        setFetchedUser(data);
-      }
-      if (token) {
-        await refreshUser(token);
-      }
-    } catch (error) {
-      console.error("Failed to fetch user details:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [token, refreshUser]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    fetchUserDetails();
-  }, [fetchUserDetails]);
+    let mounted = true;
+    getCompanyNotifications()
+      .then((items) => {
+        if (mounted) {
+          setUnreadCount(items.filter((n) => !isNotificationRead(n)).length);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Fetch user details on mount
+  useEffect(() => {
+    let mounted = true;
+    getUserService()
+      .then((data) => {
+        if (!mounted) return;
+        if (data) {
+          setFetchedUser(data);
+        }
+        if (token) {
+          return refreshUser(token);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to fetch user details:", error);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const currentUser = user || fetchedUser;
 
@@ -85,11 +107,20 @@ const TopNav: React.FC = () => {
         className="w-18 md:visible invisible"
       />
       <div className="flex gap-6 items-center">
-        <Link to="#">
+        <Link
+          to="/dashboard/notifications"
+          className="relative flex items-center justify-center hover:opacity-80 transition"
+          aria-label="Notifications"
+        >
           <PiBellSimple
             size={20}
             className="dark:text-white text-gray-600 hover:text-gray-900 dark:hover:text-white/75 transition"
           />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1.5 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
         </Link>
 
         <ThemeToggle />
