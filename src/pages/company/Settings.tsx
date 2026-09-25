@@ -4,10 +4,11 @@ import { FiEye, FiEyeOff } from "react-icons/fi";
 import {
   LuUser,
   LuShieldCheck,
-  LuCrown,
+  LuLock,
 } from "react-icons/lu";
 import { useUser } from "../../hooks/useUser";
 import { updateCompanyDetails } from "../../services/companyService";
+import { changePasswordService } from "../../services/authService";
 import { getErrorMessage } from "../../helpers/api";
 import TierSettings from "./TierSettings";
 import type { SettingsTab, PasswordFieldProps } from "../../lib/interfaces";
@@ -102,10 +103,19 @@ const Settings: React.FC = () => {
 
   // Profile Form State
   const [profile, setProfile] = useState({
+    name:
+      user?.company_name ||
+      user?.name ||
+      user?.company_details?.name ||
+      "",
     firstName: user?.first_name || "",
     lastName: user?.last_name || "",
     email: user?.email || "",
-    phoneNumber: "",
+    phoneNumber:
+      user?.phone ||
+      user?.phone_number ||
+      user?.company_details?.phone ||
+      "",
     department: currentRole.toUpperCase(),
     address: user?.company_details?.address ?? "",
     about: user?.company_details?.about ?? "",
@@ -114,6 +124,14 @@ const Settings: React.FC = () => {
 
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPin, setSavingPin] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  // Password Form State
+  const [passwordForm, setPasswordForm] = useState({
+    current_password: "",
+    password: "",
+    password_confirmation: "",
+  });
 
   // PIN Form State
   const [pin, setPin] = useState({
@@ -131,11 +149,49 @@ const Settings: React.FC = () => {
     setProfile((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleUpdatePassword = async () => {
+    if (!passwordForm.current_password) {
+      toast.error("Please enter your current password");
+      return;
+    }
+    if (!passwordForm.password) {
+      toast.error("Please enter a new password");
+      return;
+    }
+    if (passwordForm.password.length < 6) {
+      toast.error("New password must be at least 6 characters long");
+      return;
+    }
+    if (passwordForm.password !== passwordForm.password_confirmation) {
+      toast.error("New password and confirm password do not match");
+      return;
+    }
+
+    setSavingPassword(true);
+    try {
+      await changePasswordService({
+        current_password: passwordForm.current_password,
+        password: passwordForm.password,
+        password_confirmation: passwordForm.password_confirmation,
+      });
+      toast.success("Password changed successfully");
+      setPasswordForm({
+        current_password: "",
+        password: "",
+        password_confirmation: "",
+      });
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to change password"));
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
   const handleSaveProfile = async () => {
     setSavingProfile(true);
     try {
       await updateCompanyDetails({
-        name: profile.profileName.trim() || undefined,
+        name: profile.name.trim() || undefined,
         email: profile.email.trim() || undefined,
         phone: profile.phoneNumber.trim() || undefined,
         address: profile.address.trim() || undefined,
@@ -195,12 +251,12 @@ const Settings: React.FC = () => {
             {/* Profile badge header */}
             <div className="flex items-center gap-4 p-4 rounded-xl bg-secondary border border-primary/10">
               <div className="w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center font-bold text-lg">
-                {profile.profileName?.[0] || profile.firstName?.[0] || "U"}
-                {!profile.profileName ? (profile.lastName?.[0] || "") : ""}
+                {profile.name?.[0] || profile.firstName?.[0] || "U"}
+                {!profile.name ? (profile.lastName?.[0] || "") : ""}
               </div>
               <div className="flex flex-col">
                 <span className="font-semibold text-sm text-textBlack">
-                  {profile.profileName ||
+                  {profile.name ||
                     (profile.firstName || "") + " " + (profile.lastName || "")}
                 </span>
                 <span className="text-xs text-textBlack/60">{profile.email}</span>
@@ -215,8 +271,8 @@ const Settings: React.FC = () => {
                 <span className="font-medium text-xs text-textBlack">Company Name</span>
                 <input
                   type="text"
-                  value={profile.profileName}
-                  onChange={(e) => handleProfileChange("profileName", e.target.value)}
+                  value={profile.name}
+                  onChange={(e) => handleProfileChange("name", e.target.value)}
                   className={inputClass}
                 />
               </label>
@@ -341,6 +397,59 @@ const Settings: React.FC = () => {
           </div>
         );
 
+      case "password":
+        return (
+          <div className="flex flex-col gap-6 max-w-xl">
+            <div className="flex flex-col">
+              <h3 className="font-semibold text-base text-textBlack">Security & Password</h3>
+              <p className="text-xs text-textBlack/60">
+                Ensure your account is using a strong password to keep your dashboard secure
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-y-4">
+              <PasswordField
+                label="Current Password"
+                value={passwordForm.current_password}
+                onChange={(value) =>
+                  setPasswordForm((prev) => ({ ...prev, current_password: value }))
+                }
+                visible={isFieldVisible("pwd_current")}
+                onToggle={() => toggleField("pwd_current")}
+                placeholder="Enter current password"
+              />
+              <PasswordField
+                label="New Password"
+                value={passwordForm.password}
+                onChange={(value) =>
+                  setPasswordForm((prev) => ({ ...prev, password: value }))
+                }
+                visible={isFieldVisible("pwd_new")}
+                onToggle={() => toggleField("pwd_new")}
+                placeholder="Enter new password (min. 6 characters)"
+              />
+              <PasswordField
+                label="Confirm New Password"
+                value={passwordForm.password_confirmation}
+                onChange={(value) =>
+                  setPasswordForm((prev) => ({ ...prev, password_confirmation: value }))
+                }
+                visible={isFieldVisible("pwd_confirm")}
+                onToggle={() => toggleField("pwd_confirm")}
+                placeholder="Re-enter new password"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleUpdatePassword}
+              disabled={savingPassword}
+              className={`${submitClass} self-start disabled:opacity-60 disabled:cursor-not-allowed`}
+            >
+              {savingPassword ? "Updating..." : "Update Password"}
+            </button>
+          </div>
+        );
+
       case "tier":
         return <TierSettings />;
 
@@ -366,11 +475,10 @@ const Settings: React.FC = () => {
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 h-9 rounded-lg text-xs font-medium transition cursor-pointer ${
-                effectiveTab === tab.key
+              className={`flex items-center gap-2 px-4 h-9 rounded-lg text-xs font-medium transition cursor-pointer ${effectiveTab === tab.key
                   ? "bg-primary text-white shadow-xs"
                   : "border border-textBlack/10 text-textBlack/70 hover:bg-secondary hover:text-textBlack"
-              }`}
+                }`}
             >
               <TabIcon size={14} />
               <span>{tab.label}</span>

@@ -16,12 +16,11 @@ const ViewCompanyModal: React.FC<{
      const [currentPage, setCurrentPage] = useState(1);
      const [itemsPerPage, setItemsPerPage] = useState(10);
 
-     const tierConfig = getTierConfig(selectedCompany?.tier);
      const compName = selectedCompany?.name || selectedCompany?.companyName || "Company";
      const compPhone = selectedCompany?.phone || selectedCompany?.phoneNumber || "N/A";
      const compEmail = selectedCompany?.email || "N/A";
      const compStaff = selectedCompany?.no_of_employee ?? selectedCompany?.staff ?? 0;
-     const compTier = `${tierConfig.badge} (${tierConfig.name})`;
+     const compTier = getTierConfig(selectedCompany?.tier);
      const compStatus = typeof selectedCompany?.status === "boolean"
           ? (selectedCompany.status ? "Active" : "Inactive")
           : (selectedCompany?.status || (selectedCompany?.is_active ? "Active" : "Inactive"));
@@ -52,7 +51,7 @@ const ViewCompanyModal: React.FC<{
           },
           {
                label: "Subscription Tier",
-               value: compTier,
+               value: `${compTier.badge} (${compTier.name})`,
           },
           {
                label: "Account Status",
@@ -96,11 +95,14 @@ const ViewCompanyModal: React.FC<{
           {
                label: "Tier",
                key: "tier",
-               render: (item: CompanyProps) => (
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                         {item?.tier || "Standard"}
-                    </span>
-               ),
+               render: (item: CompanyProps) => {
+                    const t = getTierConfig(item?.tier);
+                    return (
+                         <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                              {t.badge} ({t.name})
+                         </span>
+                    );
+               },
           },
           {
                label: "Status",
@@ -147,7 +149,7 @@ const ViewCompanyModal: React.FC<{
                                    <LiaUserTagSolid className="text-sm text-primary" /> {compStaff} Staff
                               </span>
                               <span className="flex items-center gap-1.5 text-textBlack/60 text-xs">
-                                   <HiOutlineBuildingOffice2 className="text-sm text-primary" /> Tier: {compTier}
+                                   <HiOutlineBuildingOffice2 className="text-sm text-primary" /> Tier: 
                               </span>
                          </div>
                     </div>

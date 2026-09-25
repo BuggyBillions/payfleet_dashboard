@@ -1,8 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  TIER_PLANS,
-  getTierConfig,
   getAllTiersService,
   getTierByIdService,
   createTierService,
@@ -18,22 +16,16 @@ import {
 } from "../services/tierService";
 import { getErrorMessage } from "../helpers/api";
 
-export const useTierPlans = () => {
-  return {
-    plans: TIER_PLANS,
-    getTierConfig,
-  };
-};
 
 /**
  * Hook to fetch all configured platform tiers
- * GET /all-tiers
+ * GET /all-tiers?search=...
  */
-export const useAllTiers = () => {
+export const useAllTiers = (search?: string) => {
   return useQuery({
-    queryKey: ["tiers", "all"],
-    queryFn: () => getAllTiersService(),
-    staleTime: 60000,
+    queryKey: ["tiers", "all", search],
+    queryFn: () => getAllTiersService({ search }),
+    staleTime: 30000,
   });
 };
 

@@ -31,6 +31,7 @@ import SupportManageCompany from "./pages/support/ManageCompany";
 import Communication from "./pages/chat/Communication";
 import Verifyemail from "./pages/auth/Verifyemail";
 import Notifications from "./pages/company/Notifications";
+import ManageCompanyVerification from "./pages/superadmin/ManageCompanyVerification";
 
 function App() {
   return (
@@ -136,6 +137,16 @@ function App() {
             <MainLayout
               pageName="Manage Company"
               children={<ManageCompany />}
+            />
+          }
+        />
+        <Route
+          index
+          path="/admin/dashboard/company-verification"
+          element={
+            <MainLayout
+              pageName="Companies Verification"
+              children={<ManageCompanyVerification />}
             />
           }
         />

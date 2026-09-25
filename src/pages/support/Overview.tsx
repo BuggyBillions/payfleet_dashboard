@@ -65,7 +65,9 @@ const SupportOverview: React.FC = () => {
       render: (item) => (
         <div className="flex flex-col">
           <span className="text-xs text-textBlack/80 font-medium">
-            {item.tier}
+            {typeof item.tier === "object" && item.tier !== null
+              ? (item.tier as { name?: string; level?: number | string }).name || `Level ${(item.tier as { level?: number | string }).level || "1"}`
+              : String(item.tier || "—")}
           </span>
           <span className="text-[10px] text-textBlack/50 truncate max-w-[120px]">
             {item.industry}

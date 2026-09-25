@@ -203,7 +203,6 @@ export interface CompanyDetailsProps {
   name: string;
   email: string;
   phone?: string;
-  tier?: string | number;
   logo?: string | null;
   about?: string;
   address?: string;
@@ -566,19 +565,6 @@ export interface ReductionValues {
   reason: string;
 }
 
-export type TierLevel =
-  | 1
-  | 2
-  | 3
-  | "1"
-  | "2"
-  | "3"
-  | "Starter"
-  | "Business"
-  | "Enterprise"
-  | "Standard"
-  | "Growth";
-
 export interface TierItem {
   id: number | string;
   name: string;
@@ -650,7 +636,7 @@ export interface CompanyVerificationItem {
   tinNumber: string;
   industry: string;
   staffCount: number;
-  tier: "Starter" | "Business" | "Enterprise";
+  tier: string | number | CompanyTierProp;
   status: "Active" | "Inactive";
   verificationStatus: VerificationStatus;
   submittedAt: string;

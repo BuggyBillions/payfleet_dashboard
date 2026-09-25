@@ -173,51 +173,6 @@ const CreateEditTierModal: React.FC<CreateEditTierModalProps> = ({ tier, onClose
             </p>
           </div>
 
-          {/* Quick Preset Badges */}
-          <div className="p-3 rounded-xl bg-secondary border border-primary/10 space-y-1.5 text-xs">
-            <span className="text-[11px] font-semibold text-textBlack/60 block">
-              Quick Presets:
-            </span>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setName("Starter Tier");
-                  setLevel(1);
-                  setNoOfStaff("10");
-                  setRequirements("Registered Business Name,Email Verification,Phone Number");
-                }}
-                className="px-2.5 py-1 rounded-lg border border-primary/10 bg-tertiary text-[10px] text-textBlack hover:border-primary/30 transition"
-              >
-                Starter (10 Staff)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setName("Business Tier");
-                  setLevel(2);
-                  setNoOfStaff("50");
-                  setRequirements("CAC,TIN,Utility Bill,Director ID");
-                }}
-                className="px-2.5 py-1 rounded-lg border border-primary/10 bg-tertiary text-[10px] text-textBlack hover:border-primary/30 transition"
-              >
-                Business (50 Staff)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setName("Enterprise Tier");
-                  setLevel(3);
-                  setNoOfStaff("Unlimited");
-                  setRequirements("CAC,MERMAT,Address,Director ID,Board Resolution");
-                }}
-                className="px-2.5 py-1 rounded-lg border border-primary/10 bg-tertiary text-[10px] text-textBlack hover:border-primary/30 transition"
-              >
-                Enterprise (Unlimited)
-              </button>
-            </div>
-          </div>
-
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-3 pt-2">
             <button

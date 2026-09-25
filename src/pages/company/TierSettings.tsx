@@ -79,10 +79,10 @@ const TierDetailModal: React.FC<{
     if (fallback) return;
     let mounted = true;
     getEachTier(tierId)
-      .then((data) => {
+      .then((data: Tier) => {
         if (mounted) setTier(data);
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         if (mounted) {
           setError(getErrorMessage(err, "Failed to load tier details"));
           toast.error(getErrorMessage(err, "Failed to load tier details"));
@@ -285,7 +285,7 @@ const TierSettings: React.FC = () => {
   useEffect(() => {
     let mounted = true;
     getTiers()
-      .then((data) => {
+      .then((data: Tier[]) => {
         if (mounted) setTiers(data);
       })
       .catch(() => {
