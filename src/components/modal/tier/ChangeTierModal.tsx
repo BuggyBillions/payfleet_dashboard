@@ -21,8 +21,8 @@ const ChangeTierModal: React.FC<ChangeTierModalProps> = ({ company, onClose }) =
 
   const updateMutation = useUpdateCompanyTier();
 
-  const handleUpdate = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpdate = (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) e.preventDefault();
     if (!company.id) return;
 
     updateMutation.mutate(
@@ -147,10 +147,11 @@ const ChangeTierModal: React.FC<ChangeTierModalProps> = ({ company, onClose }) =
               Cancel
             </button>
             <ActionButton
+              type="submit"
               text="Save & Reassign Tier"
               loadingText="Updating Tier..."
               loading={updateMutation.isPending}
-              action={() => {}}
+              action={handleUpdate}
             />
           </div>
         </form>

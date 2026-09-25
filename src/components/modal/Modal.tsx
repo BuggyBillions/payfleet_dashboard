@@ -10,7 +10,14 @@ const Modal = ({ children, onClose, showClose=true, customMode=false }: modalPro
   }
 
   return ReactDOM.createPortal(
-    <div className="fixed inset-0 bg-black/80 z-9999 flex items-center justify-center p-4">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget && onClose) {
+          onClose();
+        }
+      }}
+      className="fixed inset-0 bg-black/80 z-9999 flex items-center justify-center p-4 overflow-y-auto"
+    >
       {
         customMode ? (
           children

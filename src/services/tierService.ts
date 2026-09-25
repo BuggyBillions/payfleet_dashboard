@@ -66,9 +66,7 @@ export const updateTierService = async ({
     requirements: data.requirements,
   };
 
-  const response = await api.post(`/update-tier/${id}`, payload).catch(async () => {
-    return await api.put(`/update-tier/${id}`, payload);
-  });
+  const response = await api.put(`/update-tier/${id}`, payload);
   return response.data?.data ?? response.data;
 };
 
@@ -77,9 +75,7 @@ export const updateTierService = async ({
  * DELETE /delete-tiers/{id} (or POST)
  */
 export const deleteTierService = async (id: number | string) => {
-  const response = await api.delete(`/delete-tiers/${id}`).catch(async () => {
-    return await api.post(`/delete-tiers/${id}`);
-  });
+  const response = await api.delete(`/delete-tiers/${id}`);
   return response.data;
 };
 
@@ -198,9 +194,21 @@ export const requestTierUpgradeService = async (payload: RequestTierUpgradePaylo
  * Get all tier upgrade requests (SuperAdmin / Admin)
  */
 export const getTierUpgradeRequestsService = async (): Promise<TierUpgradeRequest[]> => {
-  const response = await api.get("/tier/requests");
-  const data = response.data?.data ?? response.data;
-  return data;
+  try {
+    const response = await api.get("/tier-requests").catch(async () => {
+      return await api.get("/all-tier-requests");
+    });
+    const resData = response.data;
+    const rawList =
+      resData?.data?.data ||
+      resData?.data ||
+      resData?.requests ||
+      (Array.isArray(resData) ? resData : []);
+    return Array.isArray(rawList) ? rawList : [];
+  } catch (error) {
+    console.warn("Could not fetch tier requests:", error);
+    return [];
+  }
 };
 
 /**
@@ -208,6 +216,7 @@ export const getTierUpgradeRequestsService = async (): Promise<TierUpgradeReques
  */
 export const getCompanyTierRequestsService = async (companyId?: number | string): Promise<TierUpgradeRequest[]> => {
   const all = await getTierUpgradeRequestsService();
+  if (!Array.isArray(all)) return [];
   if (!companyId) return all;
   return all.filter((r) => String(r.companyId) === String(companyId) || String(r.companyId) === "current");
 };
@@ -257,15 +266,15 @@ export const reviewTierRequestService = async ({
   companyId,
 }: {
   requestId: number | string;
-  status: "approved" | "rejected";
+  status: "approved" | "rejected" | "approve" | "reject" | string;
   rejectionReason?: string;
   targetTier?: number | string;
   companyId?: number | string;
 }) => {
   let resData;
   try {
-    const response = await api.post(`/tier/requests/${requestId}/review`, {
-      status,
+    const response = await api.post(`/review-tier-upgrade/${requestId}`, {
+      action: status,
       rejection_reason: rejectionReason,
       tier: targetTier,
     });
@@ -275,7 +284,7 @@ export const reviewTierRequestService = async ({
   }
 
   // If approved and companyId is provided, update company tier
-  if (status === "approved" && companyId && targetTier) {
+  if ((status === "approve" || status === "approved") && companyId && targetTier) {
     await updateCompanyTierService({ companyId, tier: targetTier }).catch(() => { });
   }
 

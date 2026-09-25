@@ -44,7 +44,7 @@ const normalizeStatus = (status: CompanyDeposit["status"]): DemoDeposit["status"
 
 const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
   const { user } = useUser();
-  const companyId = user?.company_details?.id;
+  const companyId = (user as any)?.company_details?.id || (user as any)?.company_id || user?.id;
   const [deposits, setDeposits] = useState<DepositRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -165,7 +165,7 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
           <p className="text-xs text-textBlack/60">
             {defaultFilter === "pending"
               ? "Monitor and track incoming deposits awaiting bank confirmation."
-              : "Manage all  deposit transactions."}
+              : "Manage all deposit transactions."}
           </p>
         </div>
         <div className="shrink-0">
@@ -177,7 +177,7 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-x-4 gap-y-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6">
         <OverviewCards
           icon={LuWallet}
           title="Available Account Balance"

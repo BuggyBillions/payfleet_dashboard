@@ -10,12 +10,13 @@ const ActionButton: React.FC<ActionButtonProps> = ({
   disabled,
   buttonStyle,
   overideBg,
-  title
+  title,
+  type = "button"
 }) => {
   return (
     <button
       className={`${overideBg ? "" : `action-btn text-white`} h-10 px-4 min-w-25 rounded-md text-sm flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${buttonStyle}`}
-      type="button"
+      type={type}
       onClick={onClick || action}
       disabled={disabled || loading}
       title={title ? title : ""}

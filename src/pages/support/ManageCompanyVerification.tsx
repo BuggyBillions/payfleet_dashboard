@@ -45,7 +45,14 @@ const SupportManageCompanyVerification: React.FC = () => {
 
   const { data: statsData } = useCompanyStats();
   const { data: allTiersList = [] } = useAllTiers();
-  const { data: tierRequests = [], isLoading: loadingRequests, refetch: refetchRequests } = useTierRequests();
+  const { data: rawTierRequests, isLoading: loadingRequests, refetch: refetchRequests } = useTierRequests();
+  const tierRequests: TierUpgradeRequest[] = useMemo(() => {
+    if (Array.isArray(rawTierRequests)) return rawTierRequests;
+    if (rawTierRequests && typeof rawTierRequests === "object" && Array.isArray((rawTierRequests as any).data)) {
+      return (rawTierRequests as any).data;
+    }
+    return [];
+  }, [rawTierRequests]);
 
   const allCompanies = statsData?.items ?? companiesData?.items ?? [];
   const companiesList = companiesData?.items ?? [];

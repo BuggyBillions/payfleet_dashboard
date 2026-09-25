@@ -58,8 +58,8 @@ const UpgradeTierModal: React.FC<UpgradeTierModalProps> = ({ onClose, defaultTie
   const targetPlan: Partial<TierItem> | undefined =
     allTiers.find((p) => Number(p.id) === selectedTierId) || upgradeableTiers[0];
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) e.preventDefault();
 
     if (!selectedTierId) {
       toast.error("Please select a target tier for upgrade.");
@@ -285,10 +285,11 @@ const UpgradeTierModal: React.FC<UpgradeTierModalProps> = ({ onClose, defaultTie
               Cancel
             </button>
             <ActionButton
+              type="submit"
               text="Submit Upgrade Application"
               loadingText="Submitting Application..."
               loading={upgradeMutation.isPending}
-              action={() => {}}
+              action={handleSubmit}
             />
           </div>
         </form>

@@ -100,6 +100,7 @@ export interface ActionButtonProps {
   buttonStyle?: string;
   overideBg?: boolean;
   title?: string;
+  type?: "button" | "submit" | "reset";
 }
 
 export interface FormattedInputProps extends Omit<
