@@ -96,20 +96,6 @@ export interface SearchResult {
   snippet?: string;
 }
 
-export interface UserProps {
-  id: number;
-  username: string;
-  first_name: string;
-  full_name: string;
-  last_name: string;
-  email: string;
-  is_admin: number;
-  role: string;
-  enabled: number;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface BankProps {
   name: string;
   code: string;
@@ -133,7 +119,6 @@ export interface StaffProps {
   role: string
   status: string
 }
-
 
 export interface PageHeaderProps {
   heading?: string;
