@@ -19,16 +19,19 @@ export const getStaffsService = async ({
   role,
   status,
 }: GetStaffsParams = {}): Promise<StaffListResponse> => {
-  const querySearch = searchTerm || search;
+  // If role filter is active (e.g. "support" or "finance") and no other text search is typed,
+  // query with ?search=support or ?search=finance as specified by API
+  let querySearch = (searchTerm || search || "").trim();
+  if (!querySearch && role && role !== "all") {
+    querySearch = role.trim();
+  }
+
   const params: Record<string, unknown> = {
     page,
-    search: querySearch ? querySearch.trim() : undefined,
+    search: querySearch || undefined,
     per_page,
   };
 
-  if (role && role !== "all") {
-    params.role = role;
-  }
   if (status && status !== "all") {
     params.status = status;
   }
@@ -98,6 +101,7 @@ export const createFinanceOfficerService = async (
     email: payload.email?.trim(),
     phone: payload.phoneNumber?.trim() || payload.phone?.trim(),
     phoneNumber: payload.phoneNumber?.trim() || payload.phone?.trim(),
+    password: payload.password,
     role: "Finance",
   };
 
@@ -123,6 +127,7 @@ export const createSupportOfficerService = async (
     email: payload.email?.trim(),
     phone: payload.phoneNumber?.trim() || payload.phone?.trim(),
     phoneNumber: payload.phoneNumber?.trim() || payload.phone?.trim(),
+    password: payload.password,
     role: "Support",
   };
 

@@ -23,9 +23,18 @@ export const setupInterceptors = (logout: () => void) => {
   api.interceptors.response.use(
     (res) => res,
     (error) => {
+      const url = error.config?.url || "";
+      const isAuthEndpoint =
+        url.includes("/login") ||
+        url.includes("/register") ||
+        url.includes("/verify-otp") ||
+        url.includes("/resend-otp") ||
+        url.includes("/forgotpassword") ||
+        url.includes("/reset-password");
+
       if (error.code === "ERR_NETWORK") {
         toast.error("No internet or server down");
-      } else if (error.response?.status === 401) {
+      } else if (error.response?.status === 401 && !isAuthEndpoint) {
         toast.error("Session expired. Logging out...");
         logout();
       }

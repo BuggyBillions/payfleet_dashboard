@@ -23,7 +23,7 @@ const ManageStaff: React.FC = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [roleFilter, setRoleFilter] = useState("all");
+  const [roleFilter, setRoleFilter] = useState("");
 
   const [deleteModal, setDeleteModal] = useState(false);
   const [createStaff, setCreateStaff] = useState(false);
