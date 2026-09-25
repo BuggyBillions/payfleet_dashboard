@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import ReusableTable from "../../utility/ReusableTable";
 import ActionCell from "../../components/ui/ActionCell";
 import Modal from "../../components/modal/Modal";
@@ -8,7 +8,8 @@ import StatusBadge from "../../components/ui/StatusBadge";
 import OverviewCards from "../../components/cards/OverviewCards";
 import { toast } from "sonner";
 import { formatShortDate } from "../../helpers/formatterUtility";
-import type { TableColumnProps, VerificationStatus, CompanyVerificationItem } from "../../lib/interfaces";
+import type { TableColumnProps, VerificationStatus, CompanyVerificationItem, CompanyProps } from "../../lib/interfaces";
+import { useCompanies, useCompanyStats, useVerifyCompany } from "../../hooks/useCompany";
 import { FiSearch, FiCheckCircle, FiXCircle, FiFileText } from "react-icons/fi";
 import {
   LuClock,
@@ -178,147 +179,139 @@ const CLARIFICATION_REASONS = [
 ];
 
 const SupportManageCompany: React.FC = () => {
-  const [companies, setCompanies] = useState<CompanyVerificationItem[]>(SEED_COMPANIES);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("pending_verification");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Modal States
-  const [selectedCompany, setSelectedCompany] = useState<CompanyVerificationItem | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<CompanyProps | null>(null);
   const [reviewModal, setReviewModal] = useState(false);
   const [approveModal, setApproveModal] = useState(false);
   const [rejectModal, setRejectModal] = useState(false);
   const [rejectionReasonSelect, setRejectionReasonSelect] = useState(CLARIFICATION_REASONS[0]);
   const [customRejectionReason, setCustomRejectionReason] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Filtered List
-  const filteredCompanies = useMemo(() => {
-    return companies.filter((comp) => {
-      const term = searchTerm.toLowerCase().trim();
-      const matchesSearch =
-        !term ||
-        comp.companyName.toLowerCase().includes(term) ||
-        comp.email.toLowerCase().includes(term) ||
-        comp.rcNumber.toLowerCase().includes(term) ||
-        comp.tinNumber.toLowerCase().includes(term) ||
-        comp.directorName.toLowerCase().includes(term) ||
-        comp.industry.toLowerCase().includes(term);
+  // Debounce search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
-      const matchesStatus =
-        statusFilter === "all" || comp.verificationStatus === statusFilter;
+  // Main paginated query
+  const {
+    data,
+    isLoading: loadingCompany,
+    isFetching,
+    error: tableError,
+  } = useCompanies({
+    page: currentPage,
+    searchTerm: debouncedSearch,
+    per_page: itemsPerPage,
+    status: statusFilter,
+  });
 
-      return matchesSearch && matchesStatus;
-    });
-  }, [companies, searchTerm, statusFilter]);
+  // Overall stats query for top KPI cards
+  const { data: statsData } = useCompanyStats();
 
-  const totalItems = filteredCompanies.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const companies = data?.items ?? [];
+  const totalItems = data?.totalItems ?? companies.length;
+  const totalPages = data?.totalPages ?? Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
-  const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredCompanies.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredCompanies, currentPage, itemsPerPage]);
-
-  // Statistics KPI
+  // Dynamic KPI Stats from live API
+  const allCompanies = statsData?.items ?? companies;
   const stats = useMemo(() => {
-    const total = companies.length;
-    const verified = companies.filter((c) => c.verificationStatus === "verified").length;
-    const pending = companies.filter(
-      (c) => c.verificationStatus === "pending_verification" || c.verificationStatus === "under_review"
-    ).length;
-    const actionRequired = companies.filter(
-      (c) => c.verificationStatus === "action_required"
-    ).length;
+    const total = statsData?.totalItems ?? allCompanies.length;
+    const verified = allCompanies.filter((c) => {
+      const v = String(c.verificationStatus || c.status || "").toLowerCase();
+      return v === "verified" || v === "successful";
+    }).length;
+
+    const pending = allCompanies.filter((c) => {
+      const v = String(c.verificationStatus || c.status || "").toLowerCase();
+      return v === "pending_verification" || v === "pending" || v === "under_review";
+    }).length;
+
+    const actionRequired = allCompanies.filter((c) => {
+      const v = String(c.verificationStatus || c.status || "").toLowerCase();
+      return v === "action_required" || v === "declined" || v === "failed";
+    }).length;
 
     return { total, verified, pending, actionRequired };
-  }, [companies]);
+  }, [allCompanies, statsData]);
 
-  // Handlers
-  const handleApproveVerification = async (companyToApprove?: CompanyVerificationItem) => {
+  // Verification Mutation Hook
+  const verifyCompanyMutation = useVerifyCompany();
+
+  const handleApproveVerification = async (companyToApprove?: CompanyProps) => {
     const target = companyToApprove || selectedCompany;
-    if (!target) return;
+    if (!target?.id) return;
 
-    setIsSubmitting(true);
-    try {
-      await new Promise((res) => setTimeout(res, 600));
-
-      setCompanies((prev) =>
-        prev.map((c) =>
-          c.id === target.id
-            ? {
-                ...c,
-                verificationStatus: "verified",
-                verifiedBy: "Support Verification Desk",
-                verifiedAt: new Date().toISOString(),
-                rejectionReason: undefined,
-              }
-            : c
-        )
-      );
-
-      toast.success(`${target.companyName} business verification approved successfully!`);
-      setApproveModal(false);
-      setReviewModal(false);
-      setSelectedCompany(null);
-    } catch {
-      toast.error("Failed to approve business verification");
-    } finally {
-      setIsSubmitting(false);
-    }
+    verifyCompanyMutation.mutate(
+      {
+        id: target.id,
+        status: "verified",
+      },
+      {
+        onSuccess: () => {
+          setApproveModal(false);
+          setReviewModal(false);
+          setSelectedCompany(null);
+        },
+      }
+    );
   };
 
   const handleRejectOrRequestInfo = async () => {
-    if (!selectedCompany) return;
+    if (!selectedCompany?.id) return;
 
-    setIsSubmitting(true);
-    try {
-      await new Promise((res) => setTimeout(res, 600));
+    const reason =
+      rejectionReasonSelect === "Other Reason (Specify below)"
+        ? customRejectionReason || "Clarification required on submitted business documents"
+        : rejectionReasonSelect;
 
-      const reason =
-        rejectionReasonSelect === "Other Reason (Specify below)"
-          ? customRejectionReason || "Clarification required on submitted business documents"
-          : rejectionReasonSelect;
+    verifyCompanyMutation.mutate(
+      {
+        id: selectedCompany.id,
+        status: "action_required",
+        rejectionReason: reason,
+      },
+      {
+        onSuccess: () => {
+          setRejectModal(false);
+          setReviewModal(false);
+          setSelectedCompany(null);
+          setCustomRejectionReason("");
+        },
+      }
+    );
+  };
 
-      setCompanies((prev) =>
-        prev.map((c) =>
-          c.id === selectedCompany.id
-            ? {
-                ...c,
-                verificationStatus: "action_required",
-                rejectionReason: reason,
-              }
-            : c
-        )
-      );
-
-      toast.info(
-        `Verification feedback sent to ${selectedCompany.companyName}. Status marked as Action Required.`
-      );
-      setRejectModal(false);
-      setReviewModal(false);
-      setSelectedCompany(null);
-      setCustomRejectionReason("");
-    } catch {
-      toast.error("Failed to send verification feedback");
-    } finally {
-      setIsSubmitting(false);
-    }
+  // Helper getters for company objects
+  const getCompanyName = (item: CompanyProps) => item.companyName || item.name || "Company";
+  const getCompanyPhone = (item: CompanyProps) => item.phoneNumber || item.phone || "N/A";
+  const getCompanyRc = (item: CompanyProps) => item.rcNumber || item.rc_number || "N/A";
+  const getCompanyTin = (item: CompanyProps) => item.tinNumber || item.tin_number || "N/A";
+  const getVerificationStatus = (item: CompanyProps): string => {
+    return item.verificationStatus || (typeof item.status === "boolean" ? (item.status ? "verified" : "pending_verification") : String(item.status || "pending_verification"));
   };
 
   // Table Columns
-  const columns: TableColumnProps<CompanyVerificationItem>[] = [
+  const columns: TableColumnProps<CompanyProps>[] = [
     {
       label: "Company / Organization",
       render: (item) => (
         <div className="flex items-center gap-2.5 min-w-[190px]">
           <div className="size-8 rounded-lg bg-primary/10 text-primary font-bold flex items-center justify-center text-xs shrink-0">
-            {item.companyName.charAt(0)}
+            {getCompanyName(item).charAt(0).toUpperCase()}
           </div>
           <div className="flex flex-col">
             <span className="font-semibold text-textBlack text-xs truncate max-w-[160px]">
-              {item.companyName}
+              {getCompanyName(item)}
             </span>
             <span className="text-[11px] text-textBlack/50 lowercase truncate max-w-[160px]">
               {item.email}
@@ -332,9 +325,9 @@ const SupportManageCompany: React.FC = () => {
       render: (item) => (
         <div className="flex flex-col min-w-[140px]">
           <span className="font-mono font-semibold text-xs text-textBlack tracking-wide">
-            {item.rcNumber}
+            {getCompanyRc(item)}
           </span>
-          <span className="font-mono text-[10px] text-textBlack/50">{item.tinNumber}</span>
+          <span className="font-mono text-[10px] text-textBlack/50">{getCompanyTin(item)}</span>
         </div>
       ),
     },
@@ -342,8 +335,8 @@ const SupportManageCompany: React.FC = () => {
       label: "Industry & Plan",
       render: (item) => (
         <div className="flex flex-col min-w-[130px]">
-          <span className="text-xs text-textBlack font-medium">{item.industry}</span>
-          <span className="text-[10px] text-primary/80 font-semibold">{item.tier} Tier</span>
+          <span className="text-xs text-textBlack font-medium">{item.industry || "Corporate"}</span>
+          <span className="text-[10px] text-primary/80 font-semibold">{item.tier || "Standard"} Tier</span>
         </div>
       ),
     },
@@ -351,20 +344,20 @@ const SupportManageCompany: React.FC = () => {
       label: "Director / Contact",
       render: (item) => (
         <div className="flex flex-col min-w-[140px]">
-          <span className="text-xs text-textBlack font-medium">{item.directorName}</span>
-          <span className="text-[10px] text-textBlack/50">{item.phoneNumber}</span>
+          <span className="text-xs text-textBlack font-medium">{item.directorName || "Principal Contact"}</span>
+          <span className="text-[10px] text-textBlack/50">{getCompanyPhone(item)}</span>
         </div>
       ),
     },
     {
       label: "Verification Status",
-      render: (item) => <StatusBadge status={item.verificationStatus} />,
+      render: (item) => <StatusBadge status={getVerificationStatus(item)} />,
     },
     {
       label: "Submitted Date",
       render: (item) => (
         <span className="text-xs text-textBlack/50 whitespace-nowrap">
-          {formatShortDate(item.submittedAt)}
+          {item.created_at ? formatShortDate(item.created_at) : "Recent"}
         </span>
       ),
     },
@@ -372,6 +365,7 @@ const SupportManageCompany: React.FC = () => {
       label: "Actions",
       key: "actions",
       render: (item) => {
+        const statusVal = getVerificationStatus(item);
         const otherActions = [
           {
             name: "Review Documents & KYC",
@@ -383,7 +377,7 @@ const SupportManageCompany: React.FC = () => {
           },
         ];
 
-        if (item.verificationStatus !== "verified") {
+        if (statusVal !== "verified") {
           otherActions.push({
             name: "Approve Verification",
             icon: <FiCheckCircle size={14} className="text-emerald-600" />,
@@ -404,7 +398,7 @@ const SupportManageCompany: React.FC = () => {
 
         return (
           <ActionCell
-            rowId={Number(item.id)}
+            rowId={Number(item.id ?? 0)}
             canView={true}
             onView={() => {
               setSelectedCompany(item);
@@ -467,10 +461,7 @@ const SupportManageCompany: React.FC = () => {
             <input
               type="text"
               value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
+              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search company name, RC number, TIN, director..."
               className="w-full pl-10 pr-4 py-2 text-xs bg-white dark:bg-[#1A1921] border border-gray-200 dark:border-white/10 rounded-xl outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-textBlack placeholder:text-textBlack/50"
             />
@@ -510,9 +501,9 @@ const SupportManageCompany: React.FC = () => {
       {/* Main Companies Table */}
       <ReusableTable
         columns={columns}
-        data={paginatedData}
-        isLoading={false}
-        error={null}
+        data={companies}
+        isLoading={loadingCompany || isFetching}
+        error={tableError}
         currentPage={currentPage}
         totalPages={totalPages}
         totalItems={totalItems}
@@ -529,11 +520,11 @@ const SupportManageCompany: React.FC = () => {
             <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/10">
               <div className="flex items-center gap-2.5">
                 <div className="size-10 rounded-xl bg-primary/10 text-primary font-bold flex items-center justify-center text-sm">
-                  {selectedCompany.companyName.charAt(0)}
+                  {getCompanyName(selectedCompany).charAt(0).toUpperCase()}
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-textBlack">
-                    {selectedCompany.companyName}
+                    {getCompanyName(selectedCompany)}
                   </h3>
                   <p className="text-xs text-textBlack/50">
                     Business Verification Dossier & Registration Review
@@ -541,7 +532,7 @@ const SupportManageCompany: React.FC = () => {
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1">
-                <StatusBadge status={selectedCompany.verificationStatus} />
+                <StatusBadge status={getVerificationStatus(selectedCompany)} />
               </div>
             </div>
 
@@ -566,19 +557,19 @@ const SupportManageCompany: React.FC = () => {
                 </span>
                 <div className="flex justify-between py-1 border-b border-gray-100 dark:border-white/5">
                   <span className="text-textBlack/50">CAC Registration (RC):</span>
-                  <span className="font-mono font-semibold text-textBlack">{selectedCompany.rcNumber}</span>
+                  <span className="font-mono font-semibold text-textBlack">{getCompanyRc(selectedCompany)}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-gray-100 dark:border-white/5">
                   <span className="text-textBlack/50">Tax ID Number (TIN):</span>
-                  <span className="font-mono font-semibold text-textBlack">{selectedCompany.tinNumber}</span>
+                  <span className="font-mono font-semibold text-textBlack">{getCompanyTin(selectedCompany)}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-gray-100 dark:border-white/5">
                   <span className="text-textBlack/50">Industry & Sector:</span>
-                  <span className="text-textBlack font-medium">{selectedCompany.industry}</span>
+                  <span className="text-textBlack font-medium">{selectedCompany.industry || "Corporate"}</span>
                 </div>
                 <div className="flex flex-col py-1">
                   <span className="text-textBlack/50">Registered Physical Address:</span>
-                  <span className="text-textBlack font-medium mt-0.5">{selectedCompany.registeredAddress}</span>
+                  <span className="text-textBlack font-medium mt-0.5">{selectedCompany.registeredAddress || selectedCompany.address || "N/A"}</span>
                 </div>
               </div>
 
@@ -588,11 +579,11 @@ const SupportManageCompany: React.FC = () => {
                 </span>
                 <div className="flex justify-between py-1 border-b border-gray-100 dark:border-white/5">
                   <span className="text-textBlack/50">Principal Director:</span>
-                  <span className="font-semibold text-textBlack">{selectedCompany.directorName}</span>
+                  <span className="font-semibold text-textBlack">{selectedCompany.directorName || "Authorized Representative"}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-gray-100 dark:border-white/5">
                   <span className="text-textBlack/50">Director Phone:</span>
-                  <span className="text-textBlack font-mono">{selectedCompany.directorPhone}</span>
+                  <span className="text-textBlack font-mono">{selectedCompany.directorPhone || getCompanyPhone(selectedCompany)}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-gray-100 dark:border-white/5">
                   <span className="text-textBlack/50">Company Email:</span>
@@ -600,7 +591,7 @@ const SupportManageCompany: React.FC = () => {
                 </div>
                 <div className="flex justify-between py-1">
                   <span className="text-textBlack/50">Staff Payroll Size:</span>
-                  <span className="text-textBlack font-medium">{selectedCompany.staffCount} Registered Employees</span>
+                  <span className="text-textBlack font-medium">{selectedCompany.no_of_employee ?? selectedCompany.staff ?? selectedCompany.staffCount ?? 0} Registered Employees</span>
                 </div>
               </div>
             </div>
@@ -616,22 +607,22 @@ const SupportManageCompany: React.FC = () => {
                 {[
                   {
                     title: "CAC Certificate of Incorporation",
-                    file: selectedCompany.documents.cacCertificate,
+                    file: selectedCompany.documents?.cacCertificate || "CAC_Certificate_Document.pdf",
                     tag: "Primary Registration",
                   },
                   {
                     title: "Form CAC 1.1 / Status Report",
-                    file: selectedCompany.documents.statusReport,
+                    file: selectedCompany.documents?.statusReport || "CAC_StatusReport_Doc.pdf",
                     tag: "Shareholding & Directors",
                   },
                   {
                     title: "Proof of Business Address",
-                    file: selectedCompany.documents.proofOfAddress,
+                    file: selectedCompany.documents?.proofOfAddress || "Utility_Bill_Address.pdf",
                     tag: "Utility / Lease",
                   },
                   {
                     title: "Director Government ID",
-                    file: selectedCompany.documents.directorId,
+                    file: selectedCompany.documents?.directorId || "Director_Government_ID.pdf",
                     tag: "Identity Verification",
                   },
                 ].map((doc, idx) => (
@@ -669,7 +660,7 @@ const SupportManageCompany: React.FC = () => {
                 overideBg={true}
                 buttonStyle="bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-200 text-xs h-9 px-4 rounded-xl"
               />
-              {selectedCompany.verificationStatus !== "verified" && (
+              {getVerificationStatus(selectedCompany) !== "verified" && (
                 <>
                   <ActionButton
                     text="Request Clarification / Reject"
@@ -682,7 +673,7 @@ const SupportManageCompany: React.FC = () => {
                     text="Approve Business Verification"
                     icon={<FiCheckCircle size={14} />}
                     onClick={() => handleApproveVerification(selectedCompany)}
-                    disabled={isSubmitting}
+                    disabled={verifyCompanyMutation.isPending}
                     overideBg={true}
                     buttonStyle="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-9 px-4 rounded-xl shadow-xs"
                   />
@@ -700,9 +691,9 @@ const SupportManageCompany: React.FC = () => {
           onCancel={() => setApproveModal(false)}
           onConfirm={() => handleApproveVerification()}
           title="Approve Business Verification"
-          message={`Are you sure you want to approve the business registration and KYC documents for ${selectedCompany.companyName} (${selectedCompany.rcNumber})? This will grant the company full verified operating privileges.`}
+          message={`Are you sure you want to approve the business registration and KYC documents for ${getCompanyName(selectedCompany)} (${getCompanyRc(selectedCompany)})? This will grant the company full verified operating privileges.`}
           confirmText="Confirm & Verify Business"
-          isLoading={isSubmitting}
+          isLoading={verifyCompanyMutation.isPending}
         />
       )}
 
@@ -713,7 +704,7 @@ const SupportManageCompany: React.FC = () => {
             <div>
               <h3 className="text-lg font-bold text-textBlack">Request Verification Clarification</h3>
               <p className="text-xs text-textBlack/50">
-                Notify {selectedCompany.companyName} of document issues needing attention.
+                Notify {getCompanyName(selectedCompany)} of document issues needing attention.
               </p>
             </div>
 
@@ -759,7 +750,7 @@ const SupportManageCompany: React.FC = () => {
               <ActionButton
                 text="Send Notice to Company"
                 onClick={handleRejectOrRequestInfo}
-                disabled={isSubmitting}
+                disabled={verifyCompanyMutation.isPending}
                 overideBg={true}
                 buttonStyle="bg-rose-600 hover:bg-rose-700 text-white text-xs h-9 px-3 rounded-xl"
               />

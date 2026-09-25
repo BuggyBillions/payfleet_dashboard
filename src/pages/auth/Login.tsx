@@ -41,8 +41,25 @@ const Login: React.FC = () => {
     // Pull full details (incl. company id) from /me
     refreshUser(token).catch(() => undefined);
 
-    const finalRoute =
-      user.role === "admin" ? "/admin/dashboard/overview" : "/dashboard/overview";
+    let finalRoute = "";
+
+    switch (user.role) {
+      case "admin":
+        finalRoute = "admin/dashboard/overview";
+        break;
+
+      case "finance":
+        finalRoute = "finance/dashboard/overview";
+        break;
+
+      case "support":
+        finalRoute = "support/dashboard/overview";
+        break;
+
+      default:
+        finalRoute = "dashboard/overview";
+        break;
+    }
     navigate(finalRoute);
   };
 

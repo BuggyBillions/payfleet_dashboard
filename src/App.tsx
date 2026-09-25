@@ -22,6 +22,7 @@ import FinancialOverview from "./pages/financial/Overview";
 import SupportOverview from "./pages/support/Overview";
 import ManageCompany from "./pages/superadmin/ManageCompany";
 import ManageStaff from "./pages/superadmin/ManageStaff";
+import ManageBanks from "./pages/superadmin/ManageBanks";
 import ManageDeposit from "./pages/superadmin/ManageDeposit";
 import SuperAdminManagePayments from "./pages/superadmin/ManagePayments";
 import FinancialManageDeposit from "./pages/financial/ManageDeposit";
@@ -39,7 +40,7 @@ function App() {
         <Route index path="/" element={<Login />} />
         <Route path="/getstarted" element={<Register />} />
         <Route path="/verify-email" element={<Verifyemail />} />
-        <Route path="/forgotpassword" element={<Forgotpassword />} />wh
+        <Route path="/forgotpassword" element={<Forgotpassword />} />
         <Route path="*" element={<NotFound />} />
         <Route
           index
@@ -129,6 +130,11 @@ function App() {
           index
           path="/admin/dashboard/staff"
           element={<MainLayout pageName="Manage Staff" children={<ManageStaff />} />}
+        />
+        <Route
+          index
+          path="/admin/dashboard/banks"
+          element={<MainLayout pageName="Manage Banks" children={<ManageBanks />} />}
         />
         <Route
           index

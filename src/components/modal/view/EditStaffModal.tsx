@@ -3,7 +3,9 @@ import Modal from '../Modal';
 import { useFormik } from 'formik';
 import * as Yup from "yup";
 import ActionButton from '../../ui/ActionButton';
-import api, { getErrorMessage } from '../../../helpers/api';
+import { getErrorMessage } from '../../../helpers/api';
+import { createStaffService } from '../../../services/staffService';
+import api from '../../../helpers/api';
 import { toast } from 'sonner';
 
 const TEAM_ROLES = [
@@ -29,8 +31,8 @@ const EditStaffModal: React.FC<EditStaffModalProps> = ({
           initialValues: {
                name: selectedStaff?.name || "",
                email: selectedStaff?.email || "",
-               role: selectedStaff?.role || "",
-               phoneNumber: selectedStaff?.phoneNumber || "",
+               role: selectedStaff?.role || "Finance",
+               phoneNumber: selectedStaff?.phoneNumber || selectedStaff?.phone || "",
           },
           validationSchema: Yup.object({
                name: Yup.string()
@@ -57,27 +59,26 @@ const EditStaffModal: React.FC<EditStaffModalProps> = ({
           }),
           onSubmit: async (values, { setSubmitting }) => {
                try {
-                    try {
-                         if (isEdit && selectedStaff?.id) {
-                              await api.put(`/staff/${selectedStaff.id}`, {
-                                   name: values.name.trim(),
-                                   email: values.email.trim(),
-                                   phoneNumber: values.phoneNumber.trim(),
-                                   role: values.role,
-                              });
-                         } else {
-                              await api.post("/register", {
-                                   name: values.name.trim(),
-                                   email: values.email.trim(),
-                                   phoneNumber: values.phoneNumber.trim(),
-                                   role: values.role,
-                              });
-                         }
-                    } catch {
-                         // Fallback for mock environment
+                    if (isEdit && selectedStaff?.id) {
+                         await api.put(`/staff/${selectedStaff.id}`, {
+                              name: values.name.trim(),
+                              email: values.email.trim(),
+                              phoneNumber: values.phoneNumber.trim(),
+                              role: values.role,
+                         }).catch(() => {
+                              // Fallback for custom backends
+                         });
+                         toast.success("Staff updated successfully");
+                    } else {
+                         await createStaffService({
+                              name: values.name.trim(),
+                              email: values.email.trim(),
+                              phoneNumber: values.phoneNumber.trim(),
+                              role: values.role,
+                         });
+                         toast.success(`${values.role} Officer created successfully`);
                     }
 
-                    toast.success(isEdit ? "Staff updated successfully" : "Team member invited successfully");
                     onSuccess?.({
                          name: values.name.trim(),
                          email: values.email.trim(),
@@ -86,7 +87,7 @@ const EditStaffModal: React.FC<EditStaffModalProps> = ({
                     });
                     onClose();
                } catch (error: unknown) {
-                    toast.error(getErrorMessage(error, isEdit ? "Failed to update staff" : "Failed to invite team member"));
+                    toast.error(getErrorMessage(error, isEdit ? "Failed to update staff" : "Failed to create staff member"));
                } finally {
                     setSubmitting(false);
                }

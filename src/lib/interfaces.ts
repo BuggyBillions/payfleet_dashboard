@@ -298,27 +298,141 @@ export interface BankProps {
 }
 
 export interface CompanyProps {
-  id?: number;
-  companyName: string;
+  id?: number | string;
+  name?: string;
+  companyName?: string;
   email: string;
-  phoneNumber: string;
-  staff: number;
-  tier: string;
-  status: string;
+  phone?: string;
+  phoneNumber?: string;
+  no_of_employee?: number;
+  staff?: number | string;
+  tier?: string | number;
+  status?: boolean | string;
+  is_active?: boolean | number;
+  created_at?: string;
+  address?: string;
+  registeredAddress?: string;
+  rc_number?: string;
+  rcNumber?: string;
+  tin_number?: string;
+  tinNumber?: string;
+  industry?: string;
+  staffCount?: number;
+  verificationStatus?: VerificationStatus;
+  documents?: {
+    cacCertificate?: string;
+    statusReport?: string;
+    proofOfAddress?: string;
+    directorId?: string;
+  };
+  rejectionReason?: string;
+  directorName?: string;
+  directorPhone?: string;
+}
+
+export interface GetCompaniesParams {
+  page?: number;
+  searchTerm?: string;
+  search?: string;
+  per_page?: number;
+  status?: string;
+}
+
+export interface CompanyListResponse {
+  items: CompanyProps[];
+  totalItems: number;
+  currentPage: number;
+  totalPages: number;
+  perPage: number;
 }
 
 export interface StaffProps {
-  id?: number;
-  name: string;
+  id?: number | string;
+  name?: string;
+  first_name?: string;
+  last_name?: string;
+  full_name?: string;
+  username?: string;
   email: string;
-  phoneNumber: string;
+  phone?: string;
+  phoneNumber?: string;
   role: string;
-  status: string;
+  status: string | boolean | number;
+  is_active?: boolean | number;
+  enabled?: number | boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface GetStaffsParams {
+  page?: number;
+  searchTerm?: string;
+  search?: string;
+  per_page?: number;
+  role?: string;
+  status?: string;
+}
+
+export interface StaffListResponse {
+  items: StaffProps[];
+  totalItems: number;
+  currentPage: number;
+  totalPages: number;
+  perPage: number;
+}
+
+export interface CreateStaffPayload {
+  name: string;
+  first_name?: string;
+  last_name?: string;
+  email: string;
+  phoneNumber?: string;
+  phone?: string;
+  role: "Finance" | "Support" | string;
+  password?: string;
+  [key: string]: unknown;
 }
 
 export interface Bank {
   name: string;
   code: string;
+}
+
+export interface BankItem {
+  id?: number | string;
+  name: string;
+  code?: string;
+  slug?: string;
+  bank_name?: string;
+  bank_code?: string;
+  logo?: string;
+}
+
+export interface BankAccountDetails {
+  id?: number | string;
+  bank_name?: string;
+  account_number?: string;
+  account_name?: string;
+  bank_code?: string;
+  currency?: string;
+  recipient_code?: string;
+  is_active?: boolean | number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CreateAccountPayload {
+  bank_name: string;
+  account_number: string;
+  account_name: string;
+  bank_code?: string;
+  [key: string]: unknown;
+}
+
+export interface AddBankModalProps {
+  onClose: () => void;
+  defaultBank?: BankItem | null;
+  onSuccess?: () => void;
 }
 
 export interface ResolvedAccount {
@@ -397,6 +511,13 @@ export interface EditStaffModalProps {
   onSuccess?: (staff: Partial<StaffProps>) => void;
 }
 
+export interface ViewStaffModalProps {
+  staff: StaffProps | null;
+  onClose: () => void;
+  onStatusChange?: () => void;
+  onDelete?: () => void;
+}
+
 export interface ReduceSalaryModalProps {
   employee: Employee;
   onClose: () => void;
@@ -418,7 +539,8 @@ export interface CompanyVerificationItem {
   id: number;
   companyName: string;
   email: string;
-  phoneNumber: string;
+  phone?: string;
+  phoneNumber?: string;
   rcNumber: string;
   tinNumber: string;
   industry: string;
@@ -603,7 +725,7 @@ export interface FloatingWidgetMessage {
 // 7. SETTINGS & PROFILE
 // ==========================================
 
-export type SettingsTab = "profile" | "pin" | "bank" | "password";
+export type SettingsTab = "profile" | "pin" | "password";
 
 export interface PasswordFieldProps {
   label: string;
