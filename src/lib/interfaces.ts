@@ -228,7 +228,6 @@ export interface UserProps {
   company_details?: CompanyDetailsProps;
   created_at?: string;
   updated_at?: string;
-  [key: string]: unknown;
 }
 
 export interface sendEmailVerificationValues {
@@ -276,6 +275,17 @@ export interface RegisterValues {
   password: string;
   phone: string;
 }
+
+export interface OTPVerifyValues {
+  reset_otp: string | number;
+  token: string;
+}
+
+export interface ResetPasswordValues {
+  token: string;
+  password: string;
+  confirmPassword: string;
+} 
 
 export interface UserContextType {
   user: UserProps | null;
