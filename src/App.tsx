@@ -28,7 +28,6 @@ import SuperAdminManagePayments from "./pages/superadmin/ManagePayments";
 import FinancialManageDeposit from "./pages/financial/ManageDeposit";
 import SupportManageCompany from "./pages/support/ManageCompany";
 import Communication from "./pages/chat/Communication";
-import Tier from "./pages/company/Tier";
 import Verifyemail from "./pages/auth/Verifyemail";
 import Notifications from "./pages/company/Notifications";
 
@@ -102,13 +101,6 @@ function App() {
               pageName="Payment History"
               children={<PaymentHistory />}
             />
-          }
-        />
-        <Route
-          index
-          path="/dashboard/tier"
-          element={
-            <MainLayout pageName="Tier Management" children={<Tier />} />
           }
         />
         <Route

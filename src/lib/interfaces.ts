@@ -190,6 +190,13 @@ export interface NavItem {
 // 3. AUTHENTICATION & USER TYPES
 // ==========================================
 
+export interface CompanyTierProp {
+  id?: number | string;
+  name?: string;
+  level?: number | string;
+  created_at?: string;
+}
+
 export interface CompanyDetailsProps {
   id: number;
   name: string;
@@ -198,6 +205,8 @@ export interface CompanyDetailsProps {
   logo?: string | null;
   about?: string;
   address?: string;
+  tier?: number | string | CompanyTierProp;
+  bvn?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -763,7 +772,7 @@ export interface FloatingWidgetMessage {
 // 7. SETTINGS & PROFILE
 // ==========================================
 
-export type SettingsTab = "profile" | "pin" | "password";
+export type SettingsTab = "profile" | "pin" | "password" | "tier";
 
 export interface PasswordFieldProps {
   label: string;

@@ -27,7 +27,7 @@ export const setupInterceptors = (logout: () => void) => {
       const isAuthEndpoint =
         url.includes("/login") ||
         url.includes("/register") ||
-        url.includes("/createcompanies") ||
+        url.includes("/register") ||
         url.includes("/verify-otp") ||
         url.includes("/resend-otp") ||
         url.includes("/forgotpassword") ||

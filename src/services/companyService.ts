@@ -8,7 +8,13 @@ import type {
 export type { GetCompaniesParams, CompanyListResponse };
 
 export interface UpdateCompanyDetailsPayload {
+  name?: string;
+  email?: string;
+  phone?: string;
   address?: string;
+  about?: string;
+  logo?: string | null;
+  bvn?: number | string;
   pin?: string;
 }
 
