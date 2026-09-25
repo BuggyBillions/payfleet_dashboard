@@ -1,5 +1,5 @@
 import { RxDashboard } from "react-icons/rx";
-import { LuUsersRound, LuArrowDownToLine, LuHistory } from "react-icons/lu";
+import { LuUsersRound, LuArrowDownToLine, LuHistory, LuBuilding2 } from "react-icons/lu";
 import { FaMoneyBillWave, FaUsers } from "react-icons/fa6";
 import { LiaUsersCogSolid } from "react-icons/lia";
 import { BsChat } from "react-icons/bs";
@@ -65,6 +65,12 @@ export const navItems: NavItem[] = [
     name: "Manage Staff",
     icon: LiaUsersCogSolid,
     path: "/admin/dashboard/staff",
+    role: ["superadmin", "super_admin", "admin"],
+  },
+  {
+    name: "Manage Banks",
+    icon: LuBuilding2,
+    path: "/admin/dashboard/banks",
     role: ["superadmin", "super_admin", "admin"],
   },
   {
