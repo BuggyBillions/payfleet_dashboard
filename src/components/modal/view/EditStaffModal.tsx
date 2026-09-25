@@ -118,19 +118,19 @@ const EditStaffModal: React.FC<EditStaffModalProps> = ({
      });
 
      return (
-          <Modal onClose={onClose}>
+          <Modal onClose={onClose} >
                <div>
-                    <h2 className="text-lg font-bold">
+                    <h2 className="text-lg font-bold text-textBlack">
                          {isEdit && selectedStaff ? "Update Staff Information" : "Create New Staff Member"}
                     </h2>
-                    <p className="text-sm text-tableHeading mb-4">
+                    <p className="text-sm text-tableHeading mb-4 text-textBlack/50">
                          {isEdit && selectedStaff
                               ? "Edit a staff member's information."
                               : "Enter credentials and details to create a new officer"}
                     </p>
                </div>
 
-               <div className="bg-secondary border border-primary/10 rounded-lg px-4 py-3 flex flex-col sm:flex-row justify-center items-center gap-4 mt-5">
+               <div className="bg-textWhite border border-primary/10 rounded-lg px-4 py-3 flex flex-col sm:flex-row justify-center items-center gap-4 mt-5">
                     {isEdit && selectedStaff && (
                          <div className="rounded-full bg-primary/10 border border-secondary w-16 h-16 flex items-center justify-center text-xl font-bold text-primary shrink-0">
                               {getInitials(selectedStaff?.name)}
@@ -147,7 +147,7 @@ const EditStaffModal: React.FC<EditStaffModalProps> = ({
                                              id="name"
                                              name="name"
                                              placeholder="e.g. Jane Doe"
-                                             className={`border border-primary/10 bg-secondary h-10 px-3 rounded-md text-sm w-full outline-none transition ${
+                                             className={`border border-primary/10 bg-tertiary text-textBlack h-10 px-3 rounded-md text-sm w-full outline-none transition ${
                                                   formik.touched.name && formik.errors.name ? "border-red-500 bg-red-50/10" : ""
                                              }`}
                                              value={formik.values.name}
@@ -170,7 +170,7 @@ const EditStaffModal: React.FC<EditStaffModalProps> = ({
                                              type="email"
                                              id="email"
                                              name="email"
-                                             className={`border border-primary/10 bg-secondary h-10 px-3 rounded-md text-sm w-full outline-none transition ${
+                                             className={`border border-primary/10 bg-tertiary text-textBlack h-10 px-3 rounded-md text-sm w-full outline-none transition ${
                                                   formik.touched.email && formik.errors.email ? "border-red-500 bg-red-50/10" : ""
                                              }`}
                                              onChange={formik.handleChange}
@@ -191,7 +191,7 @@ const EditStaffModal: React.FC<EditStaffModalProps> = ({
                                              id="phoneNumber"
                                              name="phoneNumber"
                                              placeholder="e.g. 08012345678"
-                                             className={`border border-primary/10 bg-secondary h-10 px-3 rounded-md text-sm w-full outline-none transition ${
+                                             className={`border border-primary/10 bg-tertiary text-textBlack h-10 px-3 rounded-md text-sm w-full outline-none transition ${
                                                   formik.touched.phoneNumber && formik.errors.phoneNumber ? "border-red-500 bg-red-50/10" : ""
                                              }`}
                                              value={formik.values.phoneNumber}
@@ -211,7 +211,7 @@ const EditStaffModal: React.FC<EditStaffModalProps> = ({
                                         <select
                                              id="role"
                                              name="role"
-                                             className={`border border-primary/10 bg-secondary h-10 px-3 rounded-md text-sm w-full outline-none transition ${
+                                             className={`border border-primary/10 bg-tertiary text-textBlack h-10 px-3 rounded-md text-sm w-full outline-none transition ${
                                                   formik.touched.role && formik.errors.role ? "border-red-500 bg-red-50/10" : ""
                                              }`}
                                              value={formik.values.role}
@@ -236,7 +236,7 @@ const EditStaffModal: React.FC<EditStaffModalProps> = ({
                                              Password {isEdit ? "(leave blank to keep current)" : "(Required)"}
                                         </label>
                                         <div
-                                             className={`flex items-center border h-10 px-3 rounded-md bg-secondary border-primary/10 transition focus-within:border-primary ${
+                                             className={`flex items-center border h-10 px-3 rounded-md bg-tertiary text-textBlack border-primary/10 transition focus-within:border-primary ${
                                                   formik.touched.password && formik.errors.password
                                                        ? "border-red-500 bg-red-50/10"
                                                        : ""
@@ -273,7 +273,7 @@ const EditStaffModal: React.FC<EditStaffModalProps> = ({
                                    <button
                                         type="button"
                                         onClick={onClose}
-                                        className="px-4 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition duration-300 ease-in-out"
+                                        className="px-4 py-2 text-sm rounded-lg border border-textBlack/50 hover:bg-gray-50 cursor-pointer transition duration-300 ease-in-out text-textBlack"
                                    >
                                         Cancel
                                    </button>

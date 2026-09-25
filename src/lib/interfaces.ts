@@ -633,7 +633,7 @@ export interface DemoPayment {
 }
 
 export interface DepositItemProps {
-  id: number;
+  id: number | string;
   companyName: string;
   email: string;
   reference: string;
@@ -647,9 +647,25 @@ export interface DepositItemProps {
   approvedAt?: string;
 }
 
+export interface DepositListResponse {
+  items: DepositItemProps[];
+  totalItems: number;
+  currentPage: number;
+  totalPages: number;
+  perPage: number;
+}
+
+export interface GetDepositsParams {
+  page?: number;
+  per_page?: number;
+  search?: string;
+  searchTerm?: string;
+  status?: string;
+}
+
 export interface ManageDepositProps {
   defaultFilter?: "all" | "pending";
-  role?: "superadmin" | "financial";
+  role?: "superadmin" | "financial" | string;
 }
 
 export interface DepositsProps {

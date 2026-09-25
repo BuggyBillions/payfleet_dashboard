@@ -201,11 +201,11 @@ const Sidebar = ({
       {/* Logout Confirmation Modal */}
       {showLogOutModal && (
         <Modal onClose={() => setShowLogOutModal(false)} customMode>
-          <div className="flex items-center flex-col bg-white rounded-xl py-6 px-8 max-w-sm mx-auto shadow-xl">
-            <h3 className="font-semibold text-base text-gray-900 text-center">
+          <div className="flex items-center flex-col bg-tertiary rounded-xl py-6 px-8 max-w-sm mx-auto shadow-xl">
+            <h3 className="font-semibold text-base text-textBlack text-center">
               Are you sure you want to logout?
             </h3>
-            <p className="text-xs text-gray-500 text-center mt-1">
+            <p className="text-xs text-textBlack/50 text-center mt-1">
               You will need to login again to access your dashboard.
             </p>
             <div className="flex w-full mt-6 items-center gap-3">
