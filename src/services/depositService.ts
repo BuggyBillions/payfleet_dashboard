@@ -42,6 +42,85 @@ export const getAccount = async (
   return (res.data?.data ?? res.data ?? {}) as BankAccount;
 };
 
+export interface CompanyDeposit {
+  id?: number | string;
+  company_id?: number | string;
+  company_name?: string;
+  email?: string;
+  reference?: string;
+  reference_no?: string;
+  transaction_reference?: string;
+  ref?: string;
+  amount?: number | string;
+  fee?: number | string;
+  method?: string;
+  status?: string | number | boolean;
+  date?: string;
+  created_at?: string;
+  settled_at?: string;
+  bank_name?: string;
+  account_number?: string;
+  account_name?: string;
+  transaction?: {
+    id?: number | string;
+    company_id?: number | string;
+    reference?: string;
+    amount?: number | string;
+    previous_balance?: number | string;
+    current_balance?: number | string;
+    type?: string;
+    transaction_type?: string;
+    status?: string;
+    description?: string;
+    created_at?: string;
+    updated_at?: string;
+    [key: string]: unknown;
+  };
+  company?: {
+    id?: number | string;
+    name?: string;
+    email?: string;
+    phone?: string;
+    balance?: number | string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+export const getCompanyDeposits = async (
+  companyId?: number | string,
+): Promise<CompanyDeposit[]> => {
+  const res = await api.get("/company-deposit", {
+    params: companyId ? { company_id: companyId } : undefined,
+  });
+  let data = res.data?.data ?? res.data;
+  if (data && typeof data === "object" && !Array.isArray(data)) {
+    const { data: inner, deposits, transactions, items, results } = data as {
+      data?: unknown;
+      deposits?: unknown;
+      transactions?: unknown;
+      items?: unknown;
+      results?: unknown;
+    };
+    data = inner ?? deposits ?? transactions ?? items ?? results ?? [];
+  }
+  return (Array.isArray(data) ? data : []) as CompanyDeposit[];
+};
+
+export const getEachCompanyDeposit = async (
+  id: number | string,
+): Promise<Partial<CompanyDeposit>> => {
+  const res = await api.get(`/each-company-deposit/${id}`);
+  let data = res.data?.data ?? res.data;
+  if (data && typeof data === "object" && !Array.isArray(data)) {
+    const inner = data as { data?: unknown };
+    if (inner.data && typeof inner.data === "object" && !Array.isArray(inner.data)) {
+      data = inner.data;
+    }
+  }
+  return (data ?? {}) as Partial<CompanyDeposit>;
+};
+
 /**
  * List all deposits: GET /all-deposit?search=...
  * Supports ?search=pending | ?search=successfull | ?search=failed or custom query
@@ -87,6 +166,7 @@ export const getAllDepositsService = async ({
     (Array.isArray(resData) ? resData : []);
 
   const items: DepositItemProps[] = Array.isArray(rawList)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ? rawList.map((item: Record<string, any>) => {
         const txn = item.transaction || {};
         const comp = item.company || {};

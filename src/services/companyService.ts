@@ -7,6 +7,11 @@ import type {
 
 export type { GetCompaniesParams, CompanyListResponse };
 
+export interface UpdateCompanyDetailsPayload {
+  address?: string;
+  pin?: string;
+}
+
 export const getCompaniesService = async ({
   page = 1,
   searchTerm = "",
@@ -81,4 +86,11 @@ export const verifyCompanyService = async ({
     return { data: { success: true } };
   });
   return response.data;
+};
+
+export const updateCompanyDetails = async (
+  payload: UpdateCompanyDetailsPayload,
+): Promise<unknown> => {
+  const res = await api.put("/update-company-details", payload);
+  return res.data?.data ?? res.data;
 };

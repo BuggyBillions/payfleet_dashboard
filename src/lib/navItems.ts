@@ -47,6 +47,12 @@ export const navItems: NavItem[] = [
     path: "/dashboard/tier",
     role: ["company", "user"],
   },
+  {
+    name: "Notifications",
+    icon: LuArrowDownToLine,
+    path: "/dashboard/notifications",
+    role: ["company", "user"],
+  },
 
   // --- Super Admin Navigation ---
   {
