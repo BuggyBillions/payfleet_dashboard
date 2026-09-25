@@ -17,7 +17,7 @@ const Modal = ({ children, onClose, showClose=true, customMode=false }: modalPro
         ) : (
           <div
             className="
-              bg-tertiary md:p-8 p-4 
+              bg-textWhite md:p-8 p-4 
               lg:w-3/5 md:w-3/4 w-full 
               rounded-xl relative 
               max-h-[90vh] overflow-y-auto styled-scrollbar

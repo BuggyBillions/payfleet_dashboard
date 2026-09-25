@@ -23,13 +23,6 @@ const EditStaffModal: React.FC<EditStaffModalProps> = ({
 }) => {
      const [showPassword, setShowPassword] = useState(false);
 
-     const getInitials = (name?: string) => {
-          if (!name) return "ST";
-          const parts = name.trim().split(/\s+/);
-          if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-          return (parts[0][0] + parts[1][0]).toUpperCase();
-     };
-
      const formik = useFormik({
           enableReinitialize: true,
           initialValues: {
@@ -130,12 +123,8 @@ const EditStaffModal: React.FC<EditStaffModalProps> = ({
                     </p>
                </div>
 
-               <div className="bg-textWhite border border-primary/10 rounded-lg px-4 py-3 flex flex-col sm:flex-row justify-center items-center gap-4 mt-5">
-                    {isEdit && selectedStaff && (
-                         <div className="rounded-full bg-primary/10 border border-secondary w-16 h-16 flex items-center justify-center text-xl font-bold text-primary shrink-0">
-                              {getInitials(selectedStaff?.name)}
-                         </div>
-                    )}
+               <div className="bg-textWhite rounded-lg px-4 py-3 flex flex-col sm:flex-row justify-center items-center gap-4 mt-5">
+                   
                     <div className="w-full">
                          <form onSubmit={formik.handleSubmit}>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

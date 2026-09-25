@@ -13,12 +13,12 @@ export const navItems: NavItem[] = [
     name: "Dashboard",
     icon: RxDashboard,
     path: "/dashboard/overview",
-    role: ["company", "user"],
+    role: ["company"],
   },
   {
     name: "Employees",
     icon: LuUsersRound,
-    role: ["company", "user"],
+    role: ["company"],
     children: [
       { name: "View Employees", path: "/dashboard/employees" },
       { name: "Add Employee", path: "/dashboard/employees/add" },
@@ -27,25 +27,25 @@ export const navItems: NavItem[] = [
   {
     name: "Deposits",
     icon: LuArrowDownToLine,
-    role: ["company", "user"], path: "/dashboard/deposits" 
+    role: ["company"], path: "/dashboard/deposits"
   },
   {
     name: "Process Payments",
     icon: FaMoneyBillWave,
     path: "/dashboard/payments/process",
-    role: ["company", "user"],
+    role: ["company"],
   },
   {
     name: "Payment History",
     icon: LuHistory,
     path: "/dashboard/payments/history",
-    role: ["company", "user"],
+    role: ["company"],
   },
   {
     name: "Tier ",
     icon: LuHistory,
     path: "/dashboard/tier",
-    role: ["company", "user"],
+    role: ["company"],
   },
   {
     name: "Notifications",
@@ -59,46 +59,58 @@ export const navItems: NavItem[] = [
     name: "Dashboard",
     icon: RxDashboard,
     path: "/admin/dashboard/overview",
-    role: ["superadmin", "super_admin", "admin"],
+    role: ["admin"],
   },
   {
     name: "Manage Company",
     icon: FaUsers,
-    path: "/admin/dashboard/company",
-    role: ["superadmin", "super_admin", "admin"],
+    children: [
+      {
+        name: 'All Companies',
+        path: "/admin/dashboard/company",
+      },
+      {
+        name: 'Company Verification',
+        path: '/admin/dashboard/company-verification'
+      }
+    ],
+    role: ["admin"],
+  },
+  {
+    name: "Manage Tiers",
+    icon: LuBuilding2,
+    path: "/admin/dashboard/tier",
+    role: ["admin"],
   },
   {
     name: "Manage Staff",
     icon: LiaUsersCogSolid,
     path: "/admin/dashboard/staff",
-    role: ["superadmin", "super_admin", "admin"],
+    role: ["admin"],
   },
   {
     name: "Manage Banks",
     icon: LuBuilding2,
     path: "/admin/dashboard/banks",
-    role: ["superadmin", "super_admin", "admin"],
+    role: ["admin"],
   },
   {
     name: "Manage Deposits",
     icon: LuArrowDownToLine,
-    role: ["superadmin", "super_admin", "admin"],
-    children: [
-      { name: "All Deposits", path: "/admin/dashboard/deposit" },
-      { name: "Pending Deposits", path: "/admin/dashboard/deposit/pending" },
-    ],
+    role: ["admin"],
+    path: "/admin/dashboard/deposit",
   },
   {
     name: "Manage Payments",
     icon: FaMoneyBillWave,
     path: "/admin/dashboard/payments",
-    role: ["superadmin", "super_admin", "admin"],
+    role: ["admin"],
   },
   {
     name: "Chat Support",
     icon: BsChat,
     path: "/admin/dashboard/chat",
-    role: ["superadmin", "super_admin", "admin"],
+    role: ["admin"],
   },
 
   // --- Financial Navigation ---
@@ -106,28 +118,25 @@ export const navItems: NavItem[] = [
     name: "Dashboard",
     icon: RxDashboard,
     path: "/financial/dashboard/overview",
-    role: ["financial", "finance"],
+    role: ["finance"],
   },
   {
     name: "Manage Deposits",
     icon: LuArrowDownToLine,
-    role: ["financial", "finance"],
-    children: [
-      { name: "All Deposits", path: "/financial/dashboard/deposit" },
-      { name: "Pending Deposits", path: "/financial/dashboard/deposit/pending" },
-    ],
+    role: ["finance"],
+    path: "/financial/dashboard/deposit"
   },
   {
     name: "Manage Payments",
     icon: FaMoneyBillWave,
     path: "/financial/dashboard/payments",
-    role: ["financial", "finance"],
+    role: ["finance"],
   },
   {
     name: "Chat Support",
     icon: BsChat,
     path: "/financial/dashboard/chat",
-    role: ["financial", "finance"],
+    role: ["finance"],
   },
 
   // --- Support Navigation ---
@@ -140,7 +149,16 @@ export const navItems: NavItem[] = [
   {
     name: "Manage Company",
     icon: FaUsers,
-    path: "/support/dashboard/company",
+    children: [
+      {
+        name: "All Companies",
+        path: "/support/dashboard/company",
+      },
+      {
+        name: "Company Verification",
+        path: "/support/dashboard/company-verification",
+      },
+    ],
     role: ["support"],
   },
   {

@@ -713,7 +713,7 @@ const SuperAdminManagePayments: React.FC = () => {
       </div>
 
       {/* Toolbar: Search & Filter Trigger */}
-      <div className="p-4 rounded-xl bg-secondary border border-primary/10 flex flex-col gap-3 shadow-sm">
+      <div className="p-4 rounded-xl bg-secondary border border-primary/10 flex flex-col gap-3 ">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Search Bar */}
           <div className="relative flex-1 max-w-md">
@@ -729,7 +729,7 @@ const SuperAdminManagePayments: React.FC = () => {
                 setCurrentPage(1);
               }}
               placeholder="Search reference, company, employee, account..."
-              className="w-full pl-10 pr-4 py-2 text-xs bg-white dark:bg-[#1A1921] border border-gray-200 dark:border-white/10 rounded-xl outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-textBlack placeholder:text-textBlack/50"
+              className="h-10 pl-9 pr-3 rounded-lg border border-primary/10 bg-secondary text-sm text-textBlack outline-none w-56 md:w-72 focus:border-primary/30 transition-colors placeholder:text-textBlack/40"
             />
           </div>
 
@@ -764,6 +764,8 @@ const SuperAdminManagePayments: React.FC = () => {
               </button>
             )}
           </div>
+
+
         </div>
 
         {/* Active Filter Badges */}
@@ -843,8 +845,6 @@ const SuperAdminManagePayments: React.FC = () => {
             )}
           </div>
         )}
-      </div>
-
       {/* Main Payment History Table */}
       <ReusableTable
         columns={columns}
@@ -863,6 +863,8 @@ const SuperAdminManagePayments: React.FC = () => {
         onToggleAllRows={handleToggleAllRows}
         getRowId={(item) => item.id}
       />
+      </div>
+
 
       {/* ===================== MODAL: ADVANCED FILTERS ===================== */}
       {isFilterModalOpen && (

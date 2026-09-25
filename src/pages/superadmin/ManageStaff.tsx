@@ -23,10 +23,12 @@ const ManageStaff: React.FC = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [roleFilter, setRoleFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
 
   const [deleteModal, setDeleteModal] = useState(false);
+  const [statusModal, setStatusModal] = useState(false);
   const [createStaff, setCreateStaff] = useState(false);
+  const [editStaff, setEditStaff] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<StaffProps | null>(null);
   const [viewStaff, setViewStaff] = useState<StaffProps | null>(null);
 
@@ -50,7 +52,7 @@ const ManageStaff: React.FC = () => {
     page: currentPage,
     searchTerm: debouncedSearch,
     per_page: itemsPerPage,
-    role: roleFilter !== "all" ? roleFilter : undefined,
+    role: roleFilter || "all",
   });
 
   // Full staff stats query for top KPI cards
@@ -60,40 +62,52 @@ const ManageStaff: React.FC = () => {
   const totalItems = data?.totalItems ?? staffList.length;
   const totalPages = data?.totalPages ?? Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
-  // Dynamic KPI Metrics derived from statsData
-  const allStaff = statsData?.items ?? staffList;
-  const totalStaffCount = statsData?.totalItems ?? totalItems;
+  // Dynamic KPI Metrics derived from /staff-stats or staff list
+  const allStaff = statsData?.items && statsData.items.length > 0 ? statsData.items : staffList;
+  const totalStaffCount = statsData?.totalStaff || statsData?.totalItems || totalItems;
+
+  const isStaffActive = (staff?: StaffProps | null) => {
+    if (!staff) return false;
+    if (typeof staff.status === "boolean") return staff.status;
+    const s = String(
+      staff.status !== undefined && staff.status !== null
+        ? staff.status
+        : staff.is_active ?? staff.enabled ?? ""
+    ).toLowerCase();
+    return s === "active" || s === "1" || s === "true" || s === "successful";
+  };
 
   const financeCount = useMemo(() => {
+    if (statsData?.financeStaff !== undefined && statsData.financeStaff > 0) {
+      return statsData.financeStaff;
+    }
     return allStaff.filter((s) =>
       String(s.role || "").toLowerCase().includes("finance")
     ).length;
-  }, [allStaff]);
+  }, [allStaff, statsData?.financeStaff]);
 
   const supportCount = useMemo(() => {
+    if (statsData?.supportStaff !== undefined && statsData.supportStaff > 0) {
+      return statsData.supportStaff;
+    }
     return allStaff.filter((s) =>
       String(s.role || "").toLowerCase().includes("support")
     ).length;
-  }, [allStaff]);
+  }, [allStaff, statsData?.supportStaff]);
 
   const activeCount = useMemo(() => {
-    return allStaff.filter((s) => {
-      const statusStr =
-        typeof s.status === "boolean"
-          ? s.status
-            ? "active"
-            : "inactive"
-          : String(s.status || (s.is_active ?? s.enabled ? "active" : "inactive")).toLowerCase();
-      return statusStr === "active" || statusStr === "successful" || statusStr === "1";
-    }).length;
-  }, [allStaff]);
+    if (statsData?.activeStaff !== undefined && statsData.activeStaff > 0) {
+      return statsData.activeStaff;
+    }
+    return allStaff.filter((s) => isStaffActive(s)).length;
+  }, [allStaff, statsData?.activeStaff]);
 
   // Mutations
   const activateMutation = useActivateUser();
   const deactivateMutation = useDeactivateUser();
   const deleteMutation = useDeleteUser();
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!selectedStaff?.id) return;
     deleteMutation.mutate(selectedStaff.id, {
       onSuccess: () => {
@@ -103,25 +117,25 @@ const ManageStaff: React.FC = () => {
     });
   };
 
-  const handleToggleStatus = (staff: StaffProps) => {
-    if (!staff.id) return;
-    const isCurrentlyActive =
-      typeof staff.status === "boolean"
-        ? staff.status
-        : String(staff.status || (staff.is_active ?? staff.enabled ? "active" : "")).toLowerCase() === "active";
+  const handleToggleStatus = () => {
+    if (!selectedStaff?.id) return;
+    const currentlyActive = isStaffActive(selectedStaff);
 
-    if (isCurrentlyActive) {
-      deactivateMutation.mutate(staff.id);
+    if (currentlyActive) {
+      deactivateMutation.mutate(selectedStaff.id, {
+        onSuccess: () => {
+          setStatusModal(false);
+          setSelectedStaff(null);
+        },
+      });
     } else {
-      activateMutation.mutate(staff.id);
+      activateMutation.mutate(selectedStaff.id, {
+        onSuccess: () => {
+          setStatusModal(false);
+          setSelectedStaff(null);
+        },
+      });
     }
-  };
-
-  const getInitials = (name?: string) => {
-    if (!name) return "ST";
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    return (parts[0][0] + parts[1][0]).toUpperCase();
   };
 
   const columns: TableColumnProps<StaffProps>[] = [
@@ -135,16 +149,8 @@ const ManageStaff: React.FC = () => {
             ? `${item.first_name} ${item.last_name || ""}`.trim()
             : item.full_name || item.username || "Staff Member");
         return (
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
-              {getInitials(displayName)}
-            </div>
-            <div className="flex flex-col">
-              <span className="font-semibold text-textBlack text-xs">{displayName}</span>
-              {item.id && (
-                <span className="text-[10px] text-textBlack/50 font-mono">ID: #{item.id}</span>
-              )}
-            </div>
+          <div className="flex flex-col">
+            <span className="font-semibold text-textBlack text-xs">{displayName}</span>
           </div>
         );
       },
@@ -169,14 +175,9 @@ const ManageStaff: React.FC = () => {
       label: "Role",
       key: "role",
       render: (item: StaffProps) => {
-        const isFinance = String(item.role || "").toLowerCase().includes("finance");
         return (
           <span
-            className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              isFinance
-                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-            } capitalize`}
+            className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize`}
           >
             {item.role || "Staff"}
           </span>
@@ -187,16 +188,7 @@ const ManageStaff: React.FC = () => {
       label: "Status",
       key: "status",
       render: (item: StaffProps) => {
-        const statusStr =
-          typeof item.status === "boolean"
-            ? item.status
-              ? "Active"
-              : "Inactive"
-            : item.status !== undefined && item.status !== null
-            ? String(item.status)
-            : item.is_active ?? item.enabled
-            ? "Active"
-            : "Inactive";
+        const statusStr = isStaffActive(item) ? "Active" : "Inactive";
         return <StatusBadge status={statusStr} />;
       },
     },
@@ -204,20 +196,20 @@ const ManageStaff: React.FC = () => {
       label: "Actions",
       key: "actions",
       render: (item: StaffProps) => {
-        const isCurrentlyActive =
-          typeof item.status === "boolean"
-            ? item.status
-            : String(item.status || (item.is_active ?? item.enabled ? "active" : "")).toLowerCase() === "active";
+        const currentlyActive = isStaffActive(item);
 
         const otherActions: OtherActionProps[] = [
           {
-            name: isCurrentlyActive ? "Deactivate User" : "Activate User",
-            icon: isCurrentlyActive ? (
+            name: currentlyActive ? "Deactivate User" : "Activate User",
+            icon: currentlyActive ? (
               <FaUserSlash className="text-amber-500" />
             ) : (
               <FaUserCheck className="text-emerald-500" />
             ),
-            action: () => handleToggleStatus(item),
+            action: () => {
+              setSelectedStaff(item);
+              setStatusModal(true);
+            },
           },
         ];
 
@@ -228,6 +220,7 @@ const ManageStaff: React.FC = () => {
             onView={() => setViewStaff(item)}
             onEdit={() => {
               setSelectedStaff(item);
+              setEditStaff(true);
               setCreateStaff(false);
             }}
             onDelete={() => {
@@ -257,6 +250,7 @@ const ManageStaff: React.FC = () => {
             icon={<FaPlus />}
             onClick={() => {
               setSelectedStaff(null);
+              setEditStaff(false);
               setCreateStaff(true);
             }}
           />
@@ -348,7 +342,7 @@ const ManageStaff: React.FC = () => {
         title="Delete Staff Member"
         message={`Are you sure you want to remove ${
           selectedStaff?.name || selectedStaff?.email || "this staff member"
-        }? This account will lose all system access.`}
+        }? This account will lose all system access and cannot be undone.`}
         confirmText="Yes, Delete"
         isLoading={deleteMutation.isPending}
         onCancel={() => {
@@ -358,14 +352,43 @@ const ManageStaff: React.FC = () => {
         onConfirm={handleDelete}
       />
 
+      {/* Activate / Deactivate Confirmation Modal */}
+      <ConfirmDialog
+        isOpen={statusModal && Boolean(selectedStaff)}
+        title={
+          isStaffActive(selectedStaff)
+            ? "Deactivate Staff Account"
+            : "Activate Staff Account"
+        }
+        message={
+          isStaffActive(selectedStaff)
+            ? `Are you sure you want to deactivate ${
+                selectedStaff?.name || selectedStaff?.email || "this staff member"
+              }? They will be suspended and temporarily unable to log in to the dashboard.`
+            : `Are you sure you want to activate ${
+                selectedStaff?.name || selectedStaff?.email || "this staff member"
+              }? Their dashboard access and operational permissions will be restored.`
+        }
+        confirmText={
+          isStaffActive(selectedStaff) ? "Yes, Deactivate" : "Yes, Activate"
+        }
+        isLoading={activateMutation.isPending || deactivateMutation.isPending}
+        onCancel={() => {
+          setStatusModal(false);
+          setSelectedStaff(null);
+        }}
+        onConfirm={handleToggleStatus}
+      />
+
       {/* Create / Edit Staff Modal */}
-      {(Boolean(selectedStaff) || createStaff) && !deleteModal && (
+      {(editStaff || createStaff) && (
         <EditStaffModal
           selectedStaff={selectedStaff}
-          isEdit={Boolean(selectedStaff)}
+          isEdit={Boolean(editStaff && selectedStaff)}
           onClose={() => {
             setSelectedStaff(null);
             setCreateStaff(false);
+            setEditStaff(false);
           }}
           onSuccess={() => {
             refetch();

@@ -5,7 +5,6 @@ import { useCreateAccount, useResolveAccount } from "../../hooks/useBank";
 import SearchableInput from "../ui/SearchableInput";
 import ActionButton from "../ui/ActionButton";
 import { toast } from "sonner";
-import { LuBuilding2, LuCheck } from "react-icons/lu";
 
 const inputClass =
   "w-full text-textBlack border border-primary/10 bg-secondary rounded-lg px-4 h-11 text-xs outline-0 placeholder:text-textBlack/40 focus:border-primary/40 transition";
@@ -96,9 +95,6 @@ const AddBankModal: React.FC<AddBankModalProps> = ({
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3 border-b border-primary/10 pb-4">
-          <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-            <LuBuilding2 size={20} />
-          </div>
           <div>
             <h2 className="text-lg font-bold text-textBlack">
               Configure Settlement Account
@@ -160,7 +156,7 @@ const AddBankModal: React.FC<AddBankModalProps> = ({
           <div className="flex flex-col space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="font-medium text-xs text-textBlack">
-                Account Name (/resolve-account)
+                Account Name 
               </label>
               {resolveAccountMutation.isPending ? (
                 <span className="text-[10px] text-primary animate-pulse">
@@ -168,7 +164,7 @@ const AddBankModal: React.FC<AddBankModalProps> = ({
                 </span>
               ) : accountName ? (
                 <span className="text-[10px] text-emerald-600 flex items-center gap-1">
-                  <LuCheck size={12} /> Resolved
+                  Resolved
                 </span>
               ) : null}
             </div>
@@ -179,6 +175,7 @@ const AddBankModal: React.FC<AddBankModalProps> = ({
               placeholder="Account holder registered name"
               className={inputClass}
               required
+              disabled
             />
           </div>
 

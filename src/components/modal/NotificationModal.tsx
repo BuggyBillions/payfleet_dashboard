@@ -1,12 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import Modal from "./Modal";
-import { toast } from "sonner";
-import { LuBell, LuCheck, LuLoader } from "react-icons/lu";
-import {
-  isNotificationRead,
-  type NotificationItem,
-} from "../../services/notificationService";
-import { getErrorMessage } from "../../helpers/api";
+import type { NotificationItem } from "../../services/notificationService";
+import { FaXmark } from "react-icons/fa6";
 
 interface NotificationModalProps {
   notification: NotificationItem;
@@ -17,11 +12,7 @@ interface NotificationModalProps {
 const NotificationModal: React.FC<NotificationModalProps> = ({
   notification,
   onClose,
-  onMarkRead,
 }) => {
-  const [marking, setMarking] = useState(false);
-
-  const read = isNotificationRead(notification);
   const title =
     notification.title ??
     notification.subject ??
@@ -51,33 +42,25 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
     });
   })();
 
-  const handleMarkRead = async () => {
-    if (!notification.id || read) return;
-    setMarking(true);
-    try {
-      await onMarkRead?.(notification.id);
-      onClose();
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to mark as read"));
-    } finally {
-      setMarking(false);
-    }
-  };
 
   return (
-    <Modal onClose={onClose}>
-      <div className="flex flex-col gap-6">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-            <LuBell size={20} className="text-primary" />
-          </div>
+    <Modal customMode onClose={onClose}>
+      <div className="flex flex-col gap-6 bg-tertiary rounded-xl p-6 w-1/3">
+        <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold text-textBlack">{title}</h2>
             <p className="text-xs text-textBlack/60 capitalize">{meta}</p>
           </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className=" text-textBlack text-xs rounded-md font-medium  w-5 h-5 inline-flex items-center justify-center cursor-pointer"
+          >
+            <FaXmark />
+          </button>
         </div>
 
-        <div className="bg-secondary border border-primary/10 rounded-lg p-4">
+        <div className="bg-secondary  rounded-lg p-4">
           {body ? (
             <p className="text-sm text-textBlack/80 leading-relaxed">{body}</p>
           ) : (
@@ -85,32 +68,10 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
           )}
         </div>
 
-        {time && (
-          <p className="text-xs text-textBlack/50 -mt-2">{time}</p>
-        )}
 
         <div className="flex flex-col sm:flex-row gap-3 border-t border-black/5 pt-5">
-          <button
-            type="button"
-            onClick={onClose}
-            className="bg-secondary text-xs rounded-md font-medium border border-black/10 w-full sm:w-40 h-11 cursor-pointer"
-          >
-            Close
-          </button>
-          {!read && onMarkRead && notification.id && (
-            <button
-              type="button"
-              onClick={handleMarkRead}
-              disabled={marking}
-              className="action-btn text-white text-xs rounded-md font-medium w-full sm:w-40 h-11 cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
-            >
-              {marking ? (
-                <LuLoader size={14} className="animate-spin" />
-              ) : (
-                <LuCheck size={14} />
-              )}
-              Mark as Read
-            </button>
+          {time && (
+            <p className="text-xs text-textBlack/50 -mt-2">{time}</p>
           )}
         </div>
       </div>

@@ -25,12 +25,14 @@ import ManageStaff from "./pages/superadmin/ManageStaff";
 import ManageBanks from "./pages/superadmin/ManageBanks";
 import ManageDeposit from "./pages/superadmin/ManageDeposit";
 import SuperAdminManagePayments from "./pages/superadmin/ManagePayments";
+import SuperAdminManageTier from "./pages/superadmin/ManageTier";
 import FinancialManageDeposit from "./pages/financial/ManageDeposit";
 import SupportManageCompany from "./pages/support/ManageCompany";
+import SupportManageCompanyVerification from "./pages/support/ManageCompanyVerification";
 import Communication from "./pages/chat/Communication";
-import Tier from "./pages/company/Tier";
 import Verifyemail from "./pages/auth/Verifyemail";
 import Notifications from "./pages/company/Notifications";
+import ManageCompanyVerification from "./pages/superadmin/ManageCompanyVerification";
 
 function App() {
   return (
@@ -106,13 +108,6 @@ function App() {
         />
         <Route
           index
-          path="/dashboard/tier"
-          element={
-            <MainLayout pageName="Tier Management" children={<Tier />} />
-          }
-        />
-        <Route
-          index
           path="/dashboard/notifications"
           element={
             <MainLayout
@@ -148,6 +143,26 @@ function App() {
         />
         <Route
           index
+          path="/admin/dashboard/company-verification"
+          element={
+            <MainLayout
+              pageName="Companies Verification"
+              children={<ManageCompanyVerification />}
+            />
+          }
+        />
+        <Route
+          index
+          path="/admin/dashboard/tier"
+          element={
+            <MainLayout
+              pageName="Manage Tiers"
+              children={<SuperAdminManageTier />}
+            />
+          }
+        />
+        <Route
+          index
           path="/admin/dashboard/staff"
           element={
             <MainLayout pageName="Manage Staff" children={<ManageStaff />} />
@@ -165,16 +180,6 @@ function App() {
             <MainLayout
               pageName="All Deposits"
               children={<ManageDeposit defaultFilter="all" />}
-            />
-          }
-        />
-        <Route
-          index
-          path="/admin/dashboard/deposit/pending"
-          element={
-            <MainLayout
-              pageName="Pending Deposits"
-              children={<ManageDeposit defaultFilter="pending" />}
             />
           }
         />
@@ -222,7 +227,7 @@ function App() {
           path="/financial/dashboard/deposit/pending"
           element={
             <MainLayout
-              pageName="Pending Deposits"
+              pageName="All Deposits"
               children={<FinancialManageDeposit defaultFilter="pending" />}
             />
           }
@@ -256,6 +261,16 @@ function App() {
             <MainLayout
               pageName="Manage Company"
               children={<SupportManageCompany />}
+            />
+          }
+        />
+        <Route
+          index
+          path="/support/dashboard/company-verification"
+          element={
+            <MainLayout
+              pageName="Companies Verification"
+              children={<SupportManageCompanyVerification />}
             />
           }
         />

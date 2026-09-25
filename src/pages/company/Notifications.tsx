@@ -1,103 +1,79 @@
-import React, { useEffect, useState } from "react";
-import { toast } from "sonner";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   LuBell,
   LuBellRing,
-  LuCheck,
   LuCheckCheck,
   LuLoader,
+  LuEye,
 } from "react-icons/lu";
 import { HiOutlineArrowTrendingUp } from "react-icons/hi2";
 import type { TableColumnProps } from "../../lib/interfaces";
 import {
-  getCompanyNotifications,
-  markNotificationRead,
   isNotificationRead,
   type NotificationItem,
 } from "../../services/notificationService";
-import { getErrorMessage } from "../../helpers/api";
+import {
+  useNotifications,
+  useMarkNotificationRead,
+  useMarkAllNotificationsRead,
+} from "../../hooks/useNotifications";
 import ReusableTable from "../../utility/ReusableTable";
-import ActionCell from "../../components/ui/ActionCell";
 import StatusBadge from "../../components/ui/StatusBadge";
 import NotificationModal from "../../components/modal/NotificationModal";
 import OverviewCards from "../../components/cards/OverviewCards";
+import { formatISODateToYYYYMMDD } from "../../helpers/formatterUtility";
 
 const Notifications: React.FC = () => {
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: notifications = [], isLoading: loading } = useNotifications({
+    refetchInterval: 15000,
+  });
+  const markReadMutation = useMarkNotificationRead();
+  const markAllReadMutation = useMarkAllNotificationsRead();
+
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selected, setSelected] = useState<NotificationItem | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [markingIds, setMarkingIds] = useState<Set<number | string>>(new Set());
-  const [markingAll, setMarkingAll] = useState(false);
 
+  const totalItems = notifications.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+
+  // Keep currentPage valid if totalPages shrinks
   useEffect(() => {
-    let mounted = true;
-    getCompanyNotifications()
-      .then((data) => {
-        if (!mounted) return;
-        setNotifications(
-          [...data].sort(
-            (a, b) =>
-              new Date(b.created_at ?? b.date ?? 0).getTime() -
-              new Date(a.created_at ?? a.date ?? 0).getTime(),
-          ),
-        );
-      })
-      .catch(() => undefined)
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  const unreadCount = notifications.filter((n) => !isNotificationRead(n)).length;
-
-  const handleMarkRead = async (id: number | string) => {
-    setMarkingIds((prev) => new Set(prev).add(id));
-    try {
-      await markNotificationRead(id);
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === id ? { ...n, is_read: true, read: true } : n,
-        ),
-      );
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to mark as read"));
-      throw error;
-    } finally {
-      setMarkingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
     }
+  }, [currentPage, totalPages]);
+
+  // Client-side pagination slicing
+  const paginatedNotifications = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return notifications.slice(startIndex, startIndex + itemsPerPage);
+  }, [notifications, currentPage, itemsPerPage]);
+
+  const unreadCount = useMemo(() => {
+    return notifications.filter((n) => !isNotificationRead(n)).length;
+  }, [notifications]);
+
+  const handleMarkRead = (id: number | string) => {
+    markReadMutation.mutate(id);
   };
 
-  const handleMarkAllRead = async () => {
-    const unread = notifications.filter((n) => n.id && !isNotificationRead(n));
-    if (unread.length === 0) return;
-    setMarkingAll(true);
-    try {
-      await Promise.all(unread.map((n) => markNotificationRead(n.id!)));
-      setNotifications((prev) =>
-        prev.map((n) => ({ ...n, is_read: true, read: true })),
-      );
-      toast.success("All notifications marked as read");
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to mark all as read"));
-    } finally {
-      setMarkingAll(false);
-    }
+  const handleMarkAllRead = () => {
+    const unreadIds = notifications
+      .filter((n) => n.id !== undefined && !isNotificationRead(n))
+      .map((n) => n.id!);
+    if (unreadIds.length === 0) return;
+    markAllReadMutation.mutate(unreadIds);
   };
 
   const handleView = (id: number | string) => {
     const item = notifications.find((n) => n.id === id);
     if (!item) return;
     setSelected(item);
+    if (item.id !== undefined && !isNotificationRead(item)) {
+      handleMarkRead(item.id);
+    }
     setModalOpen(true);
   };
 
@@ -110,15 +86,7 @@ const Notifications: React.FC = () => {
   const getTime = (n: NotificationItem) => {
     const dateStr = n.created_at ?? n.date ?? n.updated_at ?? n.read_at;
     if (!dateStr) return "";
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return String(dateStr);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return formatISODateToYYYYMMDD(dateStr);
   };
 
   const columns: TableColumnProps<NotificationItem>[] = [
@@ -161,34 +129,18 @@ const Notifications: React.FC = () => {
     },
     {
       label: "Action",
-      render: (n) => {
-        const read = isNotificationRead(n);
-        const marking = markingIds.has(n.id ?? -1);
-        return (
-          <ActionCell
-            rowId={n.id ?? -1}
-            onView={handleView}
-            otherActions={
-              read
-                ? []
-                : [
-                    {
-                      name: marking ? "Marking..." : "Mark as Read",
-                      icon: marking ? (
-                        <LuLoader size={13} className="animate-spin" />
-                      ) : (
-                        <LuCheck size={13} />
-                      ),
-                      action: () => {
-                        if (!n.id || read) return;
-                        handleMarkRead(n.id).catch(() => undefined);
-                      },
-                    },
-                  ]
-            }
-          />
-        );
-      },
+      className: "px-3 py-2 text-center",
+      tableHeadingClassName: "text-center",
+      render: (n) => (
+        <button
+          type="button"
+          onClick={() => handleView(n.id ?? -1)}
+          className="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition cursor-pointer inline-flex items-center justify-center"
+          title="View Notification Details"
+        >
+          <LuEye size={16} />
+        </button>
+      ),
     },
   ];
 
@@ -205,10 +157,10 @@ const Notifications: React.FC = () => {
           <button
             type="button"
             onClick={handleMarkAllRead}
-            disabled={markingAll}
+            disabled={markAllReadMutation.isPending}
             className="inline-flex items-center justify-center gap-2 px-4 h-10 rounded-lg bg-primary hover:bg-primary/90 transition text-white text-xs font-semibold cursor-pointer disabled:opacity-60"
           >
-            {markingAll ? (
+            {markAllReadMutation.isPending ? (
               <LuLoader size={14} className="animate-spin" />
             ) : (
               <LuCheckCheck size={14} />
@@ -218,7 +170,7 @@ const Notifications: React.FC = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-2  gap-x-4 gap-y-6">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-6">
         <OverviewCards
           icon={LuBellRing}
           title="Total Notifications"
@@ -233,23 +185,15 @@ const Notifications: React.FC = () => {
         />
       </div>
 
-      <div className="bg-white dark:bg-[#131217] rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-200 dark:border-white/10">
-          <h3 className="text-sm font-bold text-textBlack">
-            All Notifications
-          </h3>
-          <p className="text-xs text-textBlack/60">
-            Review and manage your notifications.
-          </p>
-        </div>
+      <div className="bg-tertiary rounded-2xl p-4 overflow-hidden">
         <ReusableTable
           columns={columns}
-          data={notifications}
+          data={paginatedNotifications}
           isLoading={loading}
           error={null}
           currentPage={currentPage}
-          totalPages={Math.ceil(notifications.length / itemsPerPage) || 1}
-          totalItems={notifications.length}
+          totalPages={totalPages}
+          totalItems={totalItems}
           itemsPerPage={itemsPerPage}
           setCurrentPage={setCurrentPage}
           setItemsPerPage={setItemsPerPage}
@@ -260,7 +204,6 @@ const Notifications: React.FC = () => {
         <NotificationModal
           notification={selected}
           onClose={() => setModalOpen(false)}
-          onMarkRead={handleMarkRead}
         />
       )}
     </div>

@@ -2,12 +2,10 @@ import React, { useState, useEffect, useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { FiLogOut } from "react-icons/fi";
 import { MdSettings } from "react-icons/md";
-import { FaXmark } from "react-icons/fa6";
 import { HiChevronDown } from "react-icons/hi2";
 import { navItems, type NavItem } from "../../lib/navItems";
 import Modal from "../modal/Modal";
 import { useUser } from "../../hooks/useUser";
-import { assets } from "../../assets/assets";
 
 const Sidebar = ({
   setIsOpen,
@@ -42,8 +40,8 @@ const Sidebar = ({
 
   // Dynamic settings path matching role context
   const settingsPath = useMemo(() => {
-    if (effectiveRole === "admin" || effectiveRole === "superadmin") return "/admin/dashboard/settings";
-    if (effectiveRole === "finance" || effectiveRole === "financial") return "/financial/dashboard/settings";
+    if (effectiveRole === "admin") return "/admin/dashboard/settings";
+    if (effectiveRole === "finance") return "/financial/dashboard/settings";
     if (effectiveRole === "support") return "/support/dashboard/settings";
     return "/dashboard/settings";
   }, [effectiveRole]);
@@ -79,11 +77,10 @@ const Sidebar = ({
           <button
             type="button"
             onClick={() => toggleMenu(item.name)}
-            className={`flex w-full items-center justify-between gap-2.5 transition-all duration-200 px-4 py-2.5 rounded-lg cursor-pointer text-xs font-medium ${
-              parentActive
+            className={`flex w-full items-center justify-between gap-2.5 transition-all duration-200 px-4 py-2.5 rounded-lg cursor-pointer text-xs font-medium ${parentActive
                 ? "bg-primary/10 text-primary font-semibold"
                 : "text-gray-700 hover:bg-primary/10 hover:text-primary"
-            }`}
+              }`}
           >
             <span className="flex items-center gap-2.5">
               {item.icon && (
@@ -95,9 +92,8 @@ const Sidebar = ({
             </span>
             <HiChevronDown
               size={14}
-              className={`transition-transform duration-300 ${
-                isOpen ? "rotate-180" : ""
-              }`}
+              className={`transition-transform duration-300 ${isOpen ? "rotate-180" : ""
+                }`}
             />
           </button>
 
@@ -108,10 +104,9 @@ const Sidebar = ({
                   <NavLink
                     to={child.path}
                     className={({ isActive }) =>
-                      `flex items-center gap-2 transition-all duration-200 px-3 py-2 rounded-md cursor-pointer text-xs ${
-                        isActive
-                          ? "bg-primary text-white font-semibold shadow-xs"
-                          : "text-gray-600 hover:bg-primary/10 hover:text-primary"
+                      `flex items-center gap-2 transition-all duration-200 px-3 py-2 rounded-md cursor-pointer text-xs ${isActive
+                        ? "bg-primary text-white font-semibold shadow-xs"
+                        : "text-gray-600 hover:bg-primary/10 hover:text-primary"
                       }`
                     }
                     onClick={() => setIsOpen(false)}
@@ -138,10 +133,9 @@ const Sidebar = ({
           to={item.path!}
           end={isDashboard}
           className={({ isActive }) =>
-            `flex items-center gap-2.5 transition-all duration-200 px-4 py-2.5 rounded-lg cursor-pointer text-xs font-medium ${
-              isActive
-                ? "bg-primary text-white font-semibold shadow-xs"
-                : "text-gray-700 hover:bg-primary/10 hover:text-primary"
+            `flex items-center gap-2.5 transition-all duration-200 px-4 py-2.5 rounded-lg cursor-pointer text-xs font-medium ${isActive
+              ? "bg-primary text-white font-semibold shadow-xs"
+              : "text-gray-700 hover:bg-primary/10 hover:text-primary"
             }`
           }
           onClick={() => setIsOpen(false)}
@@ -154,24 +148,12 @@ const Sidebar = ({
   };
 
   return (
-    <div className="relative bg-tertiary w-full h-full px-2 py-4 md:pt-0 pt-8 flex flex-col justify-between">
-      <button
-        type="button"
-        aria-label="Close sidebar"
-        className="lg:hidden absolute top-4 right-4 z-10 flex items-center justify-center w-8 h-8 rounded-full bg-primary/15 text-primary hover:bg-primary/25 transition cursor-pointer"
-        onClick={() => setIsOpen(false)}
-      >
-        <FaXmark size={18} />
-      </button>
+    <div className=" w-full h-full px-2 py-4 lg:pt-0 pt-3 flex flex-col justify-between">
       <div className="flex flex-col h-full overflow-hidden">
-        <img
-          src={assets.logo}
-          alt="Payfleet Logo"
-          className="w-1/3 mx-auto md:hidden inline mb-4"
-        />
+        
 
         {/* Navigation list */}
-        <ul className="px-3 lg:mt-4 mt-2 flex flex-col gap-1.5 overflow-y-auto no-scrollbar pb-6 flex-1">
+        <ul className="px-3 lg:mt-4 flex flex-col gap-1.5 overflow-y-auto no-scrollbar  flex-1">
           {filteredLinks.map((item, index) => renderItem(item, index))}
         </ul>
       </div>
@@ -182,10 +164,9 @@ const Sidebar = ({
           <NavLink
             to={settingsPath}
             className={({ isActive }) =>
-              `flex items-center gap-2.5 text-gray-700 transition-all duration-200 px-4 py-2.5 rounded-lg cursor-pointer text-xs font-medium hover:bg-primary/10 hover:text-primary ${
-                isActive
-                  ? "bg-primary text-white font-semibold shadow-xs hover:bg-primary hover:text-white"
-                  : ""
+              `flex items-center gap-2.5 text-gray-700 transition-all duration-200 px-4 py-2.5 rounded-lg cursor-pointer text-xs font-medium hover:bg-primary/10 hover:text-primary ${isActive
+                ? "bg-primary text-white font-semibold shadow-xs hover:bg-primary hover:text-white"
+                : ""
               }`
             }
             onClick={() => setIsOpen(false)}

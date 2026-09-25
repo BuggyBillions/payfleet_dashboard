@@ -90,7 +90,7 @@ export interface SearchableInputProps<T> {
 }
 
 export interface ActionButtonProps {
-  text: string;
+  text?: string;
   loadingText?: string;
   icon?: React.ReactNode;
   loading?: boolean;
@@ -99,6 +99,7 @@ export interface ActionButtonProps {
   disabled?: boolean;
   buttonStyle?: string;
   overideBg?: boolean;
+  title?: string;
 }
 
 export interface FormattedInputProps extends Omit<
@@ -190,6 +191,13 @@ export interface NavItem {
 // 3. AUTHENTICATION & USER TYPES
 // ==========================================
 
+export interface CompanyTierProp {
+  id?: number | string;
+  name?: string;
+  level?: number | string;
+  created_at?: string;
+}
+
 export interface CompanyDetailsProps {
   id: number;
   name: string;
@@ -198,6 +206,8 @@ export interface CompanyDetailsProps {
   logo?: string | null;
   about?: string;
   address?: string;
+  tier?: number | string | CompanyTierProp;
+  bvn?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -216,6 +226,8 @@ export interface UserProps {
   company_name?: string;
   enabled?: number;
   avatar?: string;
+  phone?: string;
+  phone_number?: string;
   company_details?: CompanyDetailsProps;
   created_at?: string;
   updated_at?: string;
@@ -251,13 +263,13 @@ export type RegisterFormValues = {
 };
 
 export type ForgotPasswordFormValues = {
-  name: string;
   email: string;
-  logo: File | null;
-  about: string;
-  address: string;
-  phone: string;
-  password: string;
+  name?: string;
+  logo?: File | null;
+  about?: string;
+  address?: string;
+  phone?: string;
+  password?: string;
 };
 
 export interface RegisterValues {
@@ -537,6 +549,11 @@ export interface ViewStaffModalProps {
   onDelete?: () => void;
 }
 
+export interface ViewProfileModalProps {
+  conversation: Conversation | null;
+  onClose: () => void;
+}
+
 export interface ReduceSalaryModalProps {
   employee: Employee;
   onClose: () => void;
@@ -546,6 +563,61 @@ export interface ReduceSalaryModalProps {
 export interface ReductionValues {
   amount: string | number;
   reason: string;
+}
+
+export interface TierItem {
+  id: number | string;
+  name: string;
+  level: number;
+  no_of_staff: string | number;
+  requirements: string;
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: unknown;
+}
+
+export interface TierFormData {
+  name: string;
+  level: number;
+  no_of_staff: string;
+  requirements: string;
+}
+
+export interface TierConfig {
+  id: number;
+  name: string;
+  code: string;
+  badge: string;
+  description: string;
+  maxEmployees: number | "Unlimited";
+  monthlyVolumeLimit: number;
+  singleTransactionLimit: number;
+  dailyPayoutLimit: number;
+  maxBankAccounts: number | "Unlimited";
+  pricing: string;
+  isPopular?: boolean;
+  features: string[];
+  kycRequirements: string[];
+}
+
+export interface TierUpgradeRequest {
+  id: number | string;
+  companyId: number | string;
+  companyName: string;
+  companyEmail: string;
+  currentTier: number | string;
+  requestedTier: number | string;
+  rcNumber?: string;
+  tinNumber?: string;
+  directorName?: string;
+  directorPhone?: string;
+  documentUrl?: string;
+  documentName?: string;
+  reason?: string;
+  status: "pending" | "approved" | "rejected";
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export type VerificationStatus =
@@ -564,7 +636,7 @@ export interface CompanyVerificationItem {
   tinNumber: string;
   industry: string;
   staffCount: number;
-  tier: "Starter" | "Business" | "Enterprise";
+  tier: string | number | CompanyTierProp;
   status: "Active" | "Inactive";
   verificationStatus: VerificationStatus;
   submittedAt: string;
@@ -729,7 +801,7 @@ export interface ChatUser {
 }
 
 export interface ChatMessage {
-  id: number;
+  id: number | string;
   senderId: number;
   senderName: string;
   text: string;
@@ -747,13 +819,19 @@ export interface Conversation {
   unread: number;
   online?: boolean;
   avatar?: string;
+  email?: string;
+  phone?: string;
+  phoneNumber?: string;
   role?: string;
+  department?: string;
+  status?: string | boolean;
+  created_at?: string;
   membersCount?: number;
   messages: ChatMessage[];
 }
 
 export interface FloatingWidgetMessage {
-  id: number;
+  id: number | string;
   sender: "user" | "support";
   text: string;
   time: string;
@@ -763,7 +841,7 @@ export interface FloatingWidgetMessage {
 // 7. SETTINGS & PROFILE
 // ==========================================
 
-export type SettingsTab = "profile" | "pin" | "password";
+export type SettingsTab = "profile" | "pin" | "password" | "tier";
 
 export interface PasswordFieldProps {
   label: string;
