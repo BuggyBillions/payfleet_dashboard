@@ -42,12 +42,6 @@ export const navItems: NavItem[] = [
     role: ["company"],
   },
   {
-    name: "Tier ",
-    icon: LuHistory,
-    path: "/dashboard/tier",
-    role: ["company"],
-  },
-  {
     name: "Notifications",
     icon: LuArrowDownToLine,
     path: "/dashboard/notifications",

@@ -208,6 +208,11 @@ export interface CompanyDetailsProps {
   address?: string;
   tier?: number | string | CompanyTierProp;
   bvn?: string;
+  cac?: string | null;
+  mermat?: string | null;
+  status_report?: string | null;
+  nin?: string;
+  balance?: string | number;
   created_at?: string;
   updated_at?: string;
 }

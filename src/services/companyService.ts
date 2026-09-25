@@ -14,7 +14,11 @@ export interface UpdateCompanyDetailsPayload {
   address?: string;
   about?: string;
   logo?: string | null;
+  cac?: string | null;
+  mermat?: string | null;
+  status_report?: string | null;
   bvn?: number | string;
+  nin?: number | string;
   pin?: string;
 }
 
@@ -95,9 +99,14 @@ export const verifyCompanyService = async ({
 };
 
 export const updateCompanyDetails = async (
-  payload: UpdateCompanyDetailsPayload,
+  payload: UpdateCompanyDetailsPayload | FormData,
 ): Promise<unknown> => {
-  const res = await api.put("/update-company-details", payload);
+  const isFormData = payload instanceof FormData;
+  const res = await api.post("/update-company-details", payload, {
+    headers: isFormData
+      ? { "Content-Type": "multipart/form-data" }
+      : undefined,
+  });
   return res.data?.data ?? res.data;
 };
 

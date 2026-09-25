@@ -375,7 +375,7 @@ const TierSettings: React.FC = () => {
         />
       </div>
 
-      <div className="bg-tertiary rounded-xl p-4 border border-primary/10">
+      <div className="bg-secondary rounded-xl p-4 border border-primary/10">
         <div className="flex flex-col mb-4">
           <h3 className="font-semibold text-textBlack">Available Tiers</h3>
           <p className="text-xs text-textBlack/60">

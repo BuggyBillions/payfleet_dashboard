@@ -1,17 +1,28 @@
 import React, { useState, useMemo } from "react";
 import { toast } from "sonner";
-import { FiEye, FiEyeOff } from "react-icons/fi";
+import { FiEye, FiEyeOff, FiUpload } from "react-icons/fi";
 import {
   LuUser,
   LuShieldCheck,
-  LuLock,
+  LuCrown,
 } from "react-icons/lu";
 import { useUser } from "../../hooks/useUser";
 import { updateCompanyDetails } from "../../services/companyService";
-import { changePasswordService } from "../../services/authService";
 import { getErrorMessage } from "../../helpers/api";
+import { formatterUtility } from "../../helpers/formatterUtility";
 import TierSettings from "./TierSettings";
 import type { SettingsTab, PasswordFieldProps } from "../../lib/interfaces";
+
+type DocumentField = "logo" | "cac" | "mermat" | "status_report";
+
+interface DocumentFieldProps {
+  label: string;
+  hint?: string;
+  accept?: string;
+  existingUrl?: string | null;
+  file: File | null;
+  onSelect: (file: File | null) => void;
+}
 
 interface TabConfig {
   key: SettingsTab;
@@ -19,8 +30,6 @@ interface TabConfig {
   icon: React.ComponentType<{ size?: number; className?: string }>;
   roles?: string[];
 }
-
-const ALL_ROLES = ["company", "admin", "finance", "support"];
 
 const TABS: TabConfig[] = [
   {
@@ -30,15 +39,15 @@ const TABS: TabConfig[] = [
     roles: ["company"],
   },
   {
-    key: "password",
-    label: "Security & Password",
-    icon: LuLock,
-    roles: ALL_ROLES,
-  },
-  {
     key: "pin",
     label: "Transaction PIN",
     icon: LuShieldCheck,
+    roles: ["company"],
+  },
+  {
+    key: "tier",
+    label: "Tier & Plan",
+    icon: LuCrown,
     roles: ["company"],
   },
 ];
@@ -81,6 +90,55 @@ const PasswordField: React.FC<PasswordFieldProps> = ({
   </label>
 );
 
+const DocumentField: React.FC<DocumentFieldProps> = ({
+  label,
+  hint,
+  accept,
+  existingUrl,
+  file,
+  onSelect,
+}) => {
+  const inputId = `doc-${label.replace(/\s+/g, "-").toLowerCase()}`;
+
+  return (
+    <div className="flex flex-col space-y-1.5">
+      <span className="font-medium text-xs text-textBlack">{label}</span>
+      <label
+        htmlFor={inputId}
+        className="flex items-center gap-3 w-full px-4 h-11 rounded-lg border border-dashed border-primary/20 bg-secondary cursor-pointer hover:border-primary/50 transition"
+      >
+        <FiUpload size={15} className="text-primary shrink-0" />
+        <span className="flex flex-col min-w-0">
+          <span className="text-xs text-textBlack truncate">
+            {file ? file.name : "Choose a file"}
+          </span>
+          {hint && (
+            <span className="text-[10px] text-textBlack/50 truncate">{hint}</span>
+          )}
+        </span>
+        {existingUrl && !file && (
+          <a
+            href={existingUrl}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="ml-auto text-[10px] font-medium text-primary hover:underline shrink-0"
+          >
+            View current
+          </a>
+        )}
+        <input
+          id={inputId}
+          type="file"
+          accept={accept}
+          className="hidden"
+          onChange={(e) => onSelect(e.currentTarget.files?.[0] ?? null)}
+        />
+      </label>
+    </div>
+  );
+};
+
 const Settings: React.FC = () => {
   const { user, role, token, refreshUser } = useUser();
   const currentRole = (role || user?.role || "company").toLowerCase().trim();
@@ -120,18 +178,33 @@ const Settings: React.FC = () => {
     address: user?.company_details?.address ?? "",
     about: user?.company_details?.about ?? "",
     bvn: user?.company_details?.bvn ?? "",
+    nin: user?.company_details?.nin ?? "",
   });
+
+  // Uploaded documents (sent as multipart only when a new file is picked)
+  const [documents, setDocuments] = useState<Record<DocumentField, File | null>>({
+    logo: null,
+    cac: null,
+    mermat: null,
+    status_report: null,
+  });
+
+  const existingDocuments: Record<DocumentField, string | null> = {
+    logo: user?.company_details?.logo ?? null,
+    cac: user?.company_details?.cac ?? null,
+    mermat: user?.company_details?.mermat ?? null,
+    status_report: user?.company_details?.status_report ?? null,
+  };
+
+  const companyBalance = Number(user?.company_details?.balance ?? 0);
+
+  const logoPreview = useMemo(
+    () => (documents.logo ? URL.createObjectURL(documents.logo) : null),
+    [documents.logo],
+  );
 
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPin, setSavingPin] = useState(false);
-  const [savingPassword, setSavingPassword] = useState(false);
-
-  // Password Form State
-  const [passwordForm, setPasswordForm] = useState({
-    current_password: "",
-    password: "",
-    password_confirmation: "",
-  });
 
   // PIN Form State
   const [pin, setPin] = useState({
@@ -149,56 +222,41 @@ const Settings: React.FC = () => {
     setProfile((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleUpdatePassword = async () => {
-    if (!passwordForm.current_password) {
-      toast.error("Please enter your current password");
-      return;
-    }
-    if (!passwordForm.password) {
-      toast.error("Please enter a new password");
-      return;
-    }
-    if (passwordForm.password.length < 6) {
-      toast.error("New password must be at least 6 characters long");
-      return;
-    }
-    if (passwordForm.password !== passwordForm.password_confirmation) {
-      toast.error("New password and confirm password do not match");
-      return;
-    }
+  const handleDocumentChange = (key: DocumentField, file: File | null) =>
+    setDocuments((prev) => ({ ...prev, [key]: file }));
 
-    setSavingPassword(true);
-    try {
-      await changePasswordService({
-        current_password: passwordForm.current_password,
-        password: passwordForm.password,
-        password_confirmation: passwordForm.password_confirmation,
-      });
-      toast.success("Password changed successfully");
-      setPasswordForm({
-        current_password: "",
-        password: "",
-        password_confirmation: "",
-      });
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to change password"));
-    } finally {
-      setSavingPassword(false);
-    }
-  };
+  const toNumeric = (value: string) =>
+    /^\d+$/.test(value.trim()) ? Number(value.trim()) : undefined;
 
   const handleSaveProfile = async () => {
     setSavingProfile(true);
     try {
-      await updateCompanyDetails({
+      const fields = {
         name: profile.name.trim() || undefined,
         email: profile.email.trim() || undefined,
         phone: profile.phoneNumber.trim() || undefined,
         address: profile.address.trim() || undefined,
         about: profile.about.trim() || undefined,
-        bvn: profile.bvn.trim() ? Number(profile.bvn) : undefined,
-      });
-      toast.success("Company details updated successfully");
+        bvn: toNumeric(profile.bvn),
+        nin: toNumeric(profile.nin),
+      };
+
+      const pickedFiles = (Object.entries(documents) as [DocumentField, File | null][])
+        .filter(([, file]) => file !== null);
+
+      if (pickedFiles.length > 0) {
+        const formData = new FormData();
+        Object.entries(fields).forEach(([key, value]) => {
+          if (value !== undefined) formData.append(key, String(value));
+        });
+        pickedFiles.forEach(([key, file]) => formData.append(key, file as File));
+        await updateCompanyDetails(formData);
+      } else {
+        await updateCompanyDetails(fields);
+      }
+
+      setDocuments({ logo: null, cac: null, mermat: null, status_report: null });
+      toast.success("Company profile updated successfully.");
       if (token) refreshUser(token).catch(() => undefined);
     } catch (error) {
       toast.error(getErrorMessage(error, "Failed to update company details"));
@@ -250,19 +308,38 @@ const Settings: React.FC = () => {
 
             {/* Profile badge header */}
             <div className="flex items-center gap-4 p-4 rounded-xl bg-secondary border border-primary/10">
-              <div className="w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center font-bold text-lg">
-                {profile.name?.[0] || profile.firstName?.[0] || "U"}
-                {!profile.name ? (profile.lastName?.[0] || "") : ""}
-              </div>
+              {logoPreview ? (
+                <img
+                  src={logoPreview}
+                  alt="Company logo preview"
+                  className="w-14 h-14 rounded-full object-cover shrink-0"
+                />
+              ) : existingDocuments.logo ? (
+                <img
+                  src={existingDocuments.logo}
+                  alt={profile.name || "Company logo"}
+                  className="w-14 h-14 rounded-full object-cover shrink-0"
+                />
+              ) : (
+                <div className="w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center font-bold text-lg shrink-0">
+                  {profile.name?.[0] || profile.firstName?.[0] || "U"}
+                  {!profile.name ? (profile.lastName?.[0] || "") : ""}
+                </div>
+              )}
               <div className="flex flex-col">
                 <span className="font-semibold text-sm text-textBlack">
                   {profile.name ||
                     (profile.firstName || "") + " " + (profile.lastName || "")}
                 </span>
                 <span className="text-xs text-textBlack/60">{profile.email}</span>
-                <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary capitalize w-fit">
-                  Role: {currentRole}
-                </span>
+                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary capitalize w-fit">
+                    Role: {currentRole}
+                  </span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary w-fit">
+                    Balance: {formatterUtility(companyBalance)}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -318,6 +395,20 @@ const Settings: React.FC = () => {
                   className={inputClass}
                 />
               </label>
+              <label className="flex flex-col space-y-1.5">
+                <span className="font-medium text-xs text-textBlack">NIN</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={11}
+                  value={profile.nin}
+                  onChange={(e) =>
+                    handleProfileChange("nin", e.target.value.replace(/\D/g, ""))
+                  }
+                  placeholder="Enter your 11-digit NIN"
+                  className={inputClass}
+                />
+              </label>
             </div>
 
             <label className="flex flex-col space-y-1.5">
@@ -329,6 +420,49 @@ const Settings: React.FC = () => {
                 className={`${inputClass} h-24 resize-none pt-3`}
               />
             </label>
+
+            <div className="flex flex-col space-y-4">
+              <div className="flex flex-col">
+                <h4 className="font-semibold text-sm text-textBlack">Company Documents</h4>
+                <p className="text-xs text-textBlack/60">
+                  Upload your logo and registration documents. Only re-upload a
+                  document to replace the current one.
+                </p>
+              </div>
+
+              <DocumentField
+                label="Company Logo"
+                hint="SVG, PNG or JPG"
+                accept="image/*"
+                existingUrl={existingDocuments.logo}
+                file={documents.logo}
+                onSelect={(file) => handleDocumentChange("logo", file)}
+              />
+              <DocumentField
+                label="CAC Certificate"
+                hint="CAC registration certificate"
+                accept="image/*,.pdf"
+                existingUrl={existingDocuments.cac}
+                file={documents.cac}
+                onSelect={(file) => handleDocumentChange("cac", file)}
+              />
+              <DocumentField
+                label="Memorandum of Association"
+                hint="Company's memorandum"
+                accept="image/*,.pdf"
+                existingUrl={existingDocuments.mermat}
+                file={documents.mermat}
+                onSelect={(file) => handleDocumentChange("mermat", file)}
+              />
+              <DocumentField
+                label="Status Report"
+                hint="Company status report"
+                accept="image/*,.pdf"
+                existingUrl={existingDocuments.status_report}
+                file={documents.status_report}
+                onSelect={(file) => handleDocumentChange("status_report", file)}
+              />
+            </div>
 
             <button
               type="button"
@@ -397,61 +531,18 @@ const Settings: React.FC = () => {
           </div>
         );
 
-      case "password":
+      case "tier":
         return (
-          <div className="flex flex-col gap-6 max-w-xl">
+          <div className="flex flex-col gap-6">
             <div className="flex flex-col">
-              <h3 className="font-semibold text-base text-textBlack">Security & Password</h3>
+              <h3 className="font-semibold text-base text-textBlack">Tier & Plan</h3>
               <p className="text-xs text-textBlack/60">
-                Ensure your account is using a strong password to keep your dashboard secure
+                Check your current subscription tier and request an upgrade
               </p>
             </div>
-
-            <div className="flex flex-col gap-y-4">
-              <PasswordField
-                label="Current Password"
-                value={passwordForm.current_password}
-                onChange={(value) =>
-                  setPasswordForm((prev) => ({ ...prev, current_password: value }))
-                }
-                visible={isFieldVisible("pwd_current")}
-                onToggle={() => toggleField("pwd_current")}
-                placeholder="Enter current password"
-              />
-              <PasswordField
-                label="New Password"
-                value={passwordForm.password}
-                onChange={(value) =>
-                  setPasswordForm((prev) => ({ ...prev, password: value }))
-                }
-                visible={isFieldVisible("pwd_new")}
-                onToggle={() => toggleField("pwd_new")}
-                placeholder="Enter new password (min. 6 characters)"
-              />
-              <PasswordField
-                label="Confirm New Password"
-                value={passwordForm.password_confirmation}
-                onChange={(value) =>
-                  setPasswordForm((prev) => ({ ...prev, password_confirmation: value }))
-                }
-                visible={isFieldVisible("pwd_confirm")}
-                onToggle={() => toggleField("pwd_confirm")}
-                placeholder="Re-enter new password"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={handleUpdatePassword}
-              disabled={savingPassword}
-              className={`${submitClass} self-start disabled:opacity-60 disabled:cursor-not-allowed`}
-            >
-              {savingPassword ? "Updating..." : "Update Password"}
-            </button>
+            <TierSettings />
           </div>
         );
-
-      case "tier":
-        return <TierSettings />;
 
       default:
         return null;
@@ -461,9 +552,9 @@ const Settings: React.FC = () => {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col">
-        <h2 className="text-lg font-semibold text-textBlack">Settings & Security</h2>
+        <h2 className="text-lg font-semibold text-textBlack">Settings</h2>
         <p className="text-xs text-textBlack/60">
-          Manage your account profile, credentials, security, and transaction PIN
+          Manage your account profile, transaction PIN and subscription tier
         </p>
       </div>
 
