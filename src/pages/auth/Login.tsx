@@ -3,16 +3,24 @@ import { Link, useNavigate } from "react-router-dom";
 import { FaEyeSlash } from "react-icons/fa";
 import { FaEye } from "react-icons/fa6";
 import { LuLoader } from "react-icons/lu";
+import * as Yup from "yup";
 import { assets } from "../../assets/assets";
 import { toast } from "sonner";
 import { getErrorMessage } from "../../helpers/api";
 import { useFormik } from "formik";
 import { useUser } from "../../hooks/useUser";
+import { useAuth } from "../../hooks/useAuth";
+import OtpModal from "../../components/modal/OtpModal";
+import type { LoginValues, UserProps } from "../../lib/interfaces";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const [passwordVisibility, setPasswordVisibility] = useState(false);
-  const { login } = useUser();
+  const [showOtp, setShowOtp] = useState(false);
+  const [pendingLogin, setPendingLogin] = useState<LoginValues | null>(null);
+
+  const { login, refreshUser } = useUser();
+  const { loginMutation } = useAuth();
 
   const validationSchema = Yup.object({
     email: Yup.string()
@@ -23,29 +31,112 @@ const Login: React.FC = () => {
       .required("Password is required"),
   });
 
-  const formik = useFormik({
+  const completeLogin = (
+    token: string,
+    user: UserProps,
+    message = "Login successful"
+  ) => {
+    login(token, user, user.role || "company");
+    toast.success(message);
+
+    // Pull latest profile details from /me
+    refreshUser(token).catch(() => undefined);
+
+    let finalRoute = "/dashboard/overview";
+    const userRole = (user?.role || "").toLowerCase();
+
+    switch (userRole) {
+      case "admin":
+      case "superadmin":
+        finalRoute = "/admin/dashboard/overview";
+        break;
+      case "financial":
+      case "finance":
+        finalRoute = "/financial/dashboard/overview";
+        break;
+      case "support":
+        finalRoute = "/support/dashboard/overview";
+        break;
+      case "company":
+      default:
+        finalRoute = "/dashboard/overview";
+        break;
+    }
+
+    navigate(finalRoute);
+  };
+
+  const formik = useFormik<LoginValues>({
     initialValues: {
       email: "",
       password: "",
     },
     validationSchema,
-    onSubmit: async (values) => {
-      console.log(values);
-      try {
-        const response = await api.post("/login", values);
-        console.log(response);
-        if (response.status === 200 || response.status === 201) {
-          console.log();
-          const { user, token } = response.data.data;
-          login(
-            token,
-            user,
-            user.role,
-          );
-          toast.success("login sussessful");
+    onSubmit: (values, { setSubmitting }) => {
+      loginMutation.mutate(values, {
+        onSuccess: (response) => {
+          const resData = response?.data || response;
+          const token =
+            resData?.token ||
+            resData?.access_token ||
+            response?.token ||
+            response?.access_token;
+          const user = resData?.user || response?.user;
 
-          const finalRoute = user.role === "admin" ? "/admin/dashboard/overview" : "/dashboard/overview"
-          navigate(finalRoute);
+          if (token && user) {
+            completeLogin(token, user);
+          } else {
+            toast.error("Invalid response from server");
+          }
+        },
+        onError: (error: unknown) => {
+          console.error("Login error:", error);
+          const message = getErrorMessage(error);
+
+          // Company account must verify OTP before logging in
+          if (
+            message.toLowerCase().includes("verify your email") ||
+            message.toLowerCase().includes("otp") ||
+            message.toLowerCase().includes("unverified")
+          ) {
+            setPendingLogin({ email: values.email, password: values.password });
+            setShowOtp(true);
+            return;
+          }
+          toast.error(message);
+        },
+        onSettled: () => {
+          setSubmitting(false);
+        },
+      });
+    },
+  });
+
+  const handleOtpVerified = async (data?: unknown) => {
+    setShowOtp(false);
+
+    // If /verify-otp already returns auth data, use it directly
+    const authData = (data as { data?: { token?: string; user?: UserProps } })
+      ?.data;
+    if (authData?.token && authData?.user) {
+      completeLogin(authData.token, authData.user);
+      return;
+    }
+
+    // Otherwise re-attempt login with the stored credentials using loginMutation
+    if (!pendingLogin) return;
+    loginMutation.mutate(pendingLogin, {
+      onSuccess: (response) => {
+        const resData = response?.data || response;
+        const token =
+          resData?.token ||
+          resData?.access_token ||
+          response?.token ||
+          response?.access_token;
+        const user = resData?.user || response?.user;
+
+        if (token && user) {
+          completeLogin(token, user);
         }
       },
       onError: (error: unknown) => {
@@ -61,7 +152,7 @@ const Login: React.FC = () => {
     <div className="w-screen h-screen flex md:flex-row flex-col items-start bg-primary">
       <div className="md:h-full h-[35vh] overflow-hidden bg-primary md:w-1/2 w-full flex flex-col gap-4 items-start justify-center lg:px-8 md:px-6 px-0 pb-8 md:pt-0 pt-15 relative">
         <h1 className="text-white text-xl px-10 lg:px-0 lg:text-4xl lg:leading-12 lg:max-w-100 font-semibold">
-          Welcome Back! Securely access your dashboard Manage.
+          Welcome Back! Securely access your dashboard.
         </h1>
         <Link
           to={"/"}
@@ -98,11 +189,17 @@ const Login: React.FC = () => {
                 onBlur={formik.handleBlur}
                 name="email"
                 id="email"
-                className={`w-full border h-12 px-3 text-sm rounded-md outline-0 transition ${formik.touched.email && formik.errors.email
+                className={`w-full border h-12 px-3 text-sm rounded-md outline-0 transition ${
+                  formik.touched.email && formik.errors.email
                     ? "border-red-500 bg-red-50/20 focus:border-red-500"
                     : "border-primary/20 focus:border-primary"
-                  }`}
+                }`}
               />
+              {formik.touched.email && formik.errors.email && (
+                <span className="text-red-500 text-xs mt-0.5">
+                  {formik.errors.email}
+                </span>
+              )}
             </div>
 
             {/* Password Field */}
@@ -119,10 +216,11 @@ const Login: React.FC = () => {
                 </Link>
               </div>
               <div
-                className={`flex items-center border h-12 px-3 rounded-md transition ${formik.touched.password && formik.errors.password
+                className={`flex items-center border h-12 px-3 rounded-md transition ${
+                  formik.touched.password && formik.errors.password
                     ? "border-red-500 bg-red-50/20"
                     : "border-primary/20 focus-within:border-primary"
-                  }`}
+                }`}
               >
                 <input
                   type={passwordVisibility ? "text" : "password"}
@@ -142,7 +240,14 @@ const Login: React.FC = () => {
                   {passwordVisibility ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
                 </button>
               </div>
+              {formik.touched.password && formik.errors.password && (
+                <span className="text-red-500 text-xs mt-0.5">
+                  {formik.errors.password}
+                </span>
+              )}
             </div>
+
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={isLoggingIn}
@@ -161,12 +266,12 @@ const Login: React.FC = () => {
 
           <div className="mt-6 text-center text-sm text-gray-600">
             Don't have an account?{" "}
-            <span
-              onClick={() => navigate("/getstarted")}
-              className="text-primary font-medium cursor-pointer hover:underline"
+            <Link
+              to="/getstarted"
+              className="text-primary font-semibold cursor-pointer hover:underline"
             >
               Get Started
-            </span>
+            </Link>
           </div>
         </div>
       </div>
