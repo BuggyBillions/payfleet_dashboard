@@ -2,7 +2,7 @@ import api from "../helpers/api";
 import type { LoginValues, RegisterValues, sendEmailVerificationValues } from "../lib/interfaces";
 
 export const createCompanyService = async (values: FormData | RegisterValues) => {
-    const response = await api.post(`/createcompanies`, values, {
+    const response = await api.post(`/register`, values, {
         headers: values instanceof FormData ? { "Content-Type": "multipart/form-data" } : undefined,
     });
     return response.data;
