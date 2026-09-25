@@ -1,11 +1,4 @@
 import { createContext } from "react";
-import type { Theme } from "../lib/interfaces";
-
-
-type ThemeContextType = {
-  theme: Theme;
-  toggleTheme: () => void;
-  setTheme: (theme: Theme) => void;
-};
+import type { ThemeContextType } from "../lib/interfaces";
 
 export const ThemeContext = createContext<ThemeContextType | null>(null);

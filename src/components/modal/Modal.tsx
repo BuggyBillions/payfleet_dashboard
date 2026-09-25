@@ -1,13 +1,5 @@
-// components/Modal.jsx
-import React from "react";
 import ReactDOM from "react-dom";
-
-interface modalProps {
-  children: React.ReactNode;
-  onClose: () => void;
-  showClose?: boolean;
-  customMode?: boolean;
-}
+import type { modalProps } from "../../lib/interfaces";
 
 const Modal = ({ children, onClose, showClose=true, customMode=false }: modalProps) => {
   const modalRoot = document.getElementById("modal-root");
@@ -25,7 +17,7 @@ const Modal = ({ children, onClose, showClose=true, customMode=false }: modalPro
         ) : (
           <div
             className="
-              bg-white md:p-8 p-4 
+              bg-tertiary md:p-8 p-4 
               lg:w-3/5 md:w-3/4 w-full 
               rounded-xl relative 
               max-h-[90vh] overflow-y-auto styled-scrollbar
@@ -36,7 +28,7 @@ const Modal = ({ children, onClose, showClose=true, customMode=false }: modalPro
                 <button
                   onClick={onClose}
                   type="button"
-                  className="absolute z-100 md:top-8 md:right-8 top-4 right-4 text-pryClr transition-colors cursor-pointer"
+                  className="absolute z-100 md:top-8 md:right-8 top-4 right-4 text-pryClr transition-colors cursor-pointer text-textBlack/50"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"

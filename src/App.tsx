@@ -4,6 +4,8 @@ import MainLayout from "./layout/MainLayout";
 
 // Auth
 import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import Forgotpassword from "./pages/auth/Forgotpassword";
 
 // General
 import NotFound from "./pages/view/NotFound";
@@ -20,16 +22,25 @@ import FinancialOverview from "./pages/financial/Overview";
 import SupportOverview from "./pages/support/Overview";
 import ManageCompany from "./pages/superadmin/ManageCompany";
 import ManageStaff from "./pages/superadmin/ManageStaff";
+import ManageBanks from "./pages/superadmin/ManageBanks";
 import ManageDeposit from "./pages/superadmin/ManageDeposit";
+import SuperAdminManagePayments from "./pages/superadmin/ManagePayments";
 import FinancialManageDeposit from "./pages/financial/ManageDeposit";
+import SupportManageCompany from "./pages/support/ManageCompany";
 import Communication from "./pages/chat/Communication";
+import Tier from "./pages/company/Tier";
+import Verifyemail from "./pages/auth/Verifyemail";
+import Notifications from "./pages/company/Notifications";
 
 function App() {
   return (
     <>
       <Toaster />
       <Routes>
-        <Route index element={<Login />} />
+        <Route index path="/" element={<Login />} />
+        <Route path="/getstarted" element={<Register />} />
+        <Route path="/verify-email" element={<Verifyemail />} />
+        <Route path="/forgotpassword" element={<Forgotpassword />} />
         <Route path="*" element={<NotFound />} />
         <Route
           index
@@ -56,7 +67,22 @@ function App() {
         <Route
           index
           path="/dashboard/deposits"
-          element={<MainLayout pageName="Deposits" children={<Deposits />} />}
+          element={
+            <MainLayout
+              pageName="All Deposits"
+              children={<Deposits defaultFilter="all" />}
+            />
+          }
+        />
+        <Route
+          index
+          path="/dashboard/deposits/pending"
+          element={
+            <MainLayout
+              pageName="Pending Deposits"
+              children={<Deposits defaultFilter="pending" />}
+            />
+          }
         />
         <Route
           index
@@ -80,55 +106,183 @@ function App() {
         />
         <Route
           index
-          path="/dashboard/settings"
+          path="/dashboard/tier"
           element={
-            <MainLayout pageName="Settings" children={<Settings />} />
+            <MainLayout pageName="Tier Management" children={<Tier />} />
           }
         />
         <Route
           index
+          path="/dashboard/notifications"
+          element={
+            <MainLayout
+              pageName="Notifications"
+              children={<Notifications />}
+            />
+          }
+        />
+        <Route
+          index
+          path="/dashboard/settings"
+          element={<MainLayout pageName="Settings" children={<Settings />} />}
+        />
+        <Route
+          index
           path="/admin/dashboard/overview"
-          element={<MainLayout pageName="Dashboard" children={<SuperAdminOverview />} />}
+          element={
+            <MainLayout
+              pageName="Dashboard"
+              children={<SuperAdminOverview />}
+            />
+          }
         />
         <Route
           index
           path="/admin/dashboard/company"
-          element={<MainLayout pageName="Manage Company" children={<ManageCompany />} />}
+          element={
+            <MainLayout
+              pageName="Manage Company"
+              children={<ManageCompany />}
+            />
+          }
         />
         <Route
           index
           path="/admin/dashboard/staff"
-          element={<MainLayout pageName="Manage Staff" children={<ManageStaff />} />}
+          element={
+            <MainLayout pageName="Manage Staff" children={<ManageStaff />} />
+          }
+        />
+        <Route
+          index
+          path="/admin/dashboard/banks"
+          element={<MainLayout pageName="Manage Banks" children={<ManageBanks />} />}
         />
         <Route
           index
           path="/admin/dashboard/deposit"
-          element={<MainLayout pageName="Manage deposit" children={<ManageDeposit />} />}
+          element={
+            <MainLayout
+              pageName="All Deposits"
+              children={<ManageDeposit defaultFilter="all" />}
+            />
+          }
+        />
+        <Route
+          index
+          path="/admin/dashboard/deposit/pending"
+          element={
+            <MainLayout
+              pageName="Pending Deposits"
+              children={<ManageDeposit defaultFilter="pending" />}
+            />
+          }
+        />
+        <Route
+          index
+          path="/admin/dashboard/payments"
+          element={
+            <MainLayout
+              pageName="Manage Payments"
+              children={<SuperAdminManagePayments />}
+            />
+          }
         />
         <Route
           index
           path="/admin/dashboard/chat"
-          element={<MainLayout pageName="Support Chat" children={<Communication />} />}
+          element={
+            <MainLayout pageName="Support Chat" children={<Communication />} />
+          }
+        />
+        <Route
+          index
+          path="/admin/dashboard/settings"
+          element={<MainLayout pageName="Settings" children={<Settings />} />}
         />
         <Route
           index
           path="/financial/dashboard/overview"
-          element={<MainLayout pageName="Dashboard" children={<FinancialOverview />} />}
+          element={
+            <MainLayout pageName="Dashboard" children={<FinancialOverview />} />
+          }
         />
         <Route
           index
           path="/financial/dashboard/deposit"
-          element={<MainLayout pageName="Manage Deposits" children={<FinancialManageDeposit />} />}
+          element={
+            <MainLayout
+              pageName="All Deposits"
+              children={<FinancialManageDeposit defaultFilter="all" />}
+            />
+          }
+        />
+        <Route
+          index
+          path="/financial/dashboard/deposit/pending"
+          element={
+            <MainLayout
+              pageName="Pending Deposits"
+              children={<FinancialManageDeposit defaultFilter="pending" />}
+            />
+          }
+        />
+        <Route
+          index
+          path="/financial/dashboard/payments"
+          element={
+            <MainLayout
+              pageName="Manage Payments"
+              children={<SuperAdminManagePayments />}
+            />
+          }
+        />
+        <Route
+          index
+          path="/financial/dashboard/settings"
+          element={<MainLayout pageName="Settings" children={<Settings />} />}
         />
         <Route
           index
           path="/support/dashboard/overview"
-          element={<MainLayout pageName="Dashboard" children={<SupportOverview />} />}
+          element={
+            <MainLayout pageName="Dashboard" children={<SupportOverview />} />
+          }
+        />
+        <Route
+          index
+          path="/support/dashboard/company"
+          element={
+            <MainLayout
+              pageName="Manage Company"
+              children={<SupportManageCompany />}
+            />
+          }
+        />
+        <Route
+          index
+          path="/support/dashboard/settings"
+          element={<MainLayout pageName="Settings" children={<Settings />} />}
         />
         <Route
           index
           path="/support/dashboard/chat"
-          element={<MainLayout pageName="Live Support Chat" children={<Communication />} />}
+          element={
+            <MainLayout
+              pageName="Live Support Chat"
+              children={<Communication />}
+            />
+          }
+        />
+        <Route
+          index
+          path="/financial/dashboard/chat"
+          element={
+            <MainLayout
+              pageName="Live Support Chat"
+              children={<Communication />}
+            />
+          }
         />
       </Routes>
     </>

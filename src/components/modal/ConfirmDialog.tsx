@@ -1,15 +1,5 @@
 import Modal from "./Modal";
-
-interface ConfirmDialogProps {
-  isOpen: boolean;
-  title?: string;
-  message?: string;
-  confirmText?: string;
-  cancelText?: string;
-  onCancel: () => void;
-  onConfirm: () => void;
-  isLoading: boolean;
-}
+import type { ConfirmDialogProps } from "../../lib/interfaces";
 
 const ConfirmDialog = ({
   isOpen,

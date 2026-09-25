@@ -1,13 +1,6 @@
 import React, { useState } from "react";
 import { formatNumberWithCommas, unformatNumber } from "../../helpers/formatterUtility";
-
-interface FormattedInputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "value"> {
-  value: string | number;
-  onChange: (e: { target: { name: string; value: number } }) => void;
-  name: string;
-  onBlur?: React.FocusEventHandler<HTMLInputElement>;
-}
+import type { FormattedInputProps } from "../../lib/interfaces";
 
 const FormattedInput: React.FC<FormattedInputProps> = ({
   value,

@@ -1,44 +1,144 @@
-import React, { useMemo, useState } from "react";
-import ReusableTable from "../../utility/ReusableTable";
-import type { TableColumnProps } from "../../lib/interfaces";
-import {
-  formatterUtility,
-  formatShortDate,
-} from "../../helpers/formatterUtility";
-import {
-  getDemoDeposits,
-  type DemoDeposit,
-} from "../../services/demoDepositService";
+import React, { useEffect, useMemo, useState } from "react";
+import type {
+  DepositsProps,
+  DemoDeposit,
+  TableColumnProps,
+} from "../../lib/interfaces";
+import { formatterUtility } from "../../helpers/formatterUtility";
 import ActionButton from "../../components/ui/ActionButton";
+import OverviewCards from "../../components/cards/OverviewCards";
+import StatusBadge from "../../components/ui/StatusBadge";
+import ActionCell from "../../components/ui/ActionCell";
+import ReusableTable from "../../utility/ReusableTable";
 import { FaPlus } from "react-icons/fa6";
-import { FiSearch } from "react-icons/fi";
+import { LuWallet, LuClock } from "react-icons/lu";
+import { HiOutlineArrowTrendingUp } from "react-icons/hi2";
 import Deposit from "../../components/modal/Deposit";
+import EachCompanyDepositModal from "../../components/modal/EachCompanyDepositModal";
+import { useUser } from "../../hooks/useUser";
+import {
+  getCompanyDeposits,
+  type CompanyDeposit,
+} from "../../services/depositService";
 
-const statusBadge = (status: DemoDeposit["status"]) => {
-  const styles = {
-    successful: "bg-green-50 text-green-700 border-green-500/30",
-    pending: "bg-amber-50 text-amber-700 border-amber-500/30",
-    failed: "bg-red-50 text-red-700 border-red-500/30",
-  };
+interface DepositRow extends Omit<DemoDeposit, "id"> {
+  id: number | string;
+}
 
-  return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full border text-[10px] font-medium capitalize ${styles[status]}`}
-    >
-      {status}
-    </span>
-  );
+const normalizeStatus = (status: CompanyDeposit["status"]): DemoDeposit["status"] => {
+  if (typeof status === "number") {
+    return status === 1 ? "successful" : status === 0 ? "pending" : "failed";
+  }
+  if (typeof status === "boolean") {
+    return status ? "successful" : "pending";
+  }
+  const s = String(status ?? "").toLowerCase();
+  if (["successful", "success", "completed", "succeeded", "approved", "paid", "credited"].includes(s)) {
+    return "successful";
+  }
+  if (["pending", "processing", "initiated", "in_progress", "awaiting", "unsettled"].includes(s)) {
+    return "pending";
+  }
+  return "failed";
 };
 
-const Deposits: React.FC = () => {
-  const [deposits, setDeposits] = useState<DemoDeposit[]>(() => getDemoDeposits());
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
+  const { user } = useUser();
+  const companyId = user?.company_details?.id;
+  const [deposits, setDeposits] = useState<DepositRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [initiate, setInitiate] = useState(false);
+  const [viewDepositId, setViewDepositId] = useState<number | string | null>(null);
 
-  // Compute live statistics and available wallet balance
+  const openView = (id: number | string) => setViewDepositId(id);
+
+  const columns: TableColumnProps<DepositRow>[] = [
+    {
+      label: "Reference",
+      render: (d) => (
+        <span className="font-semibold text-textBlack">{d.reference}</span>
+      ),
+    },
+    {
+      label: "Amount",
+      render: (d) => (
+        <span className="font-medium">{formatterUtility(d.amount)}</span>
+      ),
+    },
+    { label: "Method", key: "method" },
+    {
+      label: "Status",
+      render: (d) => <StatusBadge status={d.status} />,
+    },
+    {
+      label: "Date",
+      render: (d) =>
+        new Date(d.date).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+    },
+    {
+      label: "Action",
+      render: (d) => (
+        <ActionCell rowId={d.id} canView onView={openView} />
+      ),
+    },
+  ];
+
+  useEffect(() => {
+    let mounted = true;
+    getCompanyDeposits(companyId)
+      .then((items) => {
+        if (!mounted) return;
+        const mapped: DepositRow[] = items.map((t) => {
+          const transaction = t.transaction ?? ({} as Record<string, unknown>);
+          const reference = String(
+            transaction.reference ??
+              t.reference ??
+              t.reference_no ??
+              t.transaction_reference ??
+              t.ref ??
+              "",
+          );
+          const amount = Number(transaction.amount ?? t.amount) || 0;
+          const status = normalizeStatus(
+            (transaction.status as CompanyDeposit["status"]) ?? t.status,
+          );
+          const createdAt = String(
+            t.created_at ??
+              t.date ??
+              transaction.created_at ??
+              new Date().toISOString(),
+          );
+          return {
+            id: t.id ?? Date.now(),
+            reference:
+              reference ||
+              `PF-DEP-${Math.floor(100000 + Math.random() * 900000)}`,
+            amount,
+            method: t.method ?? "Bank Transfer",
+            status,
+            date: createdAt,
+          };
+        });
+        mapped.sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+        );
+        setDeposits(mapped);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [companyId]);
+
   const totalBalance = useMemo(() => {
     return deposits
       .filter((d) => d.status === "successful")
@@ -51,80 +151,24 @@ const Deposits: React.FC = () => {
       .reduce((sum, d) => sum + d.amount, 0);
   }, [deposits]);
 
-  const successfulCount = useMemo(() => {
-    return deposits.filter((d) => d.status === "successful").length;
-  }, [deposits]);
-
-  // Filter deposits based on search and status
-  const filteredDeposits = useMemo(() => {
-    return deposits.filter((item) => {
-      const matchesSearch =
-        searchTerm.trim() === "" ||
-        item.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.method.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.amount.toString().includes(searchTerm);
-
-      const matchesStatus =
-        statusFilter === "all" || item.status === statusFilter;
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [deposits, searchTerm, statusFilter]);
-
-  const totalItems = filteredDeposits.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
-
-  const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredDeposits.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredDeposits, currentPage, itemsPerPage]);
-
   const handleDepositSuccess = (newDeposit: DemoDeposit) => {
     setDeposits((prev) => [newDeposit, ...prev]);
   };
 
-  const columns: TableColumnProps<DemoDeposit>[] = [
-    {
-      label: "Reference",
-      render: (item) => (
-        <span className="font-semibold uppercase tracking-wider text-xs text-gray-800">
-          {item.reference}
-        </span>
-      ),
-    },
-    {
-      label: "Amount",
-      render: (item) => (
-        <span className="font-semibold text-primary">
-          {formatterUtility(item.amount)}
-        </span>
-      ),
-    },
-    {
-      label: "Status",
-      render: (item) => statusBadge(item.status),
-    },
-    {
-      label: "Date & Time",
-      render: (item) => (
-        <span className="text-gray-500 text-xs">
-          {formatShortDate(item.date)}
-        </span>
-      ),
-    },
-  ];
-
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex items-start sm:items-center justify-between gap-4">
         <div className="flex flex-col">
-          <h2 className="text-lg font-semibold text-gray-900">Deposits & Wallet</h2>
-          <p className="text-sm text-gray-500">
-            Fund your business account and manage all incoming deposit transactions.
+          <h2 className="text-lg font-semibold text-textBlack">
+            {defaultFilter === "pending" ? "Pending Deposits" : "Deposits"}
+          </h2>
+          <p className="text-xs text-textBlack/60">
+            {defaultFilter === "pending"
+              ? "Monitor and track incoming deposits awaiting bank confirmation."
+              : "Manage all  deposit transactions."}
           </p>
         </div>
-        <div>
+        <div className="shrink-0">
           <ActionButton
             text="Deposit Funds"
             icon={<FaPlus />}
@@ -133,105 +177,58 @@ const Deposits: React.FC = () => {
         </div>
       </div>
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Available Balance */}
-        <div className="flex items-center justify-between p-4 rounded-xl bg-secondary border border-primary/10">
-          <div className="flex flex-col gap-1">
-            <p className="text-xs text-tableHeading font-medium">Available Account Balance</p>
-            <p className="text-2xl font-bold text-gray-900">{formatterUtility(totalBalance)}</p>
-            <span className="text-[11px] text-green-600 font-medium flex items-center gap-1 mt-1">
-              Ready for Payroll Payouts
-            </span>
-          </div>
-        </div>
-
-        {/* Pending Settlements */}
-        <div className="flex items-center justify-between p-4 rounded-xl bg-secondary border border-primary/10">
-          <div className="flex flex-col gap-1">
-            <p className="text-xs text-tableHeading font-medium">Pending Deposits</p>
-            <p className="text-2xl font-bold">{formatterUtility(pendingAmount)}</p>
-            <span className="text-[11px] text-amber-600 font-medium flex items-center gap-1 mt-1">
-              Awaiting Bank Confirmation
-            </span>
-          </div>
-        </div>
-
-        {/* Successful Deposits Count */}
-        <div className="flex items-center justify-between p-4 rounded-xl bg-secondary border border-primary/10">
-          <div className="flex flex-col gap-1">
-            <p className="text-xs text-tableHeading font-medium">Successful Transactions</p>
-            <p className="text-2xl font-bold text-gray-900">{successfulCount}</p>
-            <span className="text-[11px] text-gray-500 font-medium mt-1">
-              Total lifetime deposits
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Deposit History Table Section */}
-      <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-2xs space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
-          <div className="flex flex-col">
-            <h3 className="font-semibold text-base text-gray-900">Deposit History</h3>
-            <p className="text-xs text-gray-500">
-              Complete audit log of all account funding and virtual bank transfers
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Status Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="h-10 px-3 text-xs rounded-lg border border-primary/10 bg-secondary outline-none text-gray-700"
-            >
-              <option value="all">All Statuses</option>
-              <option value="successful">Successful</option>
-              <option value="pending">Pending</option>
-              <option value="failed">Failed</option>
-            </select>
-
-            {/* Search Input */}
-            <div className="relative">
-              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1);
-                }}
-                placeholder="Search reference or channel..."
-                className="h-10 pl-9 pr-3 rounded-lg border border-primary/10 bg-secondary text-xs outline-none w-56 md:w-64"
-              />
-            </div>
-          </div>
-        </div>
-
-        <ReusableTable
-          columns={columns}
-          data={paginatedData}
-          isLoading={false}
-          error={null}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={totalItems}
-          itemsPerPage={itemsPerPage}
-          setCurrentPage={setCurrentPage}
-          setItemsPerPage={setItemsPerPage}
-          hasSerialNo={true}
+      <div className="grid grid-cols-2 gap-x-4 gap-y-6">
+        <OverviewCards
+          icon={LuWallet}
+          title="Available Account Balance"
+          value={formatterUtility(totalBalance)}
+          icon2={HiOutlineArrowTrendingUp}
+        />
+        <OverviewCards
+          icon={LuClock}
+          title="Pending Deposits"
+          value={formatterUtility(pendingAmount)}
+          icon2={HiOutlineArrowTrendingUp}
         />
       </div>
 
-      {/* Payment Gateway Modal */}
+      <div className="bg-white dark:bg-[#131217] rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-200 dark:border-white/10 flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-textBlack">
+              Recent Transactions
+            </h3>
+            <p className="text-xs text-textBlack/60">
+              Latest deposit activity for your business.
+            </p>
+          </div>
+        </div>
+        <ReusableTable
+          columns={columns}
+          data={deposits}
+          isLoading={loading}
+          error={null}
+          currentPage={currentPage}
+          totalPages={Math.ceil(deposits.length / itemsPerPage) || 1}
+          totalItems={deposits.length}
+          itemsPerPage={itemsPerPage}
+          setCurrentPage={setCurrentPage}
+          setItemsPerPage={setItemsPerPage}
+        />
+      </div>
+
       {initiate && (
         <Deposit
           onClose={() => setInitiate(false)}
           onDepositSuccess={handleDepositSuccess}
+          companyId={companyId}
+        />
+      )}
+
+      {viewDepositId && (
+        <EachCompanyDepositModal
+          depositId={viewDepositId}
+          onClose={() => setViewDepositId(null)}
         />
       )}
     </div>

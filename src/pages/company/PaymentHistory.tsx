@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import ReusableTable from "../../utility/ReusableTable";
+import OverviewCards from "../../components/cards/OverviewCards";
 import type { TableColumnProps } from "../../lib/interfaces";
 import { LuHistory } from "react-icons/lu";
 import { FaMoneyBillWave } from "react-icons/fa6";
@@ -11,22 +12,7 @@ import {
   getDemoPayments,
   type DemoPayment,
 } from "../../services/demoPaymentService";
-
-const statusBadge = (status: DemoPayment["status"]) => {
-  const styles = {
-    successful: "bg-green-50 text-green-600 border-green-500/30",
-    pending: "bg-amber-50 text-amber-600 border-amber-500/30",
-    failed: "bg-red-50 text-red-600 border-red-500/30",
-  };
-
-  return (
-    <span
-      className={`inline-flex items-center px-2 py-1 rounded-full border text-[10px] font-medium capitalize ${styles[status]}`}
-    >
-      {status}
-    </span>
-  );
-};
+import StatusBadge from "../../components/ui/StatusBadge";
 
 const PaymentHistory: React.FC = () => {
   const [payments] = useState<DemoPayment[]>(() => getDemoPayments());
@@ -71,7 +57,7 @@ const PaymentHistory: React.FC = () => {
     { label: "Method", key: "method" },
     {
       label: "Status",
-      render: (item) => statusBadge(item.status),
+      render: (item) => <StatusBadge status={item.status} />,
     },
     {
       label: "Date",
@@ -83,32 +69,27 @@ const PaymentHistory: React.FC = () => {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div className="flex flex-col">
-          <h2 className="text-lg font-semibold">Payment History</h2>
-          <p className="text-sm text-gray-500">
+          <h2 className="text-lg font-semibold text-textBlack">Payment History</h2>
+          <p className="text-sm text-textBlack/50">
             View all money paid out to staff
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
-        <div className="flex items-center gap-3 p-3 mt-3 rounded-lg bg-secondary border border-primary/10 text-tableData">
-          <FaMoneyBillWave size={18} className="text-tableHeading shrink-0" />
-          <div className="flex flex-col gap-0.5 text-start">
-            <p className="text-[10px] text-tableHeading">Total Paid</p>
-            <p className="text-xl font-semibold">{formatterUtility(totalPaid)}</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 p-3 mt-3 rounded-lg bg-secondary border border-primary/10 text-tableData">
-          <LuHistory size={18} className="text-tableHeading shrink-0" />
-          <div className="flex flex-col gap-0.5 text-start">
-            <p className="text-[10px] text-tableHeading">Payments</p>
-            <p className="text-xl font-semibold">{totalItems}</p>
-          </div>
-        </div>
+        <OverviewCards
+          title="Total Paid"
+          value={formatterUtility(totalPaid)}
+          icon={FaMoneyBillWave}
+        />
+        <OverviewCards
+          title="Payments"
+          value={totalItems}
+          icon={LuHistory}
+        />
       </div>
 
-      <div className="bg-white rounded-xl p-4">
+      <div className="bg-tertiary p-2">
         <ReusableTable
           columns={columns}
           data={paginatedData}

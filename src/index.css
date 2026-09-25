@@ -52,5 +52,5 @@ input[type="number"] {
 }
 
 .action-btn {
-  background: linear-gradient(100.65deg, #2f5318 7.92%, #69b935 265.65%);
+  background: var(--color-primary);
 }

@@ -1,8 +1,7 @@
 import React from "react";
 import OverviewCards from "../../components/cards/OverviewCards";
-import { TbReceiptDollar } from "react-icons/tb";
-import { HiHome, HiOutlineArrowTrendingUp } from "react-icons/hi2";
-import { LuUsersRound } from "react-icons/lu";
+import { TbReceiptDollar, TbBuildingBank } from "react-icons/tb";
+import { LuUsersRound, LuShieldAlert } from "react-icons/lu";
 import { formatterUtility } from "../../helpers/formatterUtility";
 import { useUser } from "../../hooks/useUser";
 import PageHeader from "../../components/navs/PageHeader";
@@ -11,39 +10,35 @@ const SuperAdminOverview: React.FC = () => {
   const { user } = useUser();
 
   return (
-    <div className="">
+    <div className="flex flex-col gap-6">
       <PageHeader
-        heading={`Welcome, ${user?.first_name}`}
-        value="Here is your business breakdown"
+        heading={`Welcome, ${user?.first_name || "Admin"}`}
+        value="System overview and platform performance statistics"
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <OverviewCards
           icon={TbReceiptDollar}
-          title="Total Sales"
-          value={formatterUtility(0)}
-          icon2={HiOutlineArrowTrendingUp}
+          title="Platform Volume"
+          value={formatterUtility(11790000)}
         />
 
         <OverviewCards
-          icon={TbReceiptDollar}
-          title="Active Sales"
-          value={0}
-          icon2={HiOutlineArrowTrendingUp}
+          icon={TbBuildingBank}
+          title="Active Companies"
+          value={48}
         />
 
         <OverviewCards
-          icon={HiHome}
-          title="Properties"
-          value={0}
-          icon2={HiOutlineArrowTrendingUp}
+          icon={LuShieldAlert}
+          title="Pending Verifications"
+          value={5}
         />
 
         <OverviewCards
           icon={LuUsersRound}
-          title="No of Employee"
-          value={0}
-          icon2={HiOutlineArrowTrendingUp}
+          title="System Staff"
+          value={12}
         />
       </div>
     </div>

@@ -1,17 +1,12 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Variants } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import TopNav from "../components/navs/TopNav";
 import { HiBars3 } from "react-icons/hi2";
-import { FaXmark } from "react-icons/fa6";
 import Sidebar from "../components/navs/Sidebar";
 import FloatingContactWidget from "../components/ui/FloatingContactWidget";
-
-type LayoutProps = {
-  children: React.ReactNode;
-  pageName: string;
-};
+import type { LayoutProps } from "../lib/interfaces";
 
 const MainLayout = ({
   children,
@@ -109,26 +104,28 @@ const MainLayout = ({
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="lg:hidden block"
+          className="lg:hidden block text-textBlack"
         >
           <HiBars3 size={20} />
         </button>
         <TopNav />
       </div>
-      <div className="flex items-start h-[calc(100vh-90px)]">
+      <div className="relative flex items-start h-[calc(100vh-90px)]">
+        {/* Mobile overlay backdrop (does not slide) */}
         <div
-          className={`lg:w-[20%] z-100 bg-black/50 rounded-2xl overflow-hidden h-full w-full lg:sticky absolute top-0 transition-all duration-500 ${
-            isOpen ? "left-0" : "-left-full"
+          onClick={() => setIsOpen(false)}
+          aria-hidden="true"
+          className={`lg:hidden fixed inset-0 z-[100] bg-black/60 transition-opacity duration-500 ${
+            isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          }`}
+        />
+
+        {/* Left Navigation drawer */}
+        <div
+          className={`w-[85%] md:w-[70%] lg:w-[20%] h-dvh lg:h-full rounded-none lg:rounded-2xl overflow-hidden fixed top-0 left-0 lg:static z-[110] transition-transform duration-500 ${
+            isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           }`}
         >
-          {/* Left Navigation */}
-          <button
-            type="button"
-            className="lg:hidden top-4 lg:left-[70%] md:left-[53%] left-[70%] block absolute"
-            onClick={() => setIsOpen(false)}
-          >
-            <FaXmark size={30} />
-          </button>
           <Sidebar setIsOpen={setIsOpen} />
         </div>
         <div className={`lg:w-[80%] w-full h-full overflow-hidden`}>
@@ -162,7 +159,7 @@ const MainLayout = ({
         </div>
 
         {/* Floating contact support icon for company users */}
-        {!location.pathname.startsWith("/admin") && !location.pathname.startsWith("/support") && (
+        {!location.pathname.startsWith("/admin") && !location.pathname.startsWith("/support") && !location.pathname.startsWith("/financial") && (
           <FloatingContactWidget />
         )}
       </div>

@@ -3,18 +3,14 @@ import { useFormik } from "formik";
 import { toast } from "sonner";
 import Modal from "./Modal";
 import EmployeeFormFields from "../forms/EmployeeFormFields";
+import { getErrorMessage } from "../../helpers/api";
 import {
-  updateDemoEmployee,
+  updateEmployee,
   employeeValidationSchema,
-  type DemoEmployee,
+  type Employee,
   type EmployeeFormValues,
-} from "../../services/demoEmployeeService";
-
-interface EditEmployeeModalProps {
-  employee: DemoEmployee;
-  onClose: () => void;
-  onSaved: (updated: DemoEmployee) => void;
-}
+} from "../../services/employeeService";
+import type { EditEmployeeModalProps } from "../../lib/interfaces";
 
 const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({
   employee,
@@ -23,35 +19,58 @@ const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({
 }) => {
   const formik = useFormik<EmployeeFormValues>({
     initialValues: {
-      first_name: employee.first_name,
-      last_name: employee.last_name,
-      email: employee.email,
-      phone_number: employee.phone_number,
-      address: employee.address,
-      job_title: employee.job_title,
-      employment_type: employee.employment_type,
-      bank_name: employee.bank_name,
-      account_number: employee.account_number,
-      estimate_pay: employee.estimate_pay,
+      first_name: employee.first_name ?? "",
+      last_name: employee.last_name ?? "",
+      email: employee.email ?? "",
+      phone: employee.phone ?? "",
+      address: employee.address ?? "",
+      job_title: employee.job_title ?? "",
+      employment_type: employee.employment_type ?? "full-time",
+      bank_name: employee.bank_name ?? "",
+      bank_code: employee.bank_code ?? "",
+      account_name: employee.account_name ?? "",
+      account_number: employee.account_number ?? "",
+      estimate_pay: employee.estimate_pay ?? "",
     },
     validationSchema: employeeValidationSchema,
-    onSubmit: (values) => {
-      const updated: DemoEmployee = {
-        ...employee,
-        first_name: values.first_name.trim(),
-        last_name: values.last_name.trim(),
-        email: values.email.trim(),
-        phone_number: values.phone_number.trim(),
-        address: values.address.trim(),
-        job_title: values.job_title.trim(),
-        employment_type: values.employment_type,
-        bank_name: values.bank_name.trim(),
-        account_number: values.account_number.trim(),
-        estimate_pay: Number(values.estimate_pay) || 0,
-      };
-      updateDemoEmployee(updated);
-      toast.success("Employee updated ");
-      onSaved(updated);
+    onSubmit: async (values, { setSubmitting }) => {
+      try {
+        await updateEmployee(employee.id, {
+          first_name: values.first_name.trim(),
+          last_name: values.last_name.trim(),
+          email: values.email.trim(),
+          phone: values.phone.trim(),
+          address: values.address.trim(),
+          job_title: values.job_title.trim(),
+          employment_type: values.employment_type,
+          bank_name: values.bank_name.trim(),
+          account_name: values.account_name.trim(),
+          account_number: values.account_number.trim(),
+          estimate_pay: Number(values.estimate_pay) || 0,
+        });
+
+        const updated: Employee = {
+          ...employee,
+          first_name: values.first_name.trim(),
+          last_name: values.last_name.trim(),
+          email: values.email.trim(),
+          phone: values.phone.trim(),
+          address: values.address.trim(),
+          job_title: values.job_title.trim(),
+          employment_type: values.employment_type,
+          bank_name: values.bank_name.trim(),
+          bank_code: values.bank_code || employee.bank_code,
+          account_name: values.account_name.trim(),
+          account_number: values.account_number.trim(),
+          estimate_pay: Number(values.estimate_pay) || 0,
+        };
+        toast.success("Employee updated ");
+        onSaved(updated);
+      } catch (error) {
+        toast.error(getErrorMessage(error, "Failed to update employee"));
+      } finally {
+        setSubmitting(false);
+      }
     },
   });
 

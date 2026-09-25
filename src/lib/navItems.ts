@@ -1,22 +1,11 @@
 import { RxDashboard } from "react-icons/rx";
-import { LuUsersRound, LuArrowDownToLine, LuHistory } from "react-icons/lu";
+import { LuUsersRound, LuArrowDownToLine, LuHistory, LuBuilding2 } from "react-icons/lu";
 import { FaMoneyBillWave, FaUsers } from "react-icons/fa6";
-import type { IconType } from "react-icons/lib";
 import { LiaUsersCogSolid } from "react-icons/lia";
 import { BsChat } from "react-icons/bs";
+import type { NavChild, NavItem } from "./interfaces";
 
-export interface NavChild {
-  name: string;
-  path: string;
-}
-
-export interface NavItem {
-  name: string;
-  icon: IconType;
-  path?: string;
-  role: string[];
-  children?: NavChild[];
-}
+export type { NavChild, NavItem };
 
 export const navItems: NavItem[] = [
   // --- Company / Default Dashboard Navigation ---
@@ -38,8 +27,7 @@ export const navItems: NavItem[] = [
   {
     name: "Deposits",
     icon: LuArrowDownToLine,
-    path: "/dashboard/deposits",
-    role: ["company", "user"],
+    role: ["company", "user"], path: "/dashboard/deposits" 
   },
   {
     name: "Process Payments",
@@ -51,6 +39,18 @@ export const navItems: NavItem[] = [
     name: "Payment History",
     icon: LuHistory,
     path: "/dashboard/payments/history",
+    role: ["company", "user"],
+  },
+  {
+    name: "Tier ",
+    icon: LuHistory,
+    path: "/dashboard/tier",
+    role: ["company", "user"],
+  },
+  {
+    name: "Notifications",
+    icon: LuArrowDownToLine,
+    path: "/dashboard/notifications",
     role: ["company", "user"],
   },
 
@@ -74,9 +74,24 @@ export const navItems: NavItem[] = [
     role: ["superadmin", "super_admin", "admin"],
   },
   {
+    name: "Manage Banks",
+    icon: LuBuilding2,
+    path: "/admin/dashboard/banks",
+    role: ["superadmin", "super_admin", "admin"],
+  },
+  {
     name: "Manage Deposits",
     icon: LuArrowDownToLine,
-    path: "/admin/dashboard/deposit",
+    role: ["superadmin", "super_admin", "admin"],
+    children: [
+      { name: "All Deposits", path: "/admin/dashboard/deposit" },
+      { name: "Pending Deposits", path: "/admin/dashboard/deposit/pending" },
+    ],
+  },
+  {
+    name: "Manage Payments",
+    icon: FaMoneyBillWave,
+    path: "/admin/dashboard/payments",
     role: ["superadmin", "super_admin", "admin"],
   },
   {
@@ -96,7 +111,22 @@ export const navItems: NavItem[] = [
   {
     name: "Manage Deposits",
     icon: LuArrowDownToLine,
-    path: "/financial/dashboard/deposit",
+    role: ["financial", "finance"],
+    children: [
+      { name: "All Deposits", path: "/financial/dashboard/deposit" },
+      { name: "Pending Deposits", path: "/financial/dashboard/deposit/pending" },
+    ],
+  },
+  {
+    name: "Manage Payments",
+    icon: FaMoneyBillWave,
+    path: "/financial/dashboard/payments",
+    role: ["financial", "finance"],
+  },
+  {
+    name: "Chat Support",
+    icon: BsChat,
+    path: "/financial/dashboard/chat",
     role: ["financial", "finance"],
   },
 
@@ -105,6 +135,12 @@ export const navItems: NavItem[] = [
     name: "Dashboard",
     icon: RxDashboard,
     path: "/support/dashboard/overview",
+    role: ["support"],
+  },
+  {
+    name: "Manage Company",
+    icon: FaUsers,
+    path: "/support/dashboard/company",
     role: ["support"],
   },
   {

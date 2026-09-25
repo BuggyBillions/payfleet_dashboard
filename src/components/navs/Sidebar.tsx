@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { FiLogOut } from "react-icons/fi";
 import { MdSettings } from "react-icons/md";
+import { FaXmark } from "react-icons/fa6";
 import { HiChevronDown } from "react-icons/hi2";
 import { navItems, type NavItem } from "../../lib/navItems";
 import Modal from "../modal/Modal";
@@ -37,6 +38,14 @@ const Sidebar = ({
         .map((r) => r.toLowerCase())
         .includes(effectiveRole)
     );
+  }, [effectiveRole]);
+
+  // Dynamic settings path matching role context
+  const settingsPath = useMemo(() => {
+    if (effectiveRole === "admin" || effectiveRole === "superadmin") return "/admin/dashboard/settings";
+    if (effectiveRole === "finance" || effectiveRole === "financial") return "/financial/dashboard/settings";
+    if (effectiveRole === "support") return "/support/dashboard/settings";
+    return "/dashboard/settings";
   }, [effectiveRole]);
 
   // Auto-expand accordion when viewing a child route
@@ -145,7 +154,15 @@ const Sidebar = ({
   };
 
   return (
-    <div className="bg-tertiary lg:w-full md:w-3/5 w-4/5 h-full px-2 py-4 md:pt-0 pt-8 flex flex-col justify-between">
+    <div className="relative bg-tertiary w-full h-full px-2 py-4 md:pt-0 pt-8 flex flex-col justify-between">
+      <button
+        type="button"
+        aria-label="Close sidebar"
+        className="lg:hidden absolute top-4 right-4 z-10 flex items-center justify-center w-8 h-8 rounded-full bg-primary/15 text-primary hover:bg-primary/25 transition cursor-pointer"
+        onClick={() => setIsOpen(false)}
+      >
+        <FaXmark size={18} />
+      </button>
       <div className="flex flex-col h-full overflow-hidden">
         <img
           src={assets.logo}
@@ -163,7 +180,7 @@ const Sidebar = ({
       <ul className="px-3 pt-3 border-t border-primary/10 flex flex-col gap-1 justify-end shrink-0 mt-auto">
         <li>
           <NavLink
-            to="/dashboard/settings"
+            to={settingsPath}
             className={({ isActive }) =>
               `flex items-center gap-2.5 text-gray-700 transition-all duration-200 px-4 py-2.5 rounded-lg cursor-pointer text-xs font-medium hover:bg-primary/10 hover:text-primary ${
                 isActive
@@ -193,11 +210,11 @@ const Sidebar = ({
       {/* Logout Confirmation Modal */}
       {showLogOutModal && (
         <Modal onClose={() => setShowLogOutModal(false)} customMode>
-          <div className="flex items-center flex-col bg-white rounded-xl py-6 px-8 max-w-sm mx-auto shadow-xl">
-            <h3 className="font-semibold text-base text-gray-900 text-center">
+          <div className="flex items-center flex-col bg-tertiary rounded-xl py-6 px-8 max-w-sm mx-auto shadow-xl">
+            <h3 className="font-semibold text-base text-textBlack text-center">
               Are you sure you want to logout?
             </h3>
-            <p className="text-xs text-gray-500 text-center mt-1">
+            <p className="text-xs text-textBlack/50 text-center mt-1">
               You will need to login again to access your dashboard.
             </p>
             <div className="flex w-full mt-6 items-center gap-3">

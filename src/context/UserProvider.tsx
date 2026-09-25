@@ -1,15 +1,12 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import api, { setupInterceptors } from "../helpers/api";
+import { setupInterceptors } from "../helpers/api";
 import axios from "axios";
-import type { UserProps } from "../lib/interfaces";
+import type { UserProps, UserProviderProps } from "../lib/interfaces";
 import { UserContext } from "./UserContext";
+import { getUserService } from "../services/authService";
 
-interface userProviderProps {
-  children: React.ReactNode;
-}
-
-export const UserProvider = ({ children }: userProviderProps) => {
+export const UserProvider = ({ children }: UserProviderProps) => {
   const [user, setUser] = useState<UserProps | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
@@ -31,10 +28,7 @@ export const UserProvider = ({ children }: userProviderProps) => {
   const refreshUser = useCallback(async (token: string) => {
     if (!token) throw new Error("No token");
     try {
-      const response = await api.get("/user", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const { data } = response.data;
+      const data = await getUserService();
       setUser(data);
       setRole(data?.role);
       localStorage.setItem("user", JSON.stringify(data));
@@ -83,6 +77,15 @@ export const UserProvider = ({ children }: userProviderProps) => {
     setIsAuthenticated(true);
   };
 
+  const saveVerificationToken = (token: string) => {
+    localStorage.setItem("verification_token", JSON.stringify(token))
+  }
+
+  const getVerificationToken = () => {
+    const V_TOKEN = localStorage.getItem("verification_token") ?? "";
+    return JSON.parse(V_TOKEN);
+  }
+
   useEffect(() => {
     setupInterceptors(logout);
   }, [logout]);
@@ -98,6 +101,8 @@ export const UserProvider = ({ children }: userProviderProps) => {
         isLoggedIn: isAuthenticated,
         refreshUser,
         loading,
+        saveVerificationToken,
+        getVerificationToken,
       }}
     >
       {children}
