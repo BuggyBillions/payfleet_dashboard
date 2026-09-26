@@ -12,7 +12,6 @@ import ActionCell from "../../components/ui/ActionCell";
 import ReusableTable from "../../utility/ReusableTable";
 import { FaPlus } from "react-icons/fa6";
 import { LuWallet, LuClock } from "react-icons/lu";
-import { HiOutlineArrowTrendingUp } from "react-icons/hi2";
 import Deposit from "../../components/modal/Deposit";
 import EachCompanyDepositModal from "../../components/modal/EachCompanyDepositModal";
 import { useUser } from "../../hooks/useUser";

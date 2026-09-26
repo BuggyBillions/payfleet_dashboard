@@ -510,9 +510,34 @@ export interface Employee {
   estimate_pay: number | string;
   paying?: string | number;
   deduction_amount?: number | string | null;
+  deduction_id?: number | string | null;
   company?: EmployeeCompanyProps;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface EmployeeDeduction {
+  id: number | string;
+  employee_id: number | string | null;
+  amount: number;
+  reason: string;
+  no_of_month: number;
+  employee?: {
+    id?: number | string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+  };
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface EmployeeDeductionListResponse {
+  items: EmployeeDeduction[];
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+  totalAmount: number;
 }
 
 export type EmployeeInput = Omit<
@@ -563,12 +588,13 @@ export interface ViewProfileModalProps {
 export interface ReduceSalaryModalProps {
   employee: Employee;
   onClose: () => void;
-  onSaved: (updated: Employee) => void;
+  onSaved: () => void;
 }
 
 export interface ReductionValues {
   amount: string | number;
   reason: string;
+  no_of_month: number;
 }
 
 export interface TierItem {

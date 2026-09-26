@@ -17,8 +17,8 @@ export interface UpdateCompanyDetailsPayload {
   cac?: string | null;
   mermat?: string | null;
   status_report?: string | null;
-  bvn?: number | string;
-  nin?: number | string;
+  bvn?: string;
+  nin?: string;
   pin?: string;
 }
 
