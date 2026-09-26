@@ -167,7 +167,7 @@ const FinancialOverview: React.FC = () => {
           title="Pending Deposits Queue"
           value={
             <div className="flex flex-col">
-              <span>{pendingDepositsCount} pending</span>
+              <span>{pendingDepositsCount}</span>
               <span className="text-[11px] font-normal text-textBlack/60">
                 {formatterUtility(pendingDepositsAmount)}
               </span>
