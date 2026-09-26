@@ -1,5 +1,5 @@
 import { RxDashboard } from "react-icons/rx";
-import { LuUsersRound, LuArrowDownToLine, LuHistory, LuBuilding2 } from "react-icons/lu";
+import { LuUsersRound, LuArrowDownToLine, LuHistory, LuBuilding2, LuScrollText } from "react-icons/lu";
 import { FaMoneyBillWave, FaUsers } from "react-icons/fa6";
 import { LiaUsersCogSolid } from "react-icons/lia";
 import { BsChat } from "react-icons/bs";
@@ -19,10 +19,7 @@ export const navItems: NavItem[] = [
     name: "Employees",
     icon: LuUsersRound,
     role: ["company"],
-    children: [
-      { name: "View Employees", path: "/dashboard/employees" },
-      { name: "Add Employee", path: "/dashboard/employees/add" },
-    ],
+    path: "/dashboard/employees",
   },
   {
     name: "Deposits",
@@ -46,6 +43,12 @@ export const navItems: NavItem[] = [
     icon: LuArrowDownToLine,
     path: "/dashboard/notifications",
     role: ["company", "user"],
+  },
+  {
+    name: "Activity Log",
+    icon: LuScrollText,
+    path: "/dashboard/activity-log",
+    role: ["company"],
   },
 
   // --- Super Admin Navigation ---

@@ -6,7 +6,6 @@ import {
   LuLoader,
   LuEye,
 } from "react-icons/lu";
-import { HiOutlineArrowTrendingUp } from "react-icons/hi2";
 import type { TableColumnProps } from "../../lib/interfaces";
 import {
   isNotificationRead,
@@ -175,13 +174,11 @@ const Notifications: React.FC = () => {
           icon={LuBellRing}
           title="Total Notifications"
           value={notifications.length.toString()}
-          icon2={HiOutlineArrowTrendingUp}
         />
         <OverviewCards
           icon={LuBell}
           title="Unread Notifications"
           value={unreadCount.toString()}
-          icon2={HiOutlineArrowTrendingUp}
         />
       </div>
 

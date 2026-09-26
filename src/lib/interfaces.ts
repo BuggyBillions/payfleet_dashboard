@@ -100,6 +100,7 @@ export interface ActionButtonProps {
   buttonStyle?: string;
   overideBg?: boolean;
   title?: string;
+  type?: "button" | "submit" | "reset";
 }
 
 export interface FormattedInputProps extends Omit<
@@ -165,7 +166,8 @@ export interface ConfirmDialogProps {
   message?: string;
   confirmText?: string;
   cancelText?: string;
-  onCancel: () => void;
+  onCancel?: () => void;
+  onClose?: () => void;
   onConfirm: () => void;
   isLoading: boolean;
 }
@@ -198,6 +200,47 @@ export interface CompanyTierProp {
   created_at?: string;
 }
 
+export interface MyCompanyStatsResponse {
+  /** Every numeric metric the API returned, keyed by its normalised name. */
+  metrics: Record<string, number>;
+  totalEmployees: number;
+  totalStaff: number;
+  totalPayroll: number;
+  estimatedSalary: number;
+  totalPaid: number;
+  totalSalaryPaid: number;
+  totalPayments: number;
+  completedPayments: number;
+  pendingPayments: number;
+  totalDeposits: number;
+  totalDeductions: number;
+  totalCompanies: number;
+  companyBalance: number;
+  averageSalary: number;
+  averagePay: number;
+  raw: Record<string, unknown>;
+}
+
+export interface CompanyActivityLog {
+  id: number | string;
+  action: string;
+  description: string;
+  type: string;
+  subject: string;
+  actor: string;
+  ipAddress: string;
+  status: string;
+  createdAt: string;
+  raw: Record<string, unknown>;
+}
+
+export interface CompanyActivityLogListResponse {
+  items: CompanyActivityLog[];
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+}
+
 export interface CompanyDetailsProps {
   id: number;
   name: string;
@@ -225,7 +268,8 @@ export interface UserProps {
   last_name?: string;
   name?: string;
   email?: string;
-  is_admin?: number;
+  is_active?: number | boolean;
+  is_verified?: number | boolean;
   role?: string;
   tier?: string;
   company_name?: string;
@@ -342,10 +386,12 @@ export interface CompanyProps {
   phoneNumber?: string;
   no_of_employee?: number;
   staff?: number | string;
-  tier?: string | number;
-  status?: boolean | string;
+  tier?: TierItem | string | number | unknown;
+  status?: boolean | string | number;
   is_active?: boolean | number;
+  is_verified?: boolean | number;
   created_at?: string;
+  updated_at?: string;
   address?: string;
   registeredAddress?: string;
   rc_number?: string;
@@ -354,6 +400,15 @@ export interface CompanyProps {
   tinNumber?: string;
   industry?: string;
   staffCount?: number;
+  balance?: string | number;
+  about?: string;
+  logo?: string | null;
+  bvn?: string | null;
+  nin?: string | null;
+  cac?: string | null;
+  mermat?: string | null;
+  status_report?: string | null;
+  user_id?: number | string;
   verificationStatus?: VerificationStatus;
   documents?: {
     cacCertificate?: string;
@@ -364,6 +419,9 @@ export interface CompanyProps {
   rejectionReason?: string;
   directorName?: string;
   directorPhone?: string;
+  user?: UserProps;
+  employees?: Employee[];
+  [key: string]: unknown;
 }
 
 export interface GetCompaniesParams {
@@ -509,9 +567,34 @@ export interface Employee {
   estimate_pay: number | string;
   paying?: string | number;
   deduction_amount?: number | string | null;
+  deduction_id?: number | string | null;
   company?: EmployeeCompanyProps;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface EmployeeDeduction {
+  id: number | string;
+  employee_id: number | string | null;
+  amount: number;
+  reason: string;
+  no_of_month: number;
+  employee?: {
+    id?: number | string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+  };
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface EmployeeDeductionListResponse {
+  items: EmployeeDeduction[];
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+  totalAmount: number;
 }
 
 export type EmployeeInput = Omit<
@@ -562,12 +645,13 @@ export interface ViewProfileModalProps {
 export interface ReduceSalaryModalProps {
   employee: Employee;
   onClose: () => void;
-  onSaved: (updated: Employee) => void;
+  onSaved: () => void;
 }
 
 export interface ReductionValues {
   amount: string | number;
   reason: string;
+  no_of_month: number;
 }
 
 export interface TierItem {

@@ -13,64 +13,106 @@ export interface UnreadCountResponse {
   count: number;
 }
 
+export const extractMessagesList = (raw: any): Record<string, any>[] => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    // Check if it's grouped by day: [{ day: "Yesterday", messages: [...] }, { day: "Today", messages: [...] }]
+    const hasGroups = raw.some((g) => g && Array.isArray(g.messages));
+    if (hasGroups) {
+      return raw.flatMap((g) => (Array.isArray(g.messages) ? g.messages : []));
+    }
+    return raw;
+  }
+  if (raw.messages && Array.isArray(raw.messages)) {
+    return extractMessagesList(raw.messages);
+  }
+  if (raw.data) {
+    return extractMessagesList(raw.data);
+  }
+  return [];
+};
+
+export const mapRawMessageToChatMessage = (
+  m: Record<string, any>,
+  fallbackName = "User",
+  idx = 0
+): ChatMessage | null => {
+  if (!m) return null;
+  const text = String(
+    m.message || m.content || m.text || m.body || m.msg || ""
+  ).trim();
+  if (!text) return null;
+
+  const senderRole = String(
+    m.sender_type || m.role || m.sender_role || m.type || ""
+  ).toLowerCase();
+  const isSupportOrAdmin =
+    senderRole.includes("admin") ||
+    senderRole.includes("support") ||
+    senderRole.includes("finance") ||
+    Boolean(m.is_admin || m.is_support || m.from_support || m.from_admin);
+
+  const isMe =
+    m.is_sender !== undefined
+      ? Boolean(m.is_sender)
+      : m.is_me !== undefined
+      ? Boolean(m.is_me)
+      : m.sender_type === "company" || m.sender_type === "user" || m.sender_type === "client"
+      ? true
+      : isSupportOrAdmin;
+
+  const timeStr = m.time
+    ? String(m.time)
+    : m.created_at
+    ? new Date(m.created_at).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : m.timestamp || "";
+
+  return {
+    id: m.id || idx + 1,
+    senderId: m.sender_id || (isMe ? 999 : 101),
+    senderName: m.sender_name || (isMe ? "Me" : fallbackName),
+    text,
+    timestamp: timeStr,
+    isMe,
+    status: (m.read_at || m.is_read || m.read ? "read" : "delivered") as
+      | "sent"
+      | "delivered"
+      | "read",
+  };
+};
+
 /**
  * 1. Company: Get support messages (GET /support/messages)
  */
 export const getSupportMessagesService = async (): Promise<ChatMessage[]> => {
   try {
-    const response = await api.get("/support/messages");
+    let response;
+    try {
+      response = await api.get("/support/messages");
+    } catch {
+      try {
+        response = await api.get("/support/message");
+      } catch {
+        response = await api.get("/messages");
+      }
+    }
     const resData = response.data;
-    const rawList =
-      resData?.data?.data ||
+    const rawData =
       resData?.data ||
       resData?.messages ||
-      (Array.isArray(resData) ? resData : []);
+      resData?.support_messages ||
+      resData;
 
-    if (!Array.isArray(rawList)) return [];
+    const rawList = extractMessagesList(rawData);
 
     return rawList
-      .map((item: Record<string, any>, idx: number) => {
-        const senderRole = String(
-          item.sender_type || item.role || item.sender_role || ""
-        ).toLowerCase();
-        const isSupportOrAdmin =
-          senderRole.includes("admin") ||
-          senderRole.includes("support") ||
-          senderRole.includes("finance") ||
-          Boolean(item.is_admin || item.is_support || item.from_support);
-        const isMe =
-          item.is_me !== undefined ? Boolean(item.is_me) : !isSupportOrAdmin;
-
-        const timeStr = item.created_at
-          ? new Date(item.created_at).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : item.time || item.timestamp || "";
-
-        const text = String(
-          item.message ||
-            item.content ||
-            item.text ||
-            item.body ||
-            item.msg ||
-            ""
-        ).trim();
-
-        return {
-          id: item.id || idx + 1,
-          senderId: item.sender_id || (isMe ? 999 : 101),
-          senderName:
-            item.sender_name || item.user?.name || (isMe ? "Me" : "Payfleet Support"),
-          text,
-          timestamp: timeStr,
-          isMe,
-          status: (item.read_at || item.is_read || item.read
-            ? "read"
-            : "delivered") as "sent" | "delivered" | "read",
-        };
-      })
-      .filter((msg) => Boolean(msg.text && msg.text.trim()));
+      .map((item: Record<string, any>, idx: number) =>
+        mapRawMessageToChatMessage(item, "Payfleet Support", idx)
+      )
+      .filter((msg): msg is ChatMessage => msg !== null);
   } catch {
     return [];
   }
@@ -102,8 +144,27 @@ export const sendUserMessageService = async (
           body: messageText,
         };
 
-  const response = await api.post("/support/messages", body);
-  return response.data;
+  try {
+    const response = await api.post("/support/messages", body);
+    return response.data;
+  } catch (err) {
+    try {
+      const response = await api.post("/support/message", body);
+      return response.data;
+    } catch {
+      try {
+        const response = await api.post("/support/send", body);
+        return response.data;
+      } catch {
+        try {
+          const response = await api.post("/support", body);
+          return response.data;
+        } catch {
+          throw err;
+        }
+      }
+    }
+  }
 };
 
 /**
@@ -120,8 +181,13 @@ export const markMessagesAsReadService = async (
       const response = await api.put("/support/messages/read", payload || {});
       return response.data;
     } catch {
-      const response = await api.get("/support/messages/read");
-      return response.data;
+      try {
+        const response = await api.post("/support/read", payload || {});
+        return response.data;
+      } catch {
+        const response = await api.get("/support/messages/read");
+        return response.data;
+      }
     }
   }
 };
@@ -130,16 +196,54 @@ export const markMessagesAsReadService = async (
  * 4. Company: Get unread count (GET /support/unread-count)
  */
 export const getUnreadCountService = async (): Promise<number> => {
-  const response = await api.get("/support/unread-count");
-  const resData = response.data;
-  const count = Number(
-    resData?.unread_count ??
-      resData?.count ??
-      resData?.data?.unread_count ??
-      resData?.data?.count ??
-      (typeof resData?.data === "number" ? resData.data : 0)
-  );
-  return isNaN(count) ? 0 : count;
+  try {
+    const response = await api.get("/support/unread-count");
+    const resData = response.data;
+    const count = Number(
+      resData?.unread_count ??
+        resData?.count ??
+        resData?.data?.unread_count ??
+        resData?.data?.count ??
+        (typeof resData?.data === "number" ? resData.data : 0)
+    );
+    return isNaN(count) ? 0 : count;
+  } catch {
+    return 0;
+  }
+};
+
+export const resolveConversationName = (item: Record<string, any>): string => {
+  if (!item) return "User";
+  const comp = item.company || item.user?.company || item.client?.company || {};
+  const usr = item.user || item.sender || item.client || {};
+
+  const userName =
+    usr.name ||
+    usr.full_name ||
+    (usr.first_name || usr.last_name
+      ? `${usr.first_name || ""} ${usr.last_name || ""}`.trim()
+      : "");
+
+  const itemName =
+    item.name ||
+    item.full_name ||
+    (item.first_name || item.last_name
+      ? `${item.first_name || ""} ${item.last_name || ""}`.trim()
+      : "");
+
+  const companyName =
+    comp.name ||
+    comp.company_name ||
+    comp.companyName ||
+    item.company_name ||
+    item.companyName;
+
+  const senderName = item.sender_name || item.client_name;
+
+  const email = comp.email || usr.email || item.email || "";
+  const emailName = email ? email.split("@")[0] : "";
+
+  return userName || companyName || itemName || senderName || emailName || "User";
 };
 
 /**
@@ -148,107 +252,97 @@ export const getUnreadCountService = async (): Promise<number> => {
 export const getAdminSupportConversationsService = async (
   params?: Record<string, unknown>
 ): Promise<Conversation[]> => {
-  const response = await api.get("/admin/support/conversations", { params });
-  const resData = response.data;
-  const rawList =
-    resData?.data?.data ||
-    resData?.data ||
-    resData?.conversations ||
-    (Array.isArray(resData) ? resData : []);
+  try {
+    let response;
+    try {
+      response = await api.get("/admin/support/conversations", { params });
+    } catch {
+      try {
+        response = await api.get("/support/conversations", { params });
+      } catch {
+        response = await api.get("/admin/conversations", { params });
+      }
+    }
+    const resData = response.data;
+    const rawList =
+      resData?.data?.data ||
+      resData?.data?.conversations ||
+      resData?.data?.items ||
+      resData?.data ||
+      resData?.conversations ||
+      (Array.isArray(resData) ? resData : []);
 
-  if (!Array.isArray(rawList)) return [];
+    if (!Array.isArray(rawList)) return [];
 
-  return rawList.map((item: Record<string, any>, idx: number) => {
-    const comp = item.company || item.user?.company || {};
-    const usr = item.user || {};
-    const name =
-      comp.name ||
-      item.company_name ||
-      item.companyName ||
-      usr.name ||
-      item.name ||
-      (item.id ? `Client #${item.id}` : `Client #${idx + 1}`);
-    const email = comp.email || item.email || usr.email || "";
-    const phone =
-      comp.phone ||
-      comp.phoneNumber ||
-      item.phone ||
-      usr.phone ||
-      usr.phoneNumber ||
-      "";
-    const unread = Number(
-      item.unread_count ?? item.unread ?? item.unreadMessages ?? 0
-    );
-    const lastMsg = item.last_message || item.latest_message;
-    const lastMsgText =
-      typeof lastMsg === "string"
-        ? lastMsg
-        : lastMsg?.message || lastMsg?.content || lastMsg?.text || "";
+    return rawList.map((item: Record<string, any>, idx: number) => {
+      const usr = item.user || item.sender || item.client || {};
+      const comp = item.company || usr.company || {};
+      const name = resolveConversationName(item);
+      const email = usr.email || comp.email || item.email || "";
+      const phone =
+        usr.phone ||
+        usr.phoneNumber ||
+        comp.phone ||
+        comp.phoneNumber ||
+        item.phone ||
+        "";
+      const unread = Number(
+        item.unread_count ?? item.unread ?? item.unreadMessages ?? 0
+      );
+      const lastMsg = item.last_message || item.latest_message;
+      const lastMsgText =
+        typeof lastMsg === "string"
+          ? lastMsg
+          : lastMsg?.message || lastMsg?.content || lastMsg?.text || "";
 
-    const lastTime =
-      item.last_message_time || item.updated_at || item.created_at
-        ? new Date(
-            item.last_message_time || item.updated_at || item.created_at
-          ).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      const rawTime =
+        lastMsg?.created_at ||
+        item.last_activity ||
+        item.last_message_time ||
+        item.updated_at ||
+        item.created_at;
+
+      const lastTime = rawTime
+        ? new Date(rawTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         : "";
 
-    const rawMessages =
-      item.messages || (item.last_message ? [item.last_message] : []);
-    const messages: ChatMessage[] = Array.isArray(rawMessages)
-      ? rawMessages
-          .map((m: Record<string, any>, mIdx: number) => {
-            const senderRole = String(
-              m.sender_type || m.role || ""
-            ).toLowerCase();
-            const isSupportOrAdmin =
-              senderRole.includes("admin") ||
-              senderRole.includes("support") ||
-              senderRole.includes("finance") ||
-              Boolean(m.is_admin || m.is_support);
-            const isMe =
-              m.is_me !== undefined ? Boolean(m.is_me) : isSupportOrAdmin;
+      const convId = String(
+        usr.id ||
+        item.id ||
+        item.conversation_id ||
+        item.company_id ||
+        comp.id ||
+        item.user_id ||
+        item.client_id ||
+        idx + 1
+      );
 
-            const text = String(
-              m.message || m.content || m.text || m.body || m.msg || ""
-            ).trim();
+      const rawMessagesList = extractMessagesList(
+        item.messages || (item.last_message ? [item.last_message] : [])
+      );
+      const messages: ChatMessage[] = rawMessagesList
+        .map((m, mIdx) => mapRawMessageToChatMessage(m, name, mIdx))
+        .filter((m): m is ChatMessage => m !== null);
 
-            return {
-              id: m.id || mIdx + 1,
-              senderId: m.sender_id || (isMe ? 999 : 101),
-              senderName: m.sender_name || (isMe ? "Me" : name || "User"),
-              text,
-              timestamp: m.created_at
-                ? new Date(m.created_at).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
-                : m.timestamp || "",
-              isMe,
-              status: (m.read_at || m.is_read ? "read" : "delivered") as
-                | "sent"
-                | "delivered"
-                | "read",
-            };
-          })
-          .filter((msg) => Boolean(msg.text && msg.text.trim()))
-      : [];
-
-    return {
-      id: String(item.id || `conv-${idx + 1}`),
-      name: name || "Client",
-      type: "chat" as const,
-      role: item.role || comp.tier || "Client",
-      email,
-      phone,
-      department: item.department || "Client Account",
-      online: Boolean(item.online ?? comp.online ?? false),
-      unread,
-      lastMessage: lastMsgText,
-      lastMessageTime: lastTime,
-      created_at: item.created_at,
-      messages,
-    };
-  });
+      return {
+        id: convId,
+        name,
+        type: "chat" as const,
+        role: usr.role || item.role || comp.tier || "Company Client",
+        email,
+        phone,
+        department: item.department || "Client Account",
+        online: Boolean(item.online ?? comp.online ?? true),
+        unread,
+        lastMessage: lastMsgText || (messages.length > 0 ? messages[messages.length - 1].text : "No messages yet"),
+        lastMessageTime: lastTime || (messages.length > 0 ? messages[messages.length - 1].timestamp : "Just now"),
+        created_at: item.created_at || item.last_activity,
+        messages,
+      };
+    });
+  } catch {
+    return [];
+  }
 };
 
 /**
@@ -257,70 +351,42 @@ export const getAdminSupportConversationsService = async (
 export const getAdminSupportConversationByIdService = async (
   id: string | number
 ): Promise<Conversation> => {
-  const response = await api.get(`/admin/support/conversations/${id}`);
+  let response;
+  try {
+    response = await api.get(`/admin/support/conversations/${id}`);
+  } catch {
+    try {
+      response = await api.get(`/support/conversations/${id}`);
+    } catch {
+      response = await api.get(`/admin/support/conversation/${id}`);
+    }
+  }
   const resData = response.data;
-  const item = resData?.data || resData?.conversation || resData;
+  const rawData = resData?.data || resData?.conversation || resData;
 
-  const comp = item.company || item.user?.company || {};
-  const usr = item.user || {};
-  const name =
-    comp.name ||
-    item.company_name ||
-    item.companyName ||
-    usr.name ||
-    item.name ||
-    `Client #${id}`;
-  const email = comp.email || item.email || usr.email || "";
+  const rawMessagesList = extractMessagesList(rawData);
+  const item = Array.isArray(rawData) ? (resData?.user || resData?.company || resData || {}) : rawData;
+
+  const comp = item.company || item.user?.company || resData?.company || resData?.user?.company || {};
+  const usr = item.user || resData?.user || resData?.client || {};
+  const resolvedName = resolveConversationName(item) !== "User" 
+    ? resolveConversationName(item) 
+    : resolveConversationName(resData);
+  const name = resolvedName !== "User" ? resolvedName : "";
+  const email = comp.email || item.email || usr.email || resData?.email || "";
   const phone =
-    comp.phone || comp.phoneNumber || item.phone || usr.phone || "";
-  const unread = Number(item.unread_count ?? item.unread ?? 0);
+    comp.phone || comp.phoneNumber || item.phone || usr.phone || resData?.phone || "";
+  const unread = Number(item.unread_count ?? item.unread ?? resData?.unread_count ?? 0);
 
-  const rawMessages =
-    item.messages || item.chat_messages || (Array.isArray(item) ? item : []);
-  const messages: ChatMessage[] = Array.isArray(rawMessages)
-    ? rawMessages
-        .map((m: Record<string, any>, mIdx: number) => {
-          const senderRole = String(
-            m.sender_type || m.role || ""
-          ).toLowerCase();
-          const isSupportOrAdmin =
-            senderRole.includes("admin") ||
-            senderRole.includes("support") ||
-            senderRole.includes("finance") ||
-            Boolean(m.is_admin || m.is_support);
-          const isMe =
-            m.is_me !== undefined ? Boolean(m.is_me) : isSupportOrAdmin;
-
-          const text = String(
-            m.message || m.content || m.text || m.body || m.msg || ""
-          ).trim();
-
-          return {
-            id: m.id || mIdx + 1,
-            senderId: m.sender_id || (isMe ? 999 : 101),
-            senderName: m.sender_name || (isMe ? "Me" : name || "User"),
-            text,
-            timestamp: m.created_at
-              ? new Date(m.created_at).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
-              : m.timestamp || "",
-            isMe,
-            status: (m.read_at || m.is_read ? "read" : "delivered") as
-              | "sent"
-              | "delivered"
-              | "read",
-          };
-        })
-        .filter((msg) => Boolean(msg.text && msg.text.trim()))
-    : [];
+  const messages: ChatMessage[] = rawMessagesList
+    .map((m, mIdx) => mapRawMessageToChatMessage(m, name || "User", mIdx))
+    .filter((m): m is ChatMessage => m !== null);
 
   return {
     id: String(item.id || id),
     name,
     type: "chat" as const,
-    role: item.role || comp.tier || "Company Client",
+    role: item.role || usr.role || comp.tier || "Company Client",
     email,
     phone,
     department: item.department || "Client Account",
@@ -334,7 +400,7 @@ export const getAdminSupportConversationByIdService = async (
       messages.length > 0
         ? messages[messages.length - 1].timestamp
         : "Just now",
-    created_at: item.created_at,
+    created_at: item.created_at || resData?.created_at,
     messages,
   };
 };
@@ -357,6 +423,9 @@ export const replyToCompanyService = async (
           content: messageText,
           text: messageText,
           body: messageText,
+          conversation_id: conversationId,
+          company_id: conversationId,
+          user_id: conversationId,
         }
       : {
           ...payload,
@@ -364,11 +433,36 @@ export const replyToCompanyService = async (
           content: messageText,
           text: messageText,
           body: messageText,
+          conversation_id: conversationId,
+          company_id: conversationId,
+          user_id: conversationId,
         };
 
-  const response = await api.post(
-    `/admin/support/conversations/${conversationId}/messages`,
-    body
-  );
-  return response.data;
+  try {
+    const response = await api.post(
+      `/admin/support/conversations/${conversationId}/messages`,
+      body
+    );
+    return response.data;
+  } catch (err) {
+    try {
+      const response = await api.post(
+        `/admin/support/conversations/${conversationId}/reply`,
+        body
+      );
+      return response.data;
+    } catch {
+      try {
+        const response = await api.post(`/admin/support/messages`, body);
+        return response.data;
+      } catch {
+        try {
+          const response = await api.post(`/support/messages`, body);
+          return response.data;
+        } catch {
+          throw err;
+        }
+      }
+    }
+  }
 };

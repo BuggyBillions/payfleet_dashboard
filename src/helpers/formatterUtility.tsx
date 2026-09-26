@@ -146,6 +146,25 @@ export const formatShortDate = (dateInput: string | Date) => {
   return formattedDate;
 };
 
+/**
+ * Formats a date string or Date object into localized "Month Day, Year, hh:mm AM/PM"
+ * e.g., "2026-09-26T07:09:19Z" -> "Sep 26, 2026, 08:09 AM"
+ */
+export const formatDateTime = (dateInput?: string | Date | null): string => {
+  if (!dateInput) return "—";
+  const dateObj = new Date(dateInput);
+  if (isNaN(dateObj.getTime())) return String(dateInput);
+
+  return dateObj.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
 export function getFormattedDate() {
   const now = new Date();
 
@@ -197,6 +216,50 @@ export const getPercentOfMax = (
 export function getInitials(firstName: string, lastName: string) {
   return firstName.trim()[0].toUpperCase() + lastName.trim()[0].toUpperCase();
 }
+
+/**
+ * Resolve a human readable name for the signed-in user returned by `/me`.
+ * The API does not guarantee a single field, so every known variant is tried
+ * in order before falling back. An empty string is returned when nothing is
+ * available and the caller supplies its own label.
+ */
+export const getUserDisplayName = (
+  user?: Record<string, unknown> | null,
+): string => {
+  if (!user) return "";
+
+  const clean = (value: unknown) =>
+    typeof value === "string" ? value.trim() : "";
+
+  const fullName = clean(user.full_name);
+  if (fullName) return fullName;
+
+  const name = clean(user.name);
+  if (name) return name;
+
+  const parts = [clean(user.first_name), clean(user.last_name)]
+    .filter(Boolean)
+    .join(" ");
+  if (parts) return parts;
+
+  const companyName = clean(user.company_name);
+  if (companyName) return companyName;
+
+  const details = user.company_details;
+  const companyDetailName =
+    details && typeof details === "object"
+      ? clean((details as Record<string, unknown>).name)
+      : "";
+  if (companyDetailName) return companyDetailName;
+
+  const username = clean(user.username);
+  if (username) return username;
+
+  const email = clean(user.email);
+  if (email) return email.split("@")[0];
+
+  return "";
+};
 
 export const formatISODateToYYYYMMDD = (isoString: string): string => {
   if (!isoString) return "";

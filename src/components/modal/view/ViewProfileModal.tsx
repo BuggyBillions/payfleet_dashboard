@@ -5,6 +5,7 @@ import StatusBadge from "../../ui/StatusBadge";
 import { FiMail, FiPhone, FiCalendar, FiShield, FiMessageSquare, FiCopy } from "react-icons/fi";
 import { formatShortDate } from "../../../helpers/formatterUtility";
 import { toast } from "sonner";
+import { copyToClipboard } from "../../../helpers/clipboardHelper";
 
 const ViewProfileModal: React.FC<ViewProfileModalProps> = ({
   conversation,
@@ -28,8 +29,7 @@ const ViewProfileModal: React.FC<ViewProfileModalProps> = ({
   const lastActive = conversation.lastMessageTime || "";
 
   const handleCopy = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(`${label} copied to clipboard!`);
+    copyToClipboard(text, label);
   };
 
   return (
@@ -38,9 +38,9 @@ const ViewProfileModal: React.FC<ViewProfileModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-primary/10 pb-3">
           <div>
-            <h2 className="text-lg font-bold text-textBlack">Member Profile</h2>
+            <h2 className="text-lg font-bold text-textBlack">Company Profile</h2>
             <p className="text-xs text-textBlack/60">
-              User communication and verified contact details
+              Corporate communication and verified account details
             </p>
           </div>
         </div>
@@ -64,7 +64,7 @@ const ViewProfileModal: React.FC<ViewProfileModalProps> = ({
             </h3>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary capitalize">
-                {displayRole}
+                {displayRole || "Company Client"}
               </span>
               <StatusBadge status={isOnline ? "Active" : "Inactive"} />
             </div>
@@ -74,14 +74,14 @@ const ViewProfileModal: React.FC<ViewProfileModalProps> = ({
           </div>
         </div>
 
-        {/* Contact & Administrative Details Grid */}
+        {/* Contact & Company Details Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Email Address */}
           <div className="bg-secondary/40 p-3 rounded-xl border border-primary/10 flex flex-col justify-between group">
             <div className="flex items-center justify-between text-textBlack/60 text-xs font-medium">
               <div className="flex items-center gap-1.5">
                 <FiMail className="text-primary text-sm" />
-                <span>Official Email</span>
+                <span>Company Email</span>
               </div>
               <button
                 type="button"
@@ -102,7 +102,7 @@ const ViewProfileModal: React.FC<ViewProfileModalProps> = ({
             <div className="flex items-center justify-between text-textBlack/60 text-xs font-medium">
               <div className="flex items-center gap-1.5">
                 <FiPhone className="text-primary text-sm" />
-                <span>Phone Number</span>
+                <span>Company Phone</span>
               </div>
               <button
                 type="button"
@@ -118,14 +118,14 @@ const ViewProfileModal: React.FC<ViewProfileModalProps> = ({
             </p>
           </div>
 
-          {/* Role & Access */}
+          {/* Account Tier & Type */}
           <div className="bg-secondary/40 p-3 rounded-xl border border-primary/10">
             <div className="flex items-center gap-1.5 text-textBlack/60 text-xs font-medium">
               <FiShield className="text-primary text-sm" />
-              <span>Assigned Department</span>
+              <span>Account Type</span>
             </div>
             <p className="text-xs font-semibold text-textBlack mt-1 capitalize">
-              {conversation.department || displayRole}
+              {displayRole || "Corporate Client"}
             </p>
           </div>
 
@@ -141,14 +141,14 @@ const ViewProfileModal: React.FC<ViewProfileModalProps> = ({
           </div>
         </div>
 
-        {/* Member Since / Security Note */}
+        {/* Member Since / Registration Date */}
         <div className="p-3 bg-secondary/30 rounded-xl border border-primary/10 flex items-center justify-between text-xs text-textBlack/60">
           <div className="flex items-center gap-2">
             <FiCalendar className="text-primary text-sm" />
-            <span>Registration Status</span>
+            <span>Member Since</span>
           </div>
           <span className="font-semibold text-textBlack">
-            {conversation.created_at ? formatShortDate(conversation.created_at) : "Verified User"}
+            {conversation.created_at ? formatShortDate(conversation.created_at) : "Verified Company"}
           </span>
         </div>
 

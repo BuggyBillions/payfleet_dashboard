@@ -8,7 +8,7 @@ import type {
 export const createCompanyService = async (
   values: FormData | RegisterValues,
 ) => {
-  const response = await api.post(`/register`, values, {
+  const response = await api.post(`/register  `, values, {
     headers:
       values instanceof FormData
         ? { "Content-Type": "multipart/form-data" }

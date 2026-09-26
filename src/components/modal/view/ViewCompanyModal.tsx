@@ -20,6 +20,8 @@ import {
   LuExternalLink,
   LuMapPin,
   LuLayers,
+  LuWallet,
+  LuInfo,
 } from "react-icons/lu";
 import { FiSearch } from "react-icons/fi";
 
@@ -42,19 +44,37 @@ const ViewCompanyModal: React.FC<ViewCompanyModalProps> = ({
   const compPhone = selectedCompany?.phone || selectedCompany?.phoneNumber || "N/A";
   const compEmail = selectedCompany?.email || "N/A";
   const compAddress = selectedCompany?.address || selectedCompany?.registeredAddress || "N/A";
+  const compAbout = selectedCompany?.about || "";
+  const compBalance = Number(selectedCompany?.balance) || 0;
   const compRC = selectedCompany?.rcNumber || selectedCompany?.rc_number || "N/A";
   const compTIN = selectedCompany?.tinNumber || selectedCompany?.tin_number || "N/A";
+  const compBVN = selectedCompany?.bvn || "N/A";
+  const compNIN = selectedCompany?.nin || "N/A";
   const compDirector = selectedCompany?.directorName || "N/A";
   const compDirectorPhone = selectedCompany?.directorPhone || "N/A";
   const compTier = getTierConfig(selectedCompany?.tier);
-  const compStatus =
-    typeof selectedCompany?.status === "boolean"
-      ? selectedCompany.status
-        ? "Active"
-        : "Inactive"
-      : selectedCompany?.status || (selectedCompany?.is_active ? "Active" : "Inactive");
 
-  // Fetch real enrolled staff for this company
+  const isVerified =
+    selectedCompany?.user?.is_verified === 1 ||
+    selectedCompany?.is_verified === 1 ||
+    selectedCompany?.verificationStatus === "verified" ||
+    selectedCompany?.status === "verified";
+
+  const isActive =
+    selectedCompany?.user?.is_active === 1 ||
+    selectedCompany?.is_active === 1 ||
+    selectedCompany?.status === "active" ||
+    selectedCompany?.status === true;
+
+  const compStatus = isActive ? "Active" : "Inactive";
+  const verificationStatus = isVerified ? "Verified" : "Pending Verification";
+
+  // Check if employees are already embedded in the company object
+  const embeddedEmployees = Array.isArray(selectedCompany?.employees)
+    ? selectedCompany.employees
+    : [];
+
+  // Fetch real enrolled staff for this company if not embedded
   const {
     data: employeesData,
     isLoading: loadingEmployees,
@@ -67,12 +87,12 @@ const ViewCompanyModal: React.FC<ViewCompanyModalProps> = ({
         per_page: staffItemsPerPage,
         search: staffSearch || undefined,
       }),
-    enabled: Boolean(compId),
+    enabled: Boolean(compId && embeddedEmployees.length === 0),
   });
 
-  const staffList = employeesData?.items ?? [];
-  const totalStaff = employeesData?.totalItems ?? staffList.length;
-  const totalStaffPages = employeesData?.totalPages ?? Math.max(1, Math.ceil(totalStaff / staffItemsPerPage));
+  const staffList = embeddedEmployees.length > 0 ? embeddedEmployees : (employeesData?.items ?? []);
+  const totalStaff = selectedCompany?.no_of_employee ?? (embeddedEmployees.length > 0 ? embeddedEmployees.length : (employeesData?.totalItems ?? staffList.length));
+  const totalStaffPages = embeddedEmployees.length > 0 ? 1 : (employeesData?.totalPages ?? Math.max(1, Math.ceil(totalStaff / staffItemsPerPage)));
 
   const getInitials = (name?: string) => {
     if (!name) return "CO";
@@ -86,14 +106,20 @@ const ViewCompanyModal: React.FC<ViewCompanyModalProps> = ({
     {
       title: "CAC Certificate of Incorporation",
       type: "Certificate",
-      url: selectedCompany?.documents?.cacCertificate,
-      filename: selectedCompany?.documents?.cacCertificate || `CAC_Certificate_${compName.replace(/\s+/g, "_")}.pdf`,
+      url: selectedCompany?.cac || selectedCompany?.documents?.cacCertificate,
+      filename: selectedCompany?.cac || selectedCompany?.documents?.cacCertificate || `CAC_Certificate_${compName.replace(/\s+/g, "_")}.pdf`,
+    },
+    {
+      title: "MERMAT / Memorandum of Association",
+      type: "Corporate Articles",
+      url: selectedCompany?.mermat,
+      filename: selectedCompany?.mermat || `MERMAT_${compName.replace(/\s+/g, "_")}.pdf`,
     },
     {
       title: "Form CAC 1.1 / Status Report",
       type: "Corporate Status",
-      url: selectedCompany?.documents?.statusReport,
-      filename: selectedCompany?.documents?.statusReport || `Status_Report_${compName.replace(/\s+/g, "_")}.pdf`,
+      url: selectedCompany?.status_report || selectedCompany?.documents?.statusReport,
+      filename: selectedCompany?.status_report || selectedCompany?.documents?.statusReport || `Status_Report_${compName.replace(/\s+/g, "_")}.pdf`,
     },
     {
       title: "Proof of Business Address",
@@ -162,9 +188,9 @@ const ViewCompanyModal: React.FC<ViewCompanyModalProps> = ({
       key: "bank",
       render: (item: Employee) => (
         <div className="flex flex-col text-xs">
-          <span className="text-textBlack font-medium">{item.bank_name}</span>
+          <span className="text-textBlack font-medium">{item.bank_name || "Bank"}</span>
           <span className="text-[10px] text-textBlack/50 font-mono">
-            {item.account_number}
+            {item.account_number} ({item.account_name || "Account"})
           </span>
         </div>
       ),
@@ -185,20 +211,34 @@ const ViewCompanyModal: React.FC<ViewCompanyModalProps> = ({
           </div>
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary">
-              {compTier.badge} ({compTier.name})
+              {compTier.name} ({compTier.badge})
             </span>
+            <StatusBadge status={verificationStatus} />
             <StatusBadge status={compStatus} />
           </div>
         </div>
 
         {/* Company Header Card */}
         <div className="bg-secondary border border-primary/10 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4">
-          <div className="rounded-2xl bg-primary text-white w-14 h-14 flex items-center justify-center text-lg font-bold shrink-0 shadow-xs">
-            {getInitials(compName)}
-          </div>
+          {selectedCompany?.logo ? (
+            <img
+              src={selectedCompany.logo}
+              alt={compName}
+              className="rounded-2xl w-14 h-14 object-cover border border-primary/10 bg-white"
+            />
+          ) : (
+            <div className="rounded-2xl bg-primary text-white w-14 h-14 flex items-center justify-center text-lg font-bold shrink-0 shadow-xs">
+              {getInitials(compName)}
+            </div>
+          )}
 
           <div className="flex-1 text-center sm:text-left space-y-1">
-            <h3 className="font-bold text-base text-textBlack">{compName}</h3>
+            <div className="flex items-center justify-center sm:justify-between flex-wrap gap-2">
+              <h3 className="font-bold text-base text-textBlack">{compName}</h3>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-primary/10 text-primary text-xs font-bold font-mono">
+                <LuWallet size={14} /> Balance: {formatterUtility(compBalance)}
+              </span>
+            </div>
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-1 text-xs text-textBlack/70">
               <span className="flex items-center gap-1">
                 <LuMail className="text-primary text-xs" /> {compEmail}
@@ -258,6 +298,14 @@ const ViewCompanyModal: React.FC<ViewCompanyModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               <div className="p-3.5 rounded-xl bg-secondary border border-primary/10 space-y-1">
                 <span className="text-[10px] text-textBlack/50 uppercase font-semibold">
+                  Wallet Liquidity
+                </span>
+                <p className="text-xs font-mono font-bold text-primary">
+                  {formatterUtility(compBalance)}
+                </p>
+              </div>
+              <div className="p-3.5 rounded-xl bg-secondary border border-primary/10 space-y-1">
+                <span className="text-[10px] text-textBlack/50 uppercase font-semibold">
                   CAC Registration (RC)
                 </span>
                 <p className="text-xs font-mono font-bold text-textBlack">{compRC}</p>
@@ -270,10 +318,32 @@ const ViewCompanyModal: React.FC<ViewCompanyModalProps> = ({
               </div>
               <div className="p-3.5 rounded-xl bg-secondary border border-primary/10 space-y-1">
                 <span className="text-[10px] text-textBlack/50 uppercase font-semibold">
+                  Bank Verification (BVN)
+                </span>
+                <p className="text-xs font-mono font-bold text-textBlack">{compBVN}</p>
+              </div>
+              <div className="p-3.5 rounded-xl bg-secondary border border-primary/10 space-y-1">
+                <span className="text-[10px] text-textBlack/50 uppercase font-semibold">
+                  National ID (NIN)
+                </span>
+                <p className="text-xs font-mono font-bold text-textBlack">{compNIN}</p>
+              </div>
+              <div className="p-3.5 rounded-xl bg-secondary border border-primary/10 space-y-1">
+                <span className="text-[10px] text-textBlack/50 uppercase font-semibold">
                   Active Subscription Tier
                 </span>
                 <p className="text-xs font-bold text-primary">
-                  {compTier.badge} ({compTier.name})
+                  {compTier.name} ({compTier.badge})
+                </p>
+              </div>
+              <div className="p-3.5 rounded-xl bg-secondary border border-primary/10 space-y-1">
+                <span className="text-[10px] text-textBlack/50 uppercase font-semibold">
+                  Total Staff Capacity
+                </span>
+                <p className="text-xs font-semibold text-textBlack">
+                  {String(compTier.no_of_staff).toLowerCase() === "unlimited"
+                    ? "Unlimited Staff"
+                    : `${compTier.no_of_staff} Staff Limit`}
                 </p>
               </div>
               <div className="p-3.5 rounded-xl bg-secondary border border-primary/10 space-y-1">
@@ -288,19 +358,21 @@ const ViewCompanyModal: React.FC<ViewCompanyModalProps> = ({
                 </span>
                 <p className="text-xs font-semibold text-textBlack">{compDirectorPhone}</p>
               </div>
-              <div className="p-3.5 rounded-xl bg-secondary border border-primary/10 space-y-1">
-                <span className="text-[10px] text-textBlack/50 uppercase font-semibold">
-                  Total Staff Capacity
-                </span>
-                <p className="text-xs font-semibold text-textBlack">
-                  {String(compTier.no_of_staff).toLowerCase() === "unlimited"
-                    ? "Unlimited Staff"
-                    : `${compTier.no_of_staff} Staff Limit`}
-                </p>
-              </div>
             </div>
 
-            {/* Address & About */}
+            {/* About Company */}
+            {compAbout && (
+              <div className="p-4 rounded-xl bg-secondary border border-primary/10 space-y-1.5">
+                <span className="text-[11px] font-semibold text-textBlack/70 flex items-center gap-1.5 uppercase tracking-wider">
+                  <LuInfo className="text-primary text-xs" /> About Business
+                </span>
+                <p className="text-xs text-textBlack leading-relaxed whitespace-pre-line">
+                  {compAbout}
+                </p>
+              </div>
+            )}
+
+            {/* Address */}
             <div className="p-4 rounded-xl bg-secondary border border-primary/10 space-y-2">
               <span className="text-[11px] font-semibold text-textBlack/70 flex items-center gap-1.5 uppercase tracking-wider">
                 <LuMapPin className="text-primary text-xs" /> Physical Registered Address

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import Modal from "../../components/modal/Modal";
 import { toast } from "sonner";
 import {
@@ -43,28 +44,28 @@ export interface PresetOption {
 export const PRESET_OPTIONS: PresetOption[] = [
   {
     id: "deposit-guide",
-    label: "💳 How to make a deposit",
+    label: "How to make a deposit",
     question: "How do I deposit funds or top up my wallet?",
     answer:
       "To fund your wallet: Go to Deposits > 'Deposit Funds', enter your amount, and select your payment method (Bank Transfer, Card, or Virtual Account). If paying via transfer, upload your payment receipt for instant verification.",
   },
   {
     id: "payroll-guide",
-    label: "👥 How to disburse payroll",
+    label: "How to disburse payroll",
     question: "How do I process payroll for my staff?",
     answer:
       "To process payroll: Open the Payroll menu, verify your employee list and salary amounts, confirm your wallet has sufficient balance, and click 'Run Payroll'. Payouts are dispatched directly to employee bank accounts.",
   },
   {
     id: "pending-check",
-    label: "⏳ Check pending deposit / payout",
+    label: "Check pending deposit / payout",
     question: "Why is my deposit or payroll transaction pending?",
     answer:
       "Deposits and payroll transfers are processed automatically and typically settle within 5–15 minutes. If your transaction is delayed, please share your Transaction Reference ID here so our finance team can expedite it.",
   },
   {
     id: "live-agent-request",
-    label: "👨‍💼 Speak with Live Support Agent",
+    label: "Speak with Live Support Agent",
     question: "I would like to speak with a live support agent.",
     answer:
       "Connecting you with an active Payfleet support representative. Please describe your question or issue in the chat box below to begin.",
@@ -83,12 +84,28 @@ const INITIAL_SUPPORT_MESSAGE: ChatMessage = {
 };
 
 const Communication: React.FC = () => {
-  const { user } = useUser();
-  const userRole = String(user?.role || "").toLowerCase();
-  const isStaffUser =
-    userRole.includes("admin") ||
-    userRole.includes("support") ||
-    userRole.includes("finance");
+  const { user, role } = useUser();
+  const location = useLocation();
+
+  const currentRole = (role || user?.role || "").toLowerCase();
+  const isStaffUser = useMemo(() => {
+    return (
+      currentRole.includes("admin") ||
+      currentRole.includes("support") ||
+      currentRole.includes("finance") ||
+      location.pathname.startsWith("/admin") ||
+      location.pathname.startsWith("/support") ||
+      location.pathname.startsWith("/financial")
+    );
+  }, [currentRole, location.pathname]);
+
+  const isAdminUser = useMemo(() => {
+    return (
+      currentRole.includes("admin") ||
+      location.pathname.startsWith("/admin") ||
+      location.pathname.startsWith("/superadmin")
+    );
+  }, [currentRole, location.pathname]);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeChatId, setActiveChatId] = useState<string>("");
@@ -106,124 +123,130 @@ const Communication: React.FC = () => {
   const [userSearchTerm, setUserSearchTerm] = useState("");
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // Live queries for available contact list in modal
+  // Live queries for available contact list in modal (only fetch when modal is open)
   const { data: staffData } = useStaffs({
     page: 1,
     per_page: 50,
     role: "all",
+    enabled: isAdminUser && openNewChatModal,
   });
-  const { data: companyData } = useCompanies({ page: 1, per_page: 50 });
+  const { data: companyData } = useCompanies({
+    page: 1,
+    per_page: 50,
+    enabled: openNewChatModal,
+  });
 
   // Staff live queries (GET /admin/support/conversations, GET /admin/support/conversations/{id})
-  const { data: serverConversations = [], isLoading: loadingConversations } =
+  const { data: serverConversations, isLoading: loadingConversations } =
     useAdminSupportConversations(undefined, {
-      refetchInterval: isStaffUser ? 4000 : false,
+      enabled: isStaffUser,
+      refetchInterval: isStaffUser ? 10000 : false,
+      staleTime: 5000,
     });
 
   const { data: singleConvData } = useAdminSupportConversationById(
     isStaffUser && activeChatId ? activeChatId : null,
-    { refetchInterval: isStaffUser ? 3000 : false }
+    {
+      enabled: isStaffUser && Boolean(activeChatId),
+      refetchInterval: isStaffUser && Boolean(activeChatId) ? 8000 : false,
+      staleTime: 4000,
+    }
   );
 
   const replyToCompanyMutation = useReplyToCompany();
 
   // Company live queries (GET /support/messages, POST /support/messages, POST /support/messages/read)
-  const { data: companyMessages = [], isLoading: loadingCompanyMessages } =
+  const { data: companyMessages, isLoading: loadingCompanyMessages } =
     useSupportMessages({
-      refetchInterval: !isStaffUser ? 3000 : false,
+      enabled: !isStaffUser,
+      refetchInterval: !isStaffUser ? 10000 : false,
+      staleTime: 5000,
     });
   const sendUserMessageMutation = useSendUserMessage();
   const markAsReadMutation = useMarkMessagesAsRead();
 
   // Build real user list for New Chat Modal
   const availableUsers: ChatUser[] = useMemo(() => {
-    if (isStaffUser) {
-      const comps = (companyData?.items || []).map((c, idx) => ({
-        id: Number(c.id || idx + 1),
-        name: c.name || c.companyName || "Corporate Client",
-        email: c.email || "",
-        role: "Company Client",
-        online: Boolean(c.status === "active" || c.is_active),
-      }));
-      const staffs = (staffData?.items || []).map((s, idx) => ({
-        id: Number(s.id || idx + 100),
-        name:
-          s.name ||
-          `${s.first_name || ""} ${s.last_name || ""}`.trim() ||
-          "Staff Member",
-        email: s.email || "",
-        role: s.role || "Staff",
-        online: Boolean(s.status === "active" || s.is_active),
-      }));
-      return [...comps, ...staffs];
-    } else {
-      return (staffData?.items || []).map((s, idx) => ({
-        id: Number(s.id || idx + 1),
-        name:
-          s.name ||
-          `${s.first_name || ""} ${s.last_name || ""}`.trim() ||
-          "Payfleet Support",
-        email: s.email || "",
-        role: s.role || "Support Representative",
-        online: Boolean(s.status === "active" || s.is_active),
-      }));
-    }
-  }, [companyData?.items, staffData?.items, isStaffUser]);
+    const comps = (companyData?.items || []).map((c, idx) => ({
+      id: Number(c.id || idx + 1),
+      name: c.name || c.companyName || "Corporate Client",
+      email: c.email || "",
+      role: "Company Client",
+      online: Boolean(c.status === "active" || c.is_active),
+    }));
+
+    return comps;
+  }, [companyData?.items, staffData?.items, isAdminUser]);
 
   // Synchronize server conversation threads
   useEffect(() => {
-    if (isStaffUser) {
-      if (serverConversations.length > 0) {
-        setConversations((prev) => {
-          // Merge server conversations with current local state to preserve message history & local chats
-          const updated = serverConversations.map((sc) => {
-            const existing = prev.find((p) => String(p.id) === String(sc.id));
-            if (existing) {
-              return {
-                ...sc,
-                // Keep the more complete message list
-                messages:
-                  existing.messages.length > sc.messages.length
-                    ? existing.messages
-                    : sc.messages,
-              };
-            }
-            return sc;
-          });
+    if (isStaffUser && serverConversations && serverConversations.length > 0) {
+      const serverConvs = serverConversations;
+      setConversations((prev) => {
+        // Merge server conversations with current local state to preserve message history & local chats
+        const updated = serverConvs.map((sc) => {
+          const existing = prev.find((p) => String(p.id) === String(sc.id));
+          if (existing) {
+            const messagesToKeep =
+              existing.messages.length > (sc.messages || []).length
+                ? existing.messages
+                : sc.messages || [];
 
-          // Retain any custom / new local conversation that hasn't synced to server yet
-          const customLocal = prev.filter(
-            (p) => !serverConversations.some((sc) => String(sc.id) === String(p.id))
-          );
+            const existingCustomPending = existing.messages.filter(
+              (m) =>
+                m.isMe &&
+                typeof m.id === "number" &&
+                m.id > 1000000000 &&
+                !messagesToKeep.some((srv) => srv.text === m.text)
+            );
 
-          return [...updated, ...customLocal];
+            return {
+              ...sc,
+              name:
+                existing.name &&
+                existing.name !== "User" &&
+                !existing.name.startsWith("Client #")
+                  ? existing.name
+                  : sc.name,
+              messages: [...messagesToKeep, ...existingCustomPending],
+            };
+          }
+          return sc;
         });
 
-        if (!activeChatId && serverConversations[0]?.id) {
-          setActiveChatId(String(serverConversations[0].id));
-        }
-      } else {
-        setConversations((prev) => prev);
+        // Retain any custom / new local conversation that hasn't synced to server yet
+        const customLocal = prev.filter(
+          (p) => !serverConvs.some((sc) => String(sc.id) === String(p.id))
+        );
+
+        return [...updated, ...customLocal];
+      });
+
+      if (!activeChatId && serverConvs[0]?.id) {
+        setActiveChatId(String(serverConvs[0].id));
       }
-    } else {
+    } else if (!isStaffUser && companyMessages !== undefined) {
       // Company support conversation thread
+      const compMsgs = companyMessages || [];
       const mergedMessages =
-        companyMessages.length > 0
-          ? [INITIAL_SUPPORT_MESSAGE, ...companyMessages]
+        compMsgs.length > 0
+          ? [INITIAL_SUPPORT_MESSAGE, ...compMsgs]
           : [INITIAL_SUPPORT_MESSAGE];
 
       setConversations((prev) => {
         const existing = prev.find((c) => c.id === "support-desk");
         const existingCustomPending =
-          existing?.messages.filter((m) => m.isMe) || [];
+          existing?.messages.filter(
+            (m) =>
+              m.isMe &&
+              typeof m.id === "number" &&
+              m.id > 1000000000 &&
+              !compMsgs.some((srv) => srv.text === m.text)
+          ) || [];
 
-        // Deduplicate locally sent messages against server fetched messages
-        const unconfirmedPending = existingCustomPending.filter(
-          (pen) => !companyMessages.some((srv) => srv.text === pen.text)
-        );
-
-        const fullList = [...mergedMessages, ...unconfirmedPending];
+        const fullList = [...mergedMessages, ...existingCustomPending];
         const lastMsg = fullList[fullList.length - 1];
 
         const supportConv: Conversation = {
@@ -242,30 +265,55 @@ const Communication: React.FC = () => {
           messages: fullList,
         };
 
-        return [supportConv];
+        const otherConvs = prev.filter((c) => c.id !== "support-desk");
+        return [supportConv, ...otherConvs];
       });
 
-      setActiveChatId("support-desk");
-      markAsReadMutation.mutate();
+      if (!activeChatId) {
+        setActiveChatId("support-desk");
+      }
     }
   }, [serverConversations, companyMessages, isStaffUser]);
+
+  // Mark messages as read when opening company chat
+  useEffect(() => {
+    if (!isStaffUser && activeChatId === "support-desk") {
+      markAsReadMutation.mutate();
+    }
+  }, [activeChatId, isStaffUser]);
 
   // Synchronize single conversation messages and details when loaded from API
   useEffect(() => {
     if (singleConvData && singleConvData.id) {
       setConversations((prev) =>
-        prev.map((c) =>
-          String(c.id) === String(singleConvData.id)
-            ? {
-                ...c,
-                ...singleConvData,
-                messages:
-                  singleConvData.messages && singleConvData.messages.length > 0
-                    ? singleConvData.messages
-                    : c.messages,
-              }
-            : c
-        )
+        prev.map((c) => {
+          if (String(c.id) === String(singleConvData.id)) {
+            const serverMsgs = singleConvData.messages || [];
+            const pendingMsgs = c.messages.filter(
+              (m) =>
+                m.isMe &&
+                typeof m.id === "number" &&
+                m.id > 1000000000 &&
+                !serverMsgs.some((s) => s.text === m.text)
+            );
+            return {
+              ...c,
+              ...(singleConvData.name &&
+              !singleConvData.name.startsWith("Client #") &&
+              singleConvData.name !== "User"
+                ? { name: singleConvData.name }
+                : {}),
+              ...(singleConvData.email ? { email: singleConvData.email } : {}),
+              ...(singleConvData.phone ? { phone: singleConvData.phone } : {}),
+              ...(singleConvData.role ? { role: singleConvData.role } : {}),
+              messages:
+                serverMsgs.length > 0
+                  ? [...serverMsgs, ...pendingMsgs]
+                  : c.messages,
+            };
+          }
+          return c;
+        })
       );
     }
   }, [singleConvData]);
@@ -278,6 +326,33 @@ const Communication: React.FC = () => {
       null
     );
   }, [conversations, activeChatId]);
+
+  // Combined messages to display in active conversation
+  const displayedMessages: ChatMessage[] = useMemo(() => {
+    if (!activeConversation) return [];
+
+    let baseMsgs = activeConversation.messages || [];
+
+    if (
+      isStaffUser &&
+      singleConvData &&
+      String(singleConvData.id) === String(activeChatId) &&
+      singleConvData.messages &&
+      singleConvData.messages.length > 0
+    ) {
+      const serverMsgs = singleConvData.messages;
+      const pendingMsgs = baseMsgs.filter(
+        (m) =>
+          m.isMe &&
+          typeof m.id === "number" &&
+          m.id > 1000000000 &&
+          !serverMsgs.some((s) => s.text === m.text)
+      );
+      baseMsgs = [...serverMsgs, ...pendingMsgs];
+    }
+
+    return baseMsgs.filter((m) => Boolean(m && m.text && m.text.trim()));
+  }, [activeConversation, singleConvData, activeChatId, isStaffUser]);
 
   // Filter conversations by search
   const filteredConversations = useMemo(() => {
@@ -298,12 +373,16 @@ const Communication: React.FC = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [activeConversation?.messages.length, activeChatId]);
+  }, [displayedMessages.length, activeChatId]);
+
+  const isSending = isStaffUser
+    ? replyToCompanyMutation.isPending
+    : sendUserMessageMutation.isPending;
 
   // Send Message handler
   const handleSendMessage = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!inputMsg.trim() || !activeConversation) return;
+    if (!inputMsg.trim() || !activeConversation || isSending) return;
 
     const messageText = inputMsg.trim();
     const timeString = new Date().toLocaleTimeString([], {
@@ -314,7 +393,7 @@ const Communication: React.FC = () => {
     const newMsg: ChatMessage = {
       id: Date.now(),
       senderId: 999,
-      senderName: user?.first_name || user?.name || "Me",
+      senderName: user?.name || "Me",
       text: messageText,
       timestamp: timeString,
       isMe: true,
@@ -337,6 +416,7 @@ const Communication: React.FC = () => {
     );
 
     setInputMsg("");
+    setTimeout(scrollToBottom, 50);
 
     // Dispatch API mutation based on role
     if (isStaffUser) {
@@ -348,6 +428,9 @@ const Communication: React.FC = () => {
             content: messageText,
             text: messageText,
             body: messageText,
+            conversation_id: activeConversation.id,
+            company_id: activeConversation.id,
+            user_id: activeConversation.id,
           },
         },
         {
@@ -363,6 +446,14 @@ const Communication: React.FC = () => {
           content: messageText,
           text: messageText,
           body: messageText,
+          conversation_id:
+            activeConversation.id === "support-desk"
+              ? undefined
+              : activeConversation.id,
+          recipient_id:
+            activeConversation.id === "support-desk"
+              ? undefined
+              : activeConversation.id,
         },
         {
           onSuccess: () => {
@@ -380,7 +471,7 @@ const Communication: React.FC = () => {
     });
 
     const userMsg: ChatMessage = {
-      id: `preset-user-${Date.now()}`,
+      id: Date.now(),
       senderId: 999,
       senderName: user?.first_name || user?.name || "Me",
       text: preset.question,
@@ -390,7 +481,7 @@ const Communication: React.FC = () => {
     };
 
     const botReply: ChatMessage = {
-      id: `preset-bot-${Date.now() + 1}`,
+      id: Date.now() + 1,
       senderId: 101,
       senderName: "Payfleet Support",
       text: preset.answer,
@@ -412,6 +503,12 @@ const Communication: React.FC = () => {
         return conv;
       })
     );
+
+    if (preset.action === "live_agent") {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 150);
+    }
 
     setTimeout(() => {
       scrollToBottom();
@@ -651,7 +748,6 @@ const Communication: React.FC = () => {
                     title="View User Profile"
                   >
                     <LuUser size={16} />
-                    <span className="hidden sm:inline">Profile</span>
                   </button>
                   {activeConversation.email && (
                     <a
@@ -684,9 +780,7 @@ const Communication: React.FC = () => {
 
               {/* Message List */}
               <div className="flex-1 p-5 overflow-y-auto space-y-4 styled-scrollbar">
-                {activeConversation.messages.filter((m) =>
-                  Boolean(m && m.text && m.text.trim())
-                ).length === 0 ? (
+                {displayedMessages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 dark:text-gray-500 space-y-2">
                     <LuMessageSquare className="text-3xl text-gray-300 dark:text-gray-600" />
                     <p className="text-xs">
@@ -694,9 +788,7 @@ const Communication: React.FC = () => {
                     </p>
                   </div>
                 ) : (
-                  activeConversation.messages
-                    .filter((m) => Boolean(m && m.text && m.text.trim()))
-                    .map((msg) => (
+                  displayedMessages.map((msg) => (
                     <div
                       key={msg.id}
                       className={`flex flex-col ${
@@ -778,6 +870,7 @@ const Communication: React.FC = () => {
                 className="p-3.5 bg-white dark:bg-[#131217] border-t border-gray-200/80 dark:border-white/10 flex items-center gap-2"
               >
                 <input
+                  ref={inputRef}
                   type="text"
                   value={inputMsg}
                   onChange={(e) => setInputMsg(e.target.value)}
@@ -787,11 +880,15 @@ const Communication: React.FC = () => {
 
                 <button
                   type="submit"
-                  disabled={!inputMsg.trim()}
+                  disabled={!inputMsg.trim() || isSending}
                   className="h-11 px-4 rounded-xl bg-primary hover:bg-primary/95 text-white disabled:bg-gray-200 dark:disabled:bg-white/10 disabled:text-gray-400 dark:disabled:text-gray-600 disabled:cursor-not-allowed font-semibold text-xs flex items-center gap-2 shadow-xs transition cursor-pointer"
                 >
                   <span>Send</span>
-                  <LuSend size={14} />
+                  {isSending ? (
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <LuSend size={14} />
+                  )}
                 </button>
               </form>
             </>

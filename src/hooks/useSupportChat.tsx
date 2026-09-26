@@ -13,14 +13,24 @@ import type { ChatMessage, Conversation } from "../lib/interfaces";
 import { toast } from "sonner";
 import { getErrorMessage } from "../helpers/api";
 
+export interface SupportQueryOptions {
+  refetchInterval?: number | false;
+  enabled?: boolean;
+  staleTime?: number;
+  refetchOnWindowFocus?: boolean;
+}
+
 /**
  * Hook for company support messages (GET /support/messages)
  */
-export const useSupportMessages = (options?: { refetchInterval?: number | false }) => {
+export const useSupportMessages = (options?: SupportQueryOptions) => {
   return useQuery<ChatMessage[]>({
     queryKey: ["support", "messages"],
     queryFn: () => getSupportMessagesService(),
-    refetchInterval: options?.refetchInterval ?? 5000,
+    enabled: options?.enabled ?? true,
+    refetchInterval: options?.refetchInterval ?? false,
+    staleTime: options?.staleTime ?? 10000,
+    refetchOnWindowFocus: options?.refetchOnWindowFocus ?? false,
   });
 };
 
@@ -47,9 +57,8 @@ export const useSendUserMessage = () => {
  */
 export const useMarkMessagesAsRead = () => {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (payload?: Record<string, unknown>) =>
-      markMessagesAsReadService(payload),
+  return useMutation<void, Error, void>({
+    mutationFn: () => markMessagesAsReadService(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["support", "unread-count"] });
     },
@@ -59,34 +68,55 @@ export const useMarkMessagesAsRead = () => {
 /**
  * Hook for company unread messages count (GET /support/unread-count)
  */
-export const useUnreadCount = (options?: { refetchInterval?: number | false }) => {
+export const useUnreadCount = (options?: SupportQueryOptions) => {
   return useQuery<number>({
     queryKey: ["support", "unread-count"],
     queryFn: () => getUnreadCountService(),
-    refetchInterval: options?.refetchInterval ?? 10000,
+    enabled: options?.enabled ?? true,
+    refetchInterval: options?.refetchInterval ?? false,
+    staleTime: options?.staleTime ?? 30000,
+    refetchOnWindowFocus: options?.refetchOnWindowFocus ?? false,
   });
 };
 
 /**
  * Hook for admin / support / finance to list all client conversations (GET /admin/support/conversations)
  */
-export const useAdminSupportConversations = (params?: Record<string, unknown>, options?: { refetchInterval?: number | false }) => {
+export const useAdminSupportConversations = (
+  params?: Record<string, unknown>,
+  options?: SupportQueryOptions
+) => {
   return useQuery<Conversation[]>({
     queryKey: ["admin", "support", "conversations", params],
     queryFn: () => getAdminSupportConversationsService(params),
-    refetchInterval: options?.refetchInterval ?? 5000,
+    enabled: options?.enabled ?? true,
+    refetchInterval: options?.refetchInterval ?? false,
+    staleTime: options?.staleTime ?? 10000,
+    refetchOnWindowFocus: options?.refetchOnWindowFocus ?? false,
   });
 };
 
 /**
  * Hook for admin / support / finance to get each user conversation & messages (GET /admin/support/conversations/{id})
  */
-export const useAdminSupportConversationById = (id?: string | number | null, options?: { refetchInterval?: number | false }) => {
+export const useAdminSupportConversationById = (
+  id?: string | number | null,
+  options?: SupportQueryOptions
+) => {
+  const isRealBackendId = Boolean(
+    id &&
+    String(id).trim() !== "" &&
+    !String(id).startsWith("conv-") &&
+    !String(id).startsWith("pending-") &&
+    String(id) !== "support-desk"
+  );
   return useQuery<Conversation>({
-    queryKey: ["admin", "support", "conversation", id],
+    queryKey: ["admin", "support", "conversation", id ? String(id) : id],
     queryFn: () => getAdminSupportConversationByIdService(id!),
-    enabled: Boolean(id),
-    refetchInterval: options?.refetchInterval ?? 4000,
+    enabled: (options?.enabled ?? true) && isRealBackendId,
+    refetchInterval: options?.refetchInterval ?? false,
+    staleTime: options?.staleTime ?? 8000,
+    refetchOnWindowFocus: options?.refetchOnWindowFocus ?? false,
   });
 };
 
@@ -105,7 +135,15 @@ export const useReplyToCompany = () => {
     }) => replyToCompanyService(conversationId, payload),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ["admin", "support", "conversation", variables.conversationId],
+        queryKey: [
+          "admin",
+          "support",
+          "conversation",
+          String(variables.conversationId),
+        ],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "support", "conversation"],
       });
       queryClient.invalidateQueries({
         queryKey: ["admin", "support", "conversations"],

@@ -2,6 +2,7 @@ import React from "react";
 import { useFormik } from "formik";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { FiArrowLeft } from "react-icons/fi";
 import EmployeeFormFields from "../../components/forms/EmployeeFormFields";
 import { useUser } from "../../hooks/useUser";
 import { getErrorMessage } from "../../helpers/api";
@@ -67,6 +68,15 @@ const AddEmployee: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6">
+      <button
+        type="button"
+        onClick={() => navigate("/dashboard/employees")}
+        className="flex items-center gap-1.5 self-start text-xs font-medium text-textBlack/60 hover:text-textBlack transition cursor-pointer"
+      >
+        <FiArrowLeft size={14} />
+        Back to Employees
+      </button>
+
       <div className="flex flex-col">
         <h2 className="text-lg font-semibold">Add Employee</h2>
         <p className="text-sm text-gray-500">

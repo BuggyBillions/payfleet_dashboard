@@ -4,15 +4,15 @@ import type {
   DemoDeposit,
   TableColumnProps,
 } from "../../lib/interfaces";
-import { formatterUtility } from "../../helpers/formatterUtility";
+import { formatterUtility, formatDateTime } from "../../helpers/formatterUtility";
 import ActionButton from "../../components/ui/ActionButton";
 import OverviewCards from "../../components/cards/OverviewCards";
 import StatusBadge from "../../components/ui/StatusBadge";
 import ActionCell from "../../components/ui/ActionCell";
 import ReusableTable from "../../utility/ReusableTable";
 import { FaPlus } from "react-icons/fa6";
-import { LuWallet, LuClock } from "react-icons/lu";
-import { HiOutlineArrowTrendingUp } from "react-icons/hi2";
+import { LuWallet, LuClock, LuCheck, LuCopy } from "react-icons/lu";
+import { copyToClipboard } from "../../helpers/clipboardHelper";
 import Deposit from "../../components/modal/Deposit";
 import EachCompanyDepositModal from "../../components/modal/EachCompanyDepositModal";
 import { useUser } from "../../hooks/useUser";
@@ -20,6 +20,7 @@ import {
   getCompanyDeposits,
   type CompanyDeposit,
 } from "../../services/depositService";
+import { FiSearch } from "react-icons/fi";
 
 interface DepositRow extends Omit<DemoDeposit, "id"> {
   id: number | string;
@@ -51,14 +52,54 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [initiate, setInitiate] = useState(false);
   const [viewDepositId, setViewDepositId] = useState<number | string | null>(null);
+  const [copiedRef, setCopiedRef] = useState<string | null>(null);
+
+  const handleCopyRef = async (ref: string) => {
+    const success = await copyToClipboard(ref, "Reference");
+    if (success) {
+      setCopiedRef(ref);
+      setTimeout(() => setCopiedRef(null), 2000);
+    }
+  };
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const openView = (id: number | string) => setViewDepositId(id);
+
+  // Debounce search input
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
   const columns: TableColumnProps<DepositRow>[] = [
     {
       label: "Reference",
       render: (d) => (
-        <span className="font-semibold text-textBlack">{d.reference}</span>
+        <div className="flex items-center gap-1.5 mt-0.5">
+          <span className="text-[10px] text-textBlack/50 font-mono">{d.reference}</span>
+          {d.reference && d.reference !== "—" && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCopyRef(d.reference);
+              }}
+              className="text-textBlack/40 hover:text-primary transition cursor-pointer"
+              title="Copy reference"
+            >
+              {copiedRef === d.reference ? (
+                <LuCheck size={11} className="text-emerald-500" />
+              ) : (
+                <LuCopy size={11} />
+              )}
+            </button>
+          )}
+        </div>
       ),
     },
     {
@@ -73,13 +114,12 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
       render: (d) => <StatusBadge status={d.status} />,
     },
     {
-      label: "Date",
-      render: (d) =>
-        new Date(d.date).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
+      label: "Date & Time",
+      render: (d) => (
+        <span className="text-xs text-textBlack/70 font-medium whitespace-nowrap">
+          {formatDateTime(d.date)}
+        </span>
+      ),
     },
     {
       label: "Action",
@@ -98,11 +138,11 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
           const transaction = t.transaction ?? ({} as Record<string, unknown>);
           const reference = String(
             transaction.reference ??
-              t.reference ??
-              t.reference_no ??
-              t.transaction_reference ??
-              t.ref ??
-              "",
+            t.reference ??
+            t.reference_no ??
+            t.transaction_reference ??
+            t.ref ??
+            "",
           );
           const amount = Number(transaction.amount ?? t.amount) || 0;
           const status = normalizeStatus(
@@ -110,9 +150,9 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
           );
           const createdAt = String(
             t.created_at ??
-              t.date ??
-              transaction.created_at ??
-              new Date().toISOString(),
+            t.date ??
+            transaction.created_at ??
+            new Date().toISOString(),
           );
           return {
             id: t.id ?? Date.now(),
@@ -151,6 +191,39 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
       .reduce((sum, d) => sum + d.amount, 0);
   }, [deposits]);
 
+  const filteredDeposits = useMemo(() => {
+    let list = deposits;
+    if (defaultFilter === "pending") {
+      list = list.filter((d) => d.status === "pending");
+    }
+    if (debouncedSearch.trim()) {
+      const q = debouncedSearch.toLowerCase().trim();
+      list = list.filter(
+        (d) =>
+          d.reference.toLowerCase().includes(q) ||
+          d.method.toLowerCase().includes(q) ||
+          d.status.toLowerCase().includes(q) ||
+          d.amount.toString().includes(q),
+      );
+    }
+    return list;
+  }, [deposits, defaultFilter, debouncedSearch]);
+
+  const totalPages = useMemo(() => {
+    return Math.ceil(filteredDeposits.length / itemsPerPage) || 1;
+  }, [filteredDeposits.length, itemsPerPage]);
+
+  const paginatedDeposits = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredDeposits.slice(start, start + itemsPerPage);
+  }, [filteredDeposits, currentPage, itemsPerPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [currentPage, totalPages]);
+
   const handleDepositSuccess = (newDeposit: DemoDeposit) => {
     setDeposits((prev) => [newDeposit, ...prev]);
   };
@@ -165,7 +238,7 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
           <p className="text-xs text-textBlack/60">
             {defaultFilter === "pending"
               ? "Monitor and track incoming deposits awaiting bank confirmation."
-              : "Manage all  deposit transactions."}
+              : "Manage all deposit transactions."}
           </p>
         </div>
         <div className="shrink-0">
@@ -182,35 +255,36 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
           icon={LuWallet}
           title="Available Account Balance"
           value={formatterUtility(totalBalance)}
-          icon2={HiOutlineArrowTrendingUp}
         />
         <OverviewCards
           icon={LuClock}
           title="Pending Deposits"
           value={formatterUtility(pendingAmount)}
-          icon2={HiOutlineArrowTrendingUp}
         />
       </div>
 
-      <div className="bg-white dark:bg-[#131217] rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-200 dark:border-white/10 flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-textBlack">
-              Recent Transactions
-            </h3>
-            <p className="text-xs text-textBlack/60">
-              Latest deposit activity for your business.
-            </p>
+      <div className="bg-tertiary p-4 dark:bg-[#131217] rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden space-y-4">
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-textBlack/40 text-sm" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search reference, method, amount..."
+              className="h-10 pl-9 pr-3 rounded-lg border border-primary/10 bg-secondary text-sm text-textBlack outline-none w-64 md:w-80 focus:border-primary/30 transition-colors placeholder:text-textBlack/40"
+            />
           </div>
         </div>
+
         <ReusableTable
           columns={columns}
-          data={deposits}
+          data={paginatedDeposits}
           isLoading={loading}
           error={null}
           currentPage={currentPage}
-          totalPages={Math.ceil(deposits.length / itemsPerPage) || 1}
-          totalItems={deposits.length}
+          totalPages={totalPages}
+          totalItems={filteredDeposits.length}
           itemsPerPage={itemsPerPage}
           setCurrentPage={setCurrentPage}
           setItemsPerPage={setItemsPerPage}

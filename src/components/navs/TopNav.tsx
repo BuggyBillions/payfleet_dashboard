@@ -5,53 +5,45 @@ import { assets } from "../../assets/assets";
 import ThemeToggle from "../ThemeToggle";
 import { useUser } from "../../hooks/useUser";
 import { getUserService } from "../../services/authService";
+import { getUserDisplayName } from "../../helpers/formatterUtility";
 import type { UserProps } from "../../lib/interfaces";
 import { useUnreadNotificationsCount } from "../../hooks/useNotifications";
 
 const TopNav: React.FC = () => {
-  const { user, role, token, refreshUser } = useUser();
+  const { user, role, loading } = useUser();
   const [fetchedUser, setFetchedUser] = useState<UserProps | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const unreadCount = useUnreadNotificationsCount({ refetchInterval: 15000 });
 
-  // Fetch user details on mount
+  const isCompanyUser = (role || user?.role || "").toLowerCase() === "company";
+  const unreadCount = useUnreadNotificationsCount({
+    enabled: isCompanyUser,
+    refetchInterval: isCompanyUser ? 15000 : false,
+  });
+
+  // Fetch user details on mount if not already in context
   useEffect(() => {
     let mounted = true;
-    getUserService()
-      .then((data) => {
-        if (!mounted) return;
-        if (data) {
-          setFetchedUser(data);
-        }
-        if (token) {
-          return refreshUser(token);
-        }
-      })
-      .catch((error) => {
-        console.error("Failed to fetch user details:", error);
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
+    if (!user) {
+      getUserService()
+        .then((data) => {
+          if (!mounted) return;
+          if (data) {
+            setFetchedUser(data);
+          }
+        })
+        .catch(() => undefined);
+    }
     return () => {
       mounted = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user]);
 
   const currentUser = user || fetchedUser;
 
   const displayName = useMemo(() => {
-    if (!currentUser) return "Payfleet User";
-    if (currentUser.full_name?.trim()) return currentUser.full_name.trim();
-    if (currentUser.name?.trim()) return currentUser.name.trim();
-    const fullName = `${currentUser.first_name || ""} ${currentUser.last_name || ""}`.trim();
-    if (fullName) return fullName;
-    if (currentUser.company_name?.trim()) return currentUser.company_name.trim();
-    if (currentUser.company_details?.name?.trim()) return currentUser.company_details.name.trim();
-    if (currentUser.username?.trim()) return currentUser.username.trim();
-    if (currentUser.email?.trim()) return currentUser.email.split("@")[0];
-    return "Payfleet User";
+    return (
+      getUserDisplayName(currentUser as Record<string, unknown> | null) ||
+      "Payfleet User"
+    );
   }, [currentUser]);
 
   const displayRole = useMemo(() => {

@@ -44,13 +44,17 @@ const ManageTier: React.FC = () => {
   const deleteTierMutation = useDeleteTier();
 
   const { data: statsData } = useCompanyStats();
-  const { data: tierRequests = [] } = useTierRequests();
-
-
-  // Filtered companies based on search and tier filter
+  const { data: rawTierRequests } = useTierRequests();
+  const tierRequests: TierUpgradeRequest[] = useMemo(() => {
+    if (Array.isArray(rawTierRequests)) return rawTierRequests;
+    if (rawTierRequests && typeof rawTierRequests === "object" && Array.isArray((rawTierRequests as any).data)) {
+      return (rawTierRequests as any).data;
+    }
+    return [];
+  }, [rawTierRequests]);
 
   // Dynamic statistics
-  const totalCompaniesCount = statsData?.totalCompanies ?? statsData?.totalItems ;
+  const totalCompaniesCount = statsData?.totalCompanies ?? statsData?.totalItems;
   const pendingRequestsCount = useMemo(() => {
     return tierRequests.filter((r) => r.status === "pending").length;
   }, [tierRequests]);

@@ -39,7 +39,7 @@ const Login: React.FC = () => {
     login(token, user, user.role || "company");
     toast.success(message);
 
-    // Pull latest profile details from /me
+    // Pull l atest profile details from /me
     refreshUser(token).catch(() => undefined);
 
     let finalRoute = "/dashboard/overview";
@@ -237,7 +237,7 @@ const Login: React.FC = () => {
                   onClick={() => setPasswordVisibility(!passwordVisibility)}
                   className="text-gray-400 hover:text-gray-600 transition cursor-pointer p-1"
                 >
-                  {passwordVisibility ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                  {passwordVisibility ? <FaEyeSlash size={17} /> : <FaEye size={17} />}
                 </button>
               </div>
               {formik.touched.password && formik.errors.password && (

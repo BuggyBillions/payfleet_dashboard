@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { setupInterceptors } from "../helpers/api";
-import axios from "axios";
 import type { UserProps, UserProviderProps } from "../lib/interfaces";
 import { UserContext } from "./UserContext";
 import { getUserService } from "../services/authService";
@@ -26,20 +25,21 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   }, []);
 
   const refreshUser = useCallback(async (token: string) => {
-    if (!token) throw new Error("No token");
+    if (!token) return;
     try {
       const data = await getUserService();
-      setUser(data);
-      setRole(data?.role);
-      localStorage.setItem("user", JSON.stringify(data));
-      localStorage.setItem("role", data?.role);
-    } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.status === 401) {
-        logout();
+      if (data) {
+        setUser(data);
+        if (data.role) {
+          setRole(data.role);
+          localStorage.setItem("role", data.role);
+        }
+        localStorage.setItem("user", JSON.stringify(data));
       }
-      throw err;
+    } catch {
+      // Keep session intact based on stored credentials
     }
-  }, [logout]);
+  }, []);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -55,8 +55,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         setToken(storedToken);
         setUser(parsedUser);
         setRole(parsedUser?.role);
-        await refreshUser(storedToken);
         setIsAuthenticated(true);
+        refreshUser(storedToken).catch(() => undefined);
       } catch {
         logout();
         setIsAuthenticated(false);

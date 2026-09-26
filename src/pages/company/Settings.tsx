@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { toast } from "sonner";
-import { FiEye, FiEyeOff, FiUpload } from "react-icons/fi";
+import { FiEye, FiEyeOff } from "react-icons/fi";
+import { LuPencil, LuX } from "react-icons/lu";
 import {
   LuUser,
   LuShieldCheck,
@@ -15,14 +16,14 @@ import type { SettingsTab, PasswordFieldProps } from "../../lib/interfaces";
 
 type DocumentField = "logo" | "cac" | "mermat" | "status_report";
 
-interface DocumentFieldProps {
-  label: string;
-  hint?: string;
-  accept?: string;
-  existingUrl?: string | null;
-  file: File | null;
-  onSelect: (file: File | null) => void;
-}
+// BVN/NIN are identifiers, not quantities. Keep them as digit strings so an
+// 11-digit value is never coerced into a JS number (precision loss) or a
+// numeric column (out-of-range). The API may still return them as numbers
+// while the DB column is numeric, so normalise defensively.
+const toDigitString = (value: string | number | null | undefined) => {
+  const trimmed = String(value ?? "").trim();
+  return /^\d+$/.test(trimmed) ? trimmed : undefined;
+};
 
 interface TabConfig {
   key: SettingsTab;
@@ -55,8 +56,13 @@ const TABS: TabConfig[] = [
 const inputClass =
   "w-full text-textBlack border border-primary/10 bg-secondary rounded-lg px-4 h-11 text-xs outline-0 placeholder:text-textBlack/40 focus:border-primary/40 transition";
 
+const readOnlyInputClass = `${inputClass} opacity-70 cursor-not-allowed`;
+
 const submitClass =
   "bg-primary hover:bg-primary/90 text-textWhite text-xs rounded-lg font-medium px-6 h-10 cursor-pointer shadow-xs transition disabled:opacity-60 disabled:cursor-not-allowed";
+
+const secondarySubmitClass =
+  "text-textBlack border border-primary/20 bg-secondary hover:bg-primary/10 text-xs rounded-lg font-medium px-6 h-10 cursor-pointer transition";
 
 const PasswordField: React.FC<PasswordFieldProps> = ({
   label,
@@ -89,55 +95,6 @@ const PasswordField: React.FC<PasswordFieldProps> = ({
     </div>
   </label>
 );
-
-const DocumentField: React.FC<DocumentFieldProps> = ({
-  label,
-  hint,
-  accept,
-  existingUrl,
-  file,
-  onSelect,
-}) => {
-  const inputId = `doc-${label.replace(/\s+/g, "-").toLowerCase()}`;
-
-  return (
-    <div className="flex flex-col space-y-1.5">
-      <span className="font-medium text-xs text-textBlack">{label}</span>
-      <label
-        htmlFor={inputId}
-        className="flex items-center gap-3 w-full px-4 h-11 rounded-lg border border-dashed border-primary/20 bg-secondary cursor-pointer hover:border-primary/50 transition"
-      >
-        <FiUpload size={15} className="text-primary shrink-0" />
-        <span className="flex flex-col min-w-0">
-          <span className="text-xs text-textBlack truncate">
-            {file ? file.name : "Choose a file"}
-          </span>
-          {hint && (
-            <span className="text-[10px] text-textBlack/50 truncate">{hint}</span>
-          )}
-        </span>
-        {existingUrl && !file && (
-          <a
-            href={existingUrl}
-            target="_blank"
-            rel="noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="ml-auto text-[10px] font-medium text-primary hover:underline shrink-0"
-          >
-            View current
-          </a>
-        )}
-        <input
-          id={inputId}
-          type="file"
-          accept={accept}
-          className="hidden"
-          onChange={(e) => onSelect(e.currentTarget.files?.[0] ?? null)}
-        />
-      </label>
-    </div>
-  );
-};
 
 const Settings: React.FC = () => {
   const { user, role, token, refreshUser } = useUser();
@@ -177,17 +134,24 @@ const Settings: React.FC = () => {
     department: currentRole.toUpperCase(),
     address: user?.company_details?.address ?? "",
     about: user?.company_details?.about ?? "",
-    bvn: user?.company_details?.bvn ?? "",
-    nin: user?.company_details?.nin ?? "",
+    bvn: toDigitString(user?.company_details?.bvn) ?? "",
+    nin: toDigitString(user?.company_details?.nin) ?? "",
   });
 
-  // Uploaded documents (sent as multipart only when a new file is picked)
-  const [documents, setDocuments] = useState<Record<DocumentField, File | null>>({
-    logo: null,
-    cac: null,
-    mermat: null,
-    status_report: null,
-  });
+  // Snapshot of the last persisted values. Edits are staged locally and only
+  // committed on save, so the snapshot drives both the dirty check and Cancel.
+  const [savedProfile, setSavedProfile] = useState(profile);
+
+  // Profile is read-only until Edit is pressed, so the Save action is explicit.
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+
+  const isProfileDirty = useMemo(
+    () =>
+      (Object.keys(profile) as (keyof typeof profile)[]).some(
+        (key) => profile[key] !== savedProfile[key],
+      ),
+    [profile, savedProfile],
+  );
 
   const existingDocuments: Record<DocumentField, string | null> = {
     logo: user?.company_details?.logo ?? null,
@@ -197,11 +161,6 @@ const Settings: React.FC = () => {
   };
 
   const companyBalance = Number(user?.company_details?.balance ?? 0);
-
-  const logoPreview = useMemo(
-    () => (documents.logo ? URL.createObjectURL(documents.logo) : null),
-    [documents.logo],
-  );
 
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPin, setSavingPin] = useState(false);
@@ -222,40 +181,30 @@ const Settings: React.FC = () => {
     setProfile((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleDocumentChange = (key: DocumentField, file: File | null) =>
-    setDocuments((prev) => ({ ...prev, [key]: file }));
+  const startEditingProfile = () => setIsEditingProfile(true);
 
-  const toNumeric = (value: string) =>
-    /^\d+$/.test(value.trim()) ? Number(value.trim()) : undefined;
+  const cancelEditingProfile = () => {
+    setProfile(savedProfile);
+    setIsEditingProfile(false);
+  };
 
   const handleSaveProfile = async () => {
+    if (!isProfileDirty) return;
+
     setSavingProfile(true);
     try {
-      const fields = {
+      await updateCompanyDetails({
         name: profile.name.trim() || undefined,
         email: profile.email.trim() || undefined,
         phone: profile.phoneNumber.trim() || undefined,
         address: profile.address.trim() || undefined,
         about: profile.about.trim() || undefined,
-        bvn: toNumeric(profile.bvn),
-        nin: toNumeric(profile.nin),
-      };
+        bvn: toDigitString(profile.bvn),
+        nin: toDigitString(profile.nin),
+      });
 
-      const pickedFiles = (Object.entries(documents) as [DocumentField, File | null][])
-        .filter(([, file]) => file !== null);
-
-      if (pickedFiles.length > 0) {
-        const formData = new FormData();
-        Object.entries(fields).forEach(([key, value]) => {
-          if (value !== undefined) formData.append(key, String(value));
-        });
-        pickedFiles.forEach(([key, file]) => formData.append(key, file as File));
-        await updateCompanyDetails(formData);
-      } else {
-        await updateCompanyDetails(fields);
-      }
-
-      setDocuments({ logo: null, cac: null, mermat: null, status_report: null });
+      setSavedProfile(profile);
+      setIsEditingProfile(false);
       toast.success("Company profile updated successfully.");
       if (token) refreshUser(token).catch(() => undefined);
     } catch (error) {
@@ -308,13 +257,7 @@ const Settings: React.FC = () => {
 
             {/* Profile badge header */}
             <div className="flex items-center gap-4 p-4 rounded-xl bg-secondary border border-primary/10">
-              {logoPreview ? (
-                <img
-                  src={logoPreview}
-                  alt="Company logo preview"
-                  className="w-14 h-14 rounded-full object-cover shrink-0"
-                />
-              ) : existingDocuments.logo ? (
+              {existingDocuments.logo ? (
                 <img
                   src={existingDocuments.logo}
                   alt={profile.name || "Company logo"}
@@ -350,7 +293,8 @@ const Settings: React.FC = () => {
                   type="text"
                   value={profile.name}
                   onChange={(e) => handleProfileChange("name", e.target.value)}
-                  className={inputClass}
+                  disabled={!isEditingProfile}
+                  className={isEditingProfile ? inputClass : readOnlyInputClass}
                 />
               </label>
               <label className="flex flex-col space-y-1.5">
@@ -359,7 +303,8 @@ const Settings: React.FC = () => {
                   type="email"
                   value={profile.email}
                   onChange={(e) => handleProfileChange("email", e.target.value)}
-                  className={inputClass}
+                  disabled={!isEditingProfile}
+                  className={isEditingProfile ? inputClass : readOnlyInputClass}
                 />
               </label>
               <label className="flex flex-col space-y-1.5">
@@ -368,7 +313,8 @@ const Settings: React.FC = () => {
                   type="text"
                   value={profile.phoneNumber}
                   onChange={(e) => handleProfileChange("phoneNumber", e.target.value)}
-                  className={inputClass}
+                  disabled={!isEditingProfile}
+                  className={isEditingProfile ? inputClass : readOnlyInputClass}
                 />
               </label>
               <label className="flex flex-col space-y-1.5">
@@ -378,7 +324,8 @@ const Settings: React.FC = () => {
                   value={profile.address}
                   onChange={(e) => handleProfileChange("address", e.target.value)}
                   placeholder="e.g. Tanke Estates Ilorin"
-                  className={inputClass}
+                  disabled={!isEditingProfile}
+                  className={isEditingProfile ? inputClass : readOnlyInputClass}
                 />
               </label>
               <label className="flex flex-col space-y-1.5">
@@ -392,7 +339,8 @@ const Settings: React.FC = () => {
                     handleProfileChange("bvn", e.target.value.replace(/\D/g, ""))
                   }
                   placeholder="Enter your 11-digit BVN"
-                  className={inputClass}
+                  disabled={!isEditingProfile}
+                  className={isEditingProfile ? inputClass : readOnlyInputClass}
                 />
               </label>
               <label className="flex flex-col space-y-1.5">
@@ -406,7 +354,8 @@ const Settings: React.FC = () => {
                     handleProfileChange("nin", e.target.value.replace(/\D/g, ""))
                   }
                   placeholder="Enter your 11-digit NIN"
-                  className={inputClass}
+                  disabled={!isEditingProfile}
+                  className={isEditingProfile ? inputClass : readOnlyInputClass}
                 />
               </label>
             </div>
@@ -417,61 +366,45 @@ const Settings: React.FC = () => {
                 value={profile.about}
                 onChange={(e) => handleProfileChange("about", e.target.value)}
                 placeholder="Tell us about your business"
-                className={`${inputClass} h-24 resize-none pt-3`}
+                disabled={!isEditingProfile}
+                className={`${
+                  isEditingProfile ? inputClass : readOnlyInputClass
+                } h-24 resize-none pt-3`}
               />
             </label>
 
-            <div className="flex flex-col space-y-4">
-              <div className="flex flex-col">
-                <h4 className="font-semibold text-sm text-textBlack">Company Documents</h4>
-                <p className="text-xs text-textBlack/60">
-                  Upload your logo and registration documents. Only re-upload a
-                  document to replace the current one.
-                </p>
-              </div>
-
-              <DocumentField
-                label="Company Logo"
-                hint="SVG, PNG or JPG"
-                accept="image/*"
-                existingUrl={existingDocuments.logo}
-                file={documents.logo}
-                onSelect={(file) => handleDocumentChange("logo", file)}
-              />
-              <DocumentField
-                label="CAC Certificate"
-                hint="CAC registration certificate"
-                accept="image/*,.pdf"
-                existingUrl={existingDocuments.cac}
-                file={documents.cac}
-                onSelect={(file) => handleDocumentChange("cac", file)}
-              />
-              <DocumentField
-                label="Memorandum of Association"
-                hint="Company's memorandum"
-                accept="image/*,.pdf"
-                existingUrl={existingDocuments.mermat}
-                file={documents.mermat}
-                onSelect={(file) => handleDocumentChange("mermat", file)}
-              />
-              <DocumentField
-                label="Status Report"
-                hint="Company status report"
-                accept="image/*,.pdf"
-                existingUrl={existingDocuments.status_report}
-                file={documents.status_report}
-                onSelect={(file) => handleDocumentChange("status_report", file)}
-              />
+            <div className="flex flex-wrap items-center gap-3">
+              {isEditingProfile ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSaveProfile}
+                    disabled={savingProfile || !isProfileDirty}
+                    className={submitClass}
+                  >
+                    {savingProfile ? "Saving..." : "Save Changes"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancelEditingProfile}
+                    disabled={savingProfile}
+                    className={`${secondarySubmitClass} flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed`}
+                  >
+                    <LuX size={13} />
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={startEditingProfile}
+                  className={`${submitClass} flex items-center gap-1.5`}
+                >
+                  <LuPencil size={13} />
+                  Edit Profile
+                </button>
+              )}
             </div>
-
-            <button
-              type="button"
-              onClick={handleSaveProfile}
-              disabled={savingProfile}
-              className={`${submitClass} self-start disabled:opacity-60 disabled:cursor-not-allowed`}
-            >
-              {savingProfile ? "Saving..." : "Save Profile Changes"}
-            </button>
           </div>
         );
 

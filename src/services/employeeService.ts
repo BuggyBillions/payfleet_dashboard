@@ -3,12 +3,16 @@ import api from "../helpers/api";
 import type {
   Bank,
   Employee,
+  EmployeeDeduction,
+  EmployeeDeductionListResponse,
   EmployeeListResponse,
   ResolvedAccount,
 } from "../lib/interfaces";
 
 export type {
   Employee,
+  EmployeeDeduction,
+  EmployeeDeductionListResponse,
   EmployeeFormValues,
   EmployeeListResponse,
   ResolvedAccount,
@@ -118,10 +122,96 @@ export const deleteEmployee = async (id: number | string): Promise<void> => {
   await api.delete(`/delete-employee/${id}`);
 };
 
+export interface DeductSalaryPayload {
+  employee_id: number | string;
+  amount: number;
+  reason: string;
+  no_of_month: number;
+}
+
+export const deductSalary = async (
+  payload: DeductSalaryPayload,
+): Promise<EmployeeDeduction> => {
+  const res = await api.post("/deduct-salary", {
+    employee_id: payload.employee_id,
+    amount: payload.amount,
+    reason: payload.reason.trim(),
+    no_of_month: payload.no_of_month,
+  });
+  return (res.data?.data ?? res.data) as EmployeeDeduction;
+};
+
+export interface GetEmployeeDeductionsParams {
+  company_id?: number | string;
+  search?: string;
+  employee_id?: number | string;
+  page?: number;
+  per_page?: number;
+}
+
+export const getEmployeeDeductions = async (
+  params: GetEmployeeDeductionsParams = {},
+): Promise<EmployeeDeductionListResponse> => {
+  const res = await api.get("/company-employee-deduction", {
+    params: {
+      company_id: params.company_id || undefined,
+      search: params.search?.trim() || undefined,
+      employee_id: params.employee_id || undefined,
+      page: params.page ?? 1,
+      per_page: params.per_page ?? 20,
+    },
+  });
+
+  const body = res.data?.data ?? res.data;
+  const raw: unknown[] = Array.isArray(body)
+    ? body
+    : Array.isArray(body?.data)
+      ? body.data
+      : [];
+
+  const items: EmployeeDeduction[] = raw.map((row, index) => {
+    const record = (row ?? {}) as Record<string, unknown>;
+    const employeeRecord = (record.employee ?? {}) as Record<string, unknown>;
+
+    return {
+      id: (record.id ?? record.deduction_id ?? index) as number | string,
+      employee_id:
+        (record.employee_id as number | string | undefined) ??
+        (employeeRecord.id as number | string | undefined) ??
+        null,
+      amount: Number(
+        record.amount ?? record.deduction_amount ?? record.total ?? 0,
+      ),
+      reason: String(
+        record.reason ?? record.description ?? record.note ?? "",
+      ),
+      no_of_month: Number(
+        record.no_of_month ?? record.months ?? record.number_of_months ?? 1,
+      ),
+      employee: employeeRecord as EmployeeDeduction["employee"],
+      created_at: record.created_at as string | undefined,
+      updated_at: record.updated_at as string | undefined,
+    };
+  });
+
+  const currentPage = body?.current_page ?? body?.currentPage ?? params.page ?? 1;
+  const lastPage = body?.last_page ?? body?.lastPage ?? 1;
+  const total = body?.total ?? items.length;
+
+  return {
+    items,
+    totalItems: Number(total) || items.length,
+    totalPages: Number(lastPage) || 1,
+    currentPage: Number(currentPage) || 1,
+    totalAmount: items.reduce((sum, item) => sum + (item.amount || 0), 0),
+  };
+};
+
 export const getBanks = async (search = ""): Promise<Bank[]> => {
   const res = await api.get("/all-banks", { params: { search } });
-  const data = res.data?.data ?? res.data;
-  if (!Array.isArray(data)) return [];
+  const raw =
+    res.data?.data?.data ?? res.data?.data ?? res.data?.banks ?? res.data;
+  const data = Array.isArray(raw) ? raw : [];
 
   return data
     .map((bank) => ({

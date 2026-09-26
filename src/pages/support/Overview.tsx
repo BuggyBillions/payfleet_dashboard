@@ -18,8 +18,6 @@ import {
   LuHeadphones,
   LuArrowUpRight,
   LuFileText,
-  LuCheckCheck,
-  LuMessageSquare,
 } from "react-icons/lu";
 import { HiOutlineBuildingOffice2 } from "react-icons/hi2";
 import { BsChatText } from "react-icons/bs";
@@ -86,7 +84,7 @@ const SupportOverview: React.FC = () => {
             ? item.status
               ? "Active"
               : "Inactive"
-            : item.status || (item.is_active ? "Active" : "Inactive");
+            : String(item.status || (item.is_active ? "Active" : "Inactive"));
         return <StatusBadge status={status} />;
       },
     },
@@ -266,31 +264,7 @@ const SupportOverview: React.FC = () => {
             </div>
           </div>
 
-          {/* Support Performance & SLA Card */}
-          <div className="bg-tertiary rounded-2xl p-5 border border-primary/10 shadow-sm space-y-3">
-            <h4 className="font-semibold text-xs text-textBlack flex items-center gap-1.5">
-              <LuCheckCheck className="text-green-600" size={15} />
-              Service Level Agreements (SLA)
-            </h4>
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <div className="p-3 rounded-xl bg-secondary/60 border border-primary/10">
-                <span className="text-[10px] text-textBlack/60 block">Avg. Response Time</span>
-                <span className="text-sm font-bold text-textBlack mt-0.5 block">&lt; 3.5 mins</span>
-              </div>
-              <div className="p-3 rounded-xl bg-secondary/60 border border-primary/10">
-                <span className="text-[10px] text-textBlack/60 block">Verification Turnaround</span>
-                <span className="text-sm font-bold text-textBlack mt-0.5 block">~1.4 hrs</span>
-              </div>
-            </div>
-            <div className="p-3 rounded-xl bg-green-500/5 border border-green-500/15 flex items-center justify-between text-xs">
-              <span className="text-[11px] text-green-700 dark:text-green-400 font-medium flex items-center gap-1.5">
-                <LuMessageSquare size={13} /> Support Desk Status
-              </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 border border-green-500/20">
-                Operational
-              </span>
-            </div>
-          </div>
+          
         </div>
       </div>
     </div>

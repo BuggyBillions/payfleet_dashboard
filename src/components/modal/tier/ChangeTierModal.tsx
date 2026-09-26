@@ -12,17 +12,18 @@ interface ChangeTierModalProps {
 
 const ChangeTierModal: React.FC<ChangeTierModalProps> = ({ company, onClose }) => {
   const { data: dynamicTiers = [], isLoading: loadingTiers } = useAllTiers();
-  const [selectedTier, setSelectedTier] = useState<number | string>(
-    typeof company.tier === "object" && company.tier !== null
-      ? (company.tier as { id?: number | string }).id || 1
-      : company.tier || 1
-  );
+  const [selectedTier, setSelectedTier] = useState<number | string>(() => {
+    if (typeof company.tier === "object" && company.tier !== null) {
+      return (company.tier as { id?: number | string }).id || 1;
+    }
+    return (company.tier as number | string) || 1;
+  });
   const [notes, setNotes] = useState<string>("");
 
   const updateMutation = useUpdateCompanyTier();
 
-  const handleUpdate = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpdate = (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) e.preventDefault();
     if (!company.id) return;
 
     updateMutation.mutate(
@@ -147,10 +148,11 @@ const ChangeTierModal: React.FC<ChangeTierModalProps> = ({ company, onClose }) =
               Cancel
             </button>
             <ActionButton
+              type="submit"
               text="Save & Reassign Tier"
               loadingText="Updating Tier..."
               loading={updateMutation.isPending}
-              action={() => {}}
+              action={handleUpdate}
             />
           </div>
         </form>

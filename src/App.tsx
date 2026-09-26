@@ -13,9 +13,9 @@ import NotFound from "./pages/view/NotFound";
 import Overview from "./pages/company/Overview";
 import Employees from "./pages/company/Employees";
 import AddEmployee from "./pages/company/AddEmployee";
-import Deposits from "./pages/company/Deposits";
 import ProcessPayments from "./pages/company/ProcessPayments";
 import PaymentHistory from "./pages/company/PaymentHistory";
+import ActivityLog from "./pages/company/ActivityLog";
 import Settings from "./pages/company/Settings";
 import SuperAdminOverview from "./pages/superadmin/Overview";
 import FinancialOverview from "./pages/financial/Overview";
@@ -30,9 +30,9 @@ import FinancialManageDeposit from "./pages/financial/ManageDeposit";
 import SupportManageCompany from "./pages/support/ManageCompany";
 import SupportManageCompanyVerification from "./pages/support/ManageCompanyVerification";
 import Communication from "./pages/chat/Communication";
-import Verifyemail from "./pages/auth/Verifyemail";
 import Notifications from "./pages/company/Notifications";
 import ManageCompanyVerification from "./pages/superadmin/ManageCompanyVerification";
+import Deposits from "./pages/company/Deposits";
 
 function App() {
   return (
@@ -41,7 +41,6 @@ function App() {
       <Routes>
         <Route index path="/" element={<Login />} />
         <Route path="/getstarted" element={<Register />} />
-        <Route path="/verify-email" element={<Verifyemail />} />
         <Route path="/forgotpassword" element={<Forgotpassword />} />
         <Route path="*" element={<NotFound />} />
         <Route
@@ -72,17 +71,7 @@ function App() {
           element={
             <MainLayout
               pageName="All Deposits"
-              children={<Deposits defaultFilter="all" />}
-            />
-          }
-        />
-        <Route
-          index
-          path="/dashboard/deposits/pending"
-          element={
-            <MainLayout
-              pageName="Pending Deposits"
-              children={<Deposits defaultFilter="pending" />}
+              children={<Deposits   />}
             />
           }
         />
@@ -113,6 +102,16 @@ function App() {
             <MainLayout
               pageName="Notifications"
               children={<Notifications />}
+            />
+          }
+        />
+        <Route
+          index
+          path="/dashboard/activity-log"
+          element={
+            <MainLayout
+              pageName="Activity Log"
+              children={<ActivityLog />}
             />
           }
         />

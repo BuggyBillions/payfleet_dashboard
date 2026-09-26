@@ -3,7 +3,7 @@ import Modal from "../Modal";
 import ActionButton from "../../ui/ActionButton";
 import { useCreateTier, useUpdateTier } from "../../../hooks/useTier";
 import type { TierItem, TierFormData } from "../../../lib/interfaces";
-import { LuShieldCheck, LuUsers, LuFileText, LuLayers } from "react-icons/lu";
+import { LuUsers, LuFileText, LuLayers } from "react-icons/lu";
 import { toast } from "sonner";
 
 interface CreateEditTierModalProps {
@@ -37,8 +37,10 @@ const CreateEditTierModal: React.FC<CreateEditTierModalProps> = ({ tier, onClose
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
 
     if (!name.trim()) {
       toast.error("Please enter a tier name.");
@@ -179,10 +181,11 @@ const CreateEditTierModal: React.FC<CreateEditTierModalProps> = ({ tier, onClose
               Cancel
             </button>
             <ActionButton
+              type="submit"
               text={isEdit ? "Update Tier" : "Create Tier"}
               loadingText={isEdit ? "Updating..." : "Creating..."}
               loading={isPending}
-              action={() => {}}
+              action={handleSubmit}
             />
           </div>
         </form>

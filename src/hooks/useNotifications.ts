@@ -9,6 +9,7 @@ import {
 export const NOTIFICATIONS_QUERY_KEY = ["company-notifications"];
 
 export const useNotifications = (options?: {
+  enabled?: boolean;
   refetchInterval?: number | false;
 }) => {
   return useQuery<NotificationItem[]>({
@@ -21,11 +22,13 @@ export const useNotifications = (options?: {
           new Date(a.created_at ?? a.date ?? 0).getTime()
       );
     },
+    enabled: options?.enabled ?? true,
     refetchInterval: options?.refetchInterval ?? 15000,
   });
 };
 
 export const useUnreadNotificationsCount = (options?: {
+  enabled?: boolean;
   refetchInterval?: number | false;
 }) => {
   const { data: notifications = [] } = useNotifications(options);
