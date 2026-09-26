@@ -166,7 +166,8 @@ export interface ConfirmDialogProps {
   message?: string;
   confirmText?: string;
   cancelText?: string;
-  onCancel: () => void;
+  onCancel?: () => void;
+  onClose?: () => void;
   onConfirm: () => void;
   isLoading: boolean;
 }
@@ -267,7 +268,8 @@ export interface UserProps {
   last_name?: string;
   name?: string;
   email?: string;
-  is_admin?: number;
+  is_active?: number | boolean;
+  is_verified?: number | boolean;
   role?: string;
   tier?: string;
   company_name?: string;
@@ -384,10 +386,12 @@ export interface CompanyProps {
   phoneNumber?: string;
   no_of_employee?: number;
   staff?: number | string;
-  tier?: string | number;
-  status?: boolean | string;
+  tier?: TierItem | string | number | unknown;
+  status?: boolean | string | number;
   is_active?: boolean | number;
+  is_verified?: boolean | number;
   created_at?: string;
+  updated_at?: string;
   address?: string;
   registeredAddress?: string;
   rc_number?: string;
@@ -396,6 +400,15 @@ export interface CompanyProps {
   tinNumber?: string;
   industry?: string;
   staffCount?: number;
+  balance?: string | number;
+  about?: string;
+  logo?: string | null;
+  bvn?: string | null;
+  nin?: string | null;
+  cac?: string | null;
+  mermat?: string | null;
+  status_report?: string | null;
+  user_id?: number | string;
   verificationStatus?: VerificationStatus;
   documents?: {
     cacCertificate?: string;
@@ -406,6 +419,9 @@ export interface CompanyProps {
   rejectionReason?: string;
   directorName?: string;
   directorPhone?: string;
+  user?: UserProps;
+  employees?: Employee[];
+  [key: string]: unknown;
 }
 
 export interface GetCompaniesParams {

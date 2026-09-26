@@ -21,7 +21,6 @@ import {
   useMarkMessagesAsRead,
 } from "../../hooks/useSupportChat";
 import { useUser } from "../../hooks/useUser";
-import Modal from "../modal/Modal";
 
 export interface PresetOption {
   id: string;

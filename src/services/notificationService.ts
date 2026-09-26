@@ -19,13 +19,17 @@ export interface NotificationItem {
 }
 
 export const getCompanyNotifications = async (): Promise<NotificationItem[]> => {
-  const res = await api.get("/company-notifications");
-  let data = res.data?.data ?? res.data;
-  if (data && typeof data === "object" && !Array.isArray(data)) {
-    const { notifications, items, results } = data as Record<string, unknown>;
-    data = notifications ?? items ?? results ?? [];
+  try {
+    const res = await api.get("/company-notifications");
+    let data = res.data?.data ?? res.data;
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      const { notifications, items, results } = data as Record<string, unknown>;
+      data = notifications ?? items ?? results ?? [];
+    }
+    return (Array.isArray(data) ? data : []) as NotificationItem[];
+  } catch {
+    return [];
   }
-  return (Array.isArray(data) ? data : []) as NotificationItem[];
 };
 
 export const markNotificationRead = async (

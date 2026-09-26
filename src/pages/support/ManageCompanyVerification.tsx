@@ -219,7 +219,7 @@ const SupportManageCompanyVerification: React.FC = () => {
         const s =
           typeof item.status === "boolean"
             ? item.status ? "Active" : "Inactive"
-            : item.status || (item.is_active ? "Active" : "Inactive");
+            : String(item.status || (item.is_active ? "Active" : "Inactive"));
         return <StatusBadge status={s} />;
       },
     },

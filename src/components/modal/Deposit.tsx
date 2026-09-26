@@ -18,8 +18,8 @@ import {
 import { BsArrowLeftRight } from "react-icons/bs";
 import { RiSmartphoneLine } from "react-icons/ri";
 import { motion, AnimatePresence } from "framer-motion";
-import type { DepositModalProps, PaymentMethod, ModalView, BankItem } from "../../lib/interfaces";
-import { useAccount, useAllBanks } from "../../hooks/useBank";
+import type { DepositModalProps, PaymentMethod, ModalView } from "../../lib/interfaces";
+import { useAccount } from "../../hooks/useBank";
 import { companyFunding, getEachCompanyDeposit, getCompanyDeposits } from "../../services/depositService";
 import { getErrorMessage } from "../../helpers/api";
 import Modal from "../../components/modal/Modal";
