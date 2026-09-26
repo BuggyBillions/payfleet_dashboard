@@ -13,6 +13,7 @@ import NotFound from "./pages/view/NotFound";
 import Overview from "./pages/company/Overview";
 import Employees from "./pages/company/Employees";
 import AddEmployee from "./pages/company/AddEmployee";
+import EditEmployee from "./pages/company/EditEmployee";
 import ProcessPayments from "./pages/company/ProcessPayments";
 import PaymentHistory from "./pages/company/PaymentHistory";
 import ActivityLog from "./pages/company/ActivityLog";
@@ -63,6 +64,13 @@ function App() {
           path="/dashboard/employees/add"
           element={
             <MainLayout pageName="Add Employee" children={<AddEmployee />} />
+          }
+        />
+        <Route
+          index
+          path="/dashboard/employees/edit/:id"
+          element={
+            <MainLayout pageName="Edit Employee" children={<EditEmployee />} />
           }
         />
         <Route

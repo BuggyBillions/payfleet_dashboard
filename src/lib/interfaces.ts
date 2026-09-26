@@ -617,12 +617,6 @@ export interface EmployeeFormValues {
   estimate_pay: number | string;
 }
 
-export interface EditEmployeeModalProps {
-  employee: Employee;
-  onClose: () => void;
-  onSaved: (updated: Employee) => void;
-}
-
 export interface EditStaffModalProps {
   onClose: () => void;
   selectedStaff?: StaffProps | null;
