@@ -324,11 +324,21 @@ export const getAdminSupportConversationsService = async (
         .map((m, mIdx) => mapRawMessageToChatMessage(m, name, mIdx))
         .filter((m): m is ChatMessage => m !== null);
 
+      const logo =
+        comp.logo ||
+        usr.logo ||
+        usr.avatar ||
+        item.logo ||
+        item.avatar ||
+        null;
+
       return {
         id: convId,
         name,
         type: "chat" as const,
         role: usr.role || item.role || comp.tier || "Company Client",
+        logo,
+        avatar: logo,
         email,
         phone,
         department: item.department || "Client Account",
@@ -377,6 +387,14 @@ export const getAdminSupportConversationByIdService = async (
   const phone =
     comp.phone || comp.phoneNumber || item.phone || usr.phone || resData?.phone || "";
   const unread = Number(item.unread_count ?? item.unread ?? resData?.unread_count ?? 0);
+  const logo =
+    comp.logo ||
+    usr.logo ||
+    usr.avatar ||
+    item.logo ||
+    item.avatar ||
+    resData?.logo ||
+    null;
 
   const messages: ChatMessage[] = rawMessagesList
     .map((m, mIdx) => mapRawMessageToChatMessage(m, name || "User", mIdx))
@@ -387,6 +405,8 @@ export const getAdminSupportConversationByIdService = async (
     name,
     type: "chat" as const,
     role: item.role || usr.role || comp.tier || "Company Client",
+    logo,
+    avatar: logo,
     email,
     phone,
     department: item.department || "Client Account",

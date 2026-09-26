@@ -110,7 +110,7 @@ const ReusableTable = <T extends { id?: number | string }>({
 
           <tbody>
             {isLoading ? (
-              <tr className="h-12 border-y border-textBlack/5">
+              <tr className="h-12 border-y text-textBlack border-textBlack/5">
                 <td colSpan={columnsWithSN.length}>
                   <div className="flex items-center justify-center gap-2 text-xs">
                     <LuLoaderCircle className="animate-spin" />
@@ -119,7 +119,7 @@ const ReusableTable = <T extends { id?: number | string }>({
                 </td>
               </tr>
             ) : error ? (
-              <tr className="h-12 border-y border-textBlack/5">
+              <tr className="h-12 border-y text-textBlack border-textBlack/5">
                 <td
                   colSpan={columnsWithSN.length}
                   className="px-3 py-1 text-[10px] text-center"
@@ -132,7 +132,7 @@ const ReusableTable = <T extends { id?: number | string }>({
                 </td>
               </tr>
             ) : data.length === 0 ? (
-              <tr className="h-11 border-y border-textBlack/5">
+              <tr className="h-11 border-y text-textBlack border-textBlack/5">
                 <td
                   colSpan={columnsWithSN.length}
                   className="px-3 py-1 text-[10px] text-center"

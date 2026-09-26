@@ -879,7 +879,8 @@ export interface ChatUser {
   name: string;
   email: string;
   role: string;
-  avatar?: string;
+  avatar?: string | null;
+  logo?: string | null;
   online: boolean;
 }
 
@@ -891,6 +892,8 @@ export interface ChatMessage {
   timestamp: string;
   isMe: boolean;
   status?: "sent" | "delivered" | "read";
+  avatar?: string | null;
+  logo?: string | null;
 }
 
 export interface Conversation {
@@ -901,7 +904,8 @@ export interface Conversation {
   lastMessageTime: string;
   unread: number;
   online?: boolean;
-  avatar?: string;
+  avatar?: string | null;
+  logo?: string | null;
   email?: string;
   phone?: string;
   phoneNumber?: string;

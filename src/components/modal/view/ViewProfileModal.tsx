@@ -7,18 +7,13 @@ import { formatShortDate } from "../../../helpers/formatterUtility";
 import { toast } from "sonner";
 import { copyToClipboard } from "../../../helpers/clipboardHelper";
 
+import { CompanyLogoAvatar } from "../../../helpers/logoHelper";
+
 const ViewProfileModal: React.FC<ViewProfileModalProps> = ({
   conversation,
   onClose,
 }) => {
   if (!conversation) return null;
-
-  const getInitials = (name?: string) => {
-    if (!name) return "PF";
-    const parts = name.replace("#", "").trim().split(/\s+/);
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  };
 
   const displayName = conversation.name || "User";
   const displayEmail = conversation.email || "";
@@ -48,9 +43,12 @@ const ViewProfileModal: React.FC<ViewProfileModalProps> = ({
         {/* Profile Card Header */}
         <div className="flex items-center gap-4 bg-secondary/50 p-4 rounded-2xl border border-primary/10">
           <div className="relative shrink-0">
-            <div className="w-16 h-16 rounded-2xl bg-primary/15 dark:bg-primary/25 text-primary dark:text-emerald-400 border border-primary/20 flex items-center justify-center font-bold text-xl shadow-xs">
-              {getInitials(displayName)}
-            </div>
+            <CompanyLogoAvatar
+              name={displayName}
+              logo={conversation.logo || conversation.avatar}
+              className="w-16 h-16 rounded-2xl"
+              textClassName="text-xl font-bold"
+            />
             {isOnline ? (
               <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-[#131217] shadow-xs" title="Online now" />
             ) : (
@@ -62,12 +60,6 @@ const ViewProfileModal: React.FC<ViewProfileModalProps> = ({
             <h3 className="text-base font-bold text-textBlack truncate">
               {displayName}
             </h3>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary capitalize">
-                {displayRole || "Company Client"}
-              </span>
-              <StatusBadge status={isOnline ? "Active" : "Inactive"} />
-            </div>
             <p className="text-[11px] text-textBlack/50">
               {isOnline ? "Active in chat now" : `Last message: ${lastActive}`}
             </p>

@@ -83,6 +83,14 @@ const INITIAL_SUPPORT_MESSAGE: ChatMessage = {
   status: "read",
 };
 
+import {
+  CompanyLogoAvatar as AvatarDisplay,
+  getCompanyLogoUrl,
+  getAvatarInitials,
+} from "../../helpers/logoHelper";
+
+export { AvatarDisplay, getCompanyLogoUrl, getAvatarInitials };
+
 const Communication: React.FC = () => {
   const { user, role } = useUser();
   const location = useLocation();
@@ -102,8 +110,7 @@ const Communication: React.FC = () => {
   const isAdminUser = useMemo(() => {
     return (
       currentRole.includes("admin") ||
-      location.pathname.startsWith("/admin") ||
-      location.pathname.startsWith("/superadmin")
+      location.pathname.startsWith("/admin")
     );
   }, [currentRole, location.pathname]);
 
@@ -125,7 +132,6 @@ const Communication: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // Live queries for available contact list in modal (only fetch when modal is open)
   const { data: staffData } = useStaffs({
     page: 1,
     per_page: 50,
@@ -134,8 +140,7 @@ const Communication: React.FC = () => {
   });
   const { data: companyData } = useCompanies({
     page: 1,
-    per_page: 50,
-    enabled: openNewChatModal,
+    per_page: 100,
   });
 
   // Staff live queries (GET /admin/support/conversations, GET /admin/support/conversations/{id})
@@ -167,6 +172,36 @@ const Communication: React.FC = () => {
   const sendUserMessageMutation = useSendUserMessage();
   const markAsReadMutation = useMarkMessagesAsRead();
 
+  // Build logo lookup map from companies list
+  const companyLogoMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (companyData?.items || []).forEach((c) => {
+      const logo = c.logo;
+      if (logo) {
+        if (c.id) map.set(String(c.id).toLowerCase(), logo);
+        if (c.name) map.set(c.name.trim().toLowerCase(), logo);
+        if (c.companyName) map.set(c.companyName.trim().toLowerCase(), logo);
+        if (c.email) map.set(c.email.trim().toLowerCase(), logo);
+      }
+    });
+    return map;
+  }, [companyData?.items]);
+
+  const getConversationLogo = (conv?: Conversation | null): string | null => {
+    if (!conv) return null;
+    if (conv.logo) return conv.logo;
+    if (conv.avatar) return conv.avatar;
+    const idMatch = companyLogoMap.get(String(conv.id).toLowerCase());
+    if (idMatch) return idMatch;
+    const nameMatch = companyLogoMap.get(String(conv.name).trim().toLowerCase());
+    if (nameMatch) return nameMatch;
+    if (conv.email) {
+      const emailMatch = companyLogoMap.get(conv.email.trim().toLowerCase());
+      if (emailMatch) return emailMatch;
+    }
+    return null;
+  };
+
   // Build real user list for New Chat Modal
   const availableUsers: ChatUser[] = useMemo(() => {
     const comps = (companyData?.items || []).map((c, idx) => ({
@@ -174,6 +209,8 @@ const Communication: React.FC = () => {
       name: c.name || c.companyName || "Corporate Client",
       email: c.email || "",
       role: "Company Client",
+      logo: c.logo || null,
+      avatar: c.logo || null,
       online: Boolean(c.status === "active" || c.is_active),
     }));
 
@@ -210,10 +247,16 @@ const Communication: React.FC = () => {
                 !existing.name.startsWith("Client #")
                   ? existing.name
                   : sc.name,
+              logo: sc.logo || existing.logo || getConversationLogo(sc),
+              avatar: sc.avatar || existing.avatar || getConversationLogo(sc),
               messages: [...messagesToKeep, ...existingCustomPending],
             };
           }
-          return sc;
+          return {
+            ...sc,
+            logo: sc.logo || getConversationLogo(sc),
+            avatar: sc.avatar || getConversationLogo(sc),
+          };
         });
 
         // Retain any custom / new local conversation that hasn't synced to server yet
@@ -306,6 +349,8 @@ const Communication: React.FC = () => {
               ...(singleConvData.email ? { email: singleConvData.email } : {}),
               ...(singleConvData.phone ? { phone: singleConvData.phone } : {}),
               ...(singleConvData.role ? { role: singleConvData.role } : {}),
+              logo: singleConvData.logo || c.logo || getConversationLogo(singleConvData),
+              avatar: singleConvData.avatar || c.avatar || getConversationLogo(singleConvData),
               messages:
                 serverMsgs.length > 0
                   ? [...serverMsgs, ...pendingMsgs]
@@ -531,6 +576,8 @@ const Communication: React.FC = () => {
         name: selectedUser.name,
         type: "chat",
         role: selectedUser.role,
+        logo: selectedUser.logo || selectedUser.avatar,
+        avatar: selectedUser.avatar || selectedUser.logo,
         email: selectedUser.email,
         phone: "",
         department: selectedUser.role,
@@ -547,13 +594,6 @@ const Communication: React.FC = () => {
     setOpenNewChatModal(false);
     setTabToShow("main");
     toast.success(`Chat with ${selectedUser.name} opened`);
-  };
-
-  const getAvatarInitials = (name: string) => {
-    if (!name) return "PF";
-    const parts = name.replace("#", "").trim().split(/\s+/);
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    return (parts[0][0] + parts[1][0]).toUpperCase();
   };
 
   const filteredNewChatUsers = useMemo(() => {
@@ -575,33 +615,33 @@ const Communication: React.FC = () => {
   const isLoading = isStaffUser ? loadingConversations : loadingCompanyMessages;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-115px)] w-full bg-white dark:bg-[#131217] rounded-2xl shadow-sm border border-gray-200 dark:border-white/10 overflow-hidden font-sans">
+    <div className="flex flex-col h-full min-h-0 w-full bg-white dark:bg-[#131217] rounded-xl md:rounded-2xl shadow-sm border border-gray-200 dark:border-white/10 overflow-hidden font-sans">
       {/* Main Split Layout: Sidebar & Chat Window */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         {/* LEFT SIDEBAR: Conversation List */}
         <div
-          className={`w-full md:w-80 lg:w-88 border-r border-gray-200/80 dark:border-white/10 bg-white dark:bg-[#131217] flex flex-col relative ${
+          className={`w-full md:w-72 lg:w-80 xl:w-88 border-r border-gray-200/80 dark:border-white/10 bg-white dark:bg-[#131217] flex flex-col relative shrink-0 min-h-0 ${
             tabToShow === "main" ? "hidden md:flex" : "flex"
           }`}
         >
           {/* Action Buttons */}
-          <div className="flex items-center gap-2 absolute bottom-5 right-5 z-20">
+          <div className="flex items-center gap-2 absolute bottom-4 right-4 sm:bottom-5 sm:right-5 z-20">
             <button
               onClick={() => setOpenNewChatModal(true)}
-              className="text-xs bg-primary hover:bg-primary/90 text-white h-10 px-3.5 rounded-xl shadow-md group flex items-center gap-2 transition-all cursor-pointer"
+              className="text-xs bg-primary hover:bg-primary/90 text-white h-10 px-3.5 rounded-xl shadow-lg group flex items-center gap-2 transition-all cursor-pointer"
             >
               <LuPlus
                 size={16}
                 className="group-hover:rotate-90 transition-all duration-300"
               />
-              <span className="font-semibold group-hover:flex hidden">
+              <span className="font-semibold">
                 New chat
               </span>
             </button>
           </div>
 
           {/* Search box */}
-          <div className="p-3.5 border-b border-gray-100 dark:border-white/10">
+          <div className="p-2.5 sm:p-3.5 border-b border-gray-100 dark:border-white/10 shrink-0">
             <div className="relative">
               <LuSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm" />
               <input
@@ -609,20 +649,20 @@ const Communication: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search conversations..."
-                className="w-full h-10 pl-9 pr-3 text-xs bg-secondary dark:bg-[#1A1921] border border-primary/10 dark:border-white/10 text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 rounded-xl outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition"
+                className="w-full h-9 sm:h-10 pl-9 pr-3 text-xs bg-secondary dark:bg-[#1A1921] border border-primary/10 dark:border-white/10 text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 rounded-xl outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition"
               />
             </div>
           </div>
 
           {/* Conversation list */}
-          <div className="flex-1 overflow-y-auto divide-y divide-gray-50 dark:divide-white/5 styled-scrollbar">
+          <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-gray-50 dark:divide-white/5 styled-scrollbar">
             {isLoading && conversations.length === 0 ? (
-              <div className="p-8 text-center text-gray-400 dark:text-gray-500 space-y-2">
+              <div className="p-6 sm:p-8 text-center text-gray-400 dark:text-gray-500 space-y-2">
                 <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
                 <p className="text-xs">Loading conversations...</p>
               </div>
             ) : filteredConversations.length === 0 ? (
-              <div className="p-8 text-center text-gray-400 dark:text-gray-500 space-y-2">
+              <div className="p-6 sm:p-8 text-center text-gray-400 dark:text-gray-500 space-y-2">
                 <LuMessageSquare className="mx-auto text-2xl text-gray-300 dark:text-gray-600" />
                 <p className="text-xs">No conversations found</p>
               </div>
@@ -644,25 +684,27 @@ const Communication: React.FC = () => {
                         )
                       );
                     }}
-                    className={`p-3.5 flex items-start gap-3 cursor-pointer transition ${
+                    className={`p-2.5 sm:p-3.5 flex items-start gap-2.5 sm:gap-3 cursor-pointer transition ${
                       isSelected
                         ? "bg-primary/10 dark:bg-primary/20 border-l-4 border-b-0 border-primary"
                         : "hover:bg-gray-50 dark:hover:bg-white/5"
                     }`}
                   >
-                    {/* Avatar */}
+                    {/* Avatar with company logo or initials */}
                     <div className="relative shrink-0">
-                      <div className="w-10 h-10 rounded-xl bg-primary/15 dark:bg-primary/25 text-primary dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
-                        {getAvatarInitials(conv.name)}
-                      </div>
+                      <AvatarDisplay
+                        name={conv.name}
+                        logo={getConversationLogo(conv)}
+                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl"
+                      />
                       {conv.online && (
-                        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-[#131217]" />
+                        <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-[#131217]" />
                       )}
                     </div>
 
                     {/* Conversation preview */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-0.5">
+                      <div className="flex items-center justify-between mb-0.5 gap-1">
                         <h4 className="text-xs font-bold text-gray-900 dark:text-white truncate">
                           {conv.name}
                         </h4>
@@ -691,60 +733,58 @@ const Communication: React.FC = () => {
 
         {/* RIGHT MAIN PANEL: Active Chat Area */}
         <div
-          className={`flex-1 flex flex-col bg-gray-50/40 dark:bg-[#0D0C10] ${
+          className={`flex-1 flex flex-col min-w-0 min-h-0 bg-gray-50/40 dark:bg-[#0D0C10] ${
             tabToShow === "sidebar" ? "hidden md:flex" : "flex"
           }`}
         >
           {activeConversation ? (
             <>
               {/* Chat Header */}
-              <div className="px-5 py-3.5 bg-white dark:bg-[#131217] border-b border-gray-200/80 dark:border-white/10 flex items-center justify-between shadow-2xs">
-                <div className="flex items-center gap-3">
+              <div className="px-3 sm:px-5 py-2.5 sm:py-3.5 bg-white dark:bg-[#131217] border-b border-gray-200/80 dark:border-white/10 flex items-center justify-between shadow-2xs shrink-0 gap-2 min-w-0">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                   <button
+                    type="button"
                     onClick={() => setTabToShow("sidebar")}
-                    className="md:hidden p-1.5 -ml-1.5 text-gray-500 hover:text-gray-800 dark:hover:text-white rounded-lg cursor-pointer"
+                    className="md:hidden p-1.5 -ml-1 text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg cursor-pointer shrink-0 transition"
+                    aria-label="Back to conversations"
                   >
                     <LuArrowLeft size={18} />
                   </button>
 
                   <div
                     onClick={() => handleOpenProfile(activeConversation)}
-                    className="relative cursor-pointer group"
+                    className="relative shrink-0 cursor-pointer group"
                     title="View Profile"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-primary/15 dark:bg-primary/25 text-primary dark:text-emerald-400 flex items-center justify-center font-bold text-xs group-hover:ring-2 group-hover:ring-primary transition">
-                      {getAvatarInitials(activeConversation.name)}
-                    </div>
+                    <AvatarDisplay
+                      name={activeConversation.name}
+                      logo={getConversationLogo(activeConversation)}
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl group-hover:ring-2 group-hover:ring-primary transition"
+                    />
                     {activeConversation.online && (
-                      <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-[#131217]" />
+                      <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-[#131217]" />
                     )}
                   </div>
 
                   <div
                     onClick={() => handleOpenProfile(activeConversation)}
-                    className="cursor-pointer group"
+                    className="cursor-pointer group min-w-0 flex-1"
                   >
-                    <h3 className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-primary transition flex items-center gap-1.5">
-                      <span>{activeConversation.name}</span>
+                    <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white group-hover:text-primary transition flex items-center gap-1.5 truncate">
+                      <span className="truncate">{activeConversation.name}</span>
                     </h3>
-                    <p className="text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
-                      <span className="capitalize font-medium text-primary">
-                        {activeConversation.role || "Participant"}
-                      </span>
-                      <span>•</span>
-                      <span>
-                        {activeConversation.online ? "Online" : "Offline"}
-                      </span>
+                    <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1.5 truncate">
+                        {activeConversation.email}
                     </p>
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={() => handleOpenProfile(activeConversation)}
-                    className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-xl transition cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
+                    className="p-1.5 sm:p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-xl transition cursor-pointer flex items-center gap-1 text-xs font-semibold"
                     title="View User Profile"
                   >
                     <LuUser size={16} />
@@ -752,7 +792,7 @@ const Communication: React.FC = () => {
                   {activeConversation.email && (
                     <a
                       href={`mailto:${activeConversation.email}`}
-                      className="p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-xl transition cursor-pointer"
+                      className="p-1.5 sm:p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-xl transition cursor-pointer"
                       title="Send Email"
                     >
                       <BsEnvelope size={15} />
@@ -770,7 +810,7 @@ const Communication: React.FC = () => {
                       );
                       toast.info("Conversation cleared locally");
                     }}
-                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition cursor-pointer"
+                    className="p-1.5 sm:p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition cursor-pointer"
                     title="Clear Chat Messages"
                   >
                     <LuTrash2 size={15} />
@@ -779,9 +819,9 @@ const Communication: React.FC = () => {
               </div>
 
               {/* Message List */}
-              <div className="flex-1 p-5 overflow-y-auto space-y-4 styled-scrollbar">
+              <div className="flex-1 p-3 sm:p-4 md:p-5 overflow-y-auto space-y-3 sm:space-y-4 styled-scrollbar min-h-0">
                 {displayedMessages.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 dark:text-gray-500 space-y-2">
+                  <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 dark:text-gray-500 space-y-2 p-4">
                     <LuMessageSquare className="text-3xl text-gray-300 dark:text-gray-600" />
                     <p className="text-xs">
                       No messages exchanged yet. Send a message to begin.
@@ -795,15 +835,18 @@ const Communication: React.FC = () => {
                         msg.isMe ? "items-end" : "items-start"
                       }`}
                     >
-                      <div className="flex items-end gap-2 max-w-[80%]">
+                      <div className="flex items-end gap-1.5 sm:gap-2 max-w-[90%] sm:max-w-[80%] md:max-w-[75%]">
                         {!msg.isMe && (
-                          <div className="w-6 h-6 rounded-lg bg-primary/20 dark:bg-primary/30 text-primary dark:text-emerald-400 text-[10px] font-bold flex items-center justify-center shrink-0 mb-1">
-                            {getAvatarInitials(msg.senderName)}
-                          </div>
+                          <AvatarDisplay
+                            name={msg.senderName}
+                            logo={msg.logo || msg.avatar || getConversationLogo(activeConversation)}
+                            className="w-6 h-6 rounded-lg mb-1"
+                            textClassName="text-[10px] font-bold"
+                          />
                         )}
 
                         <div
-                          className={`p-3 rounded-2xl text-xs leading-relaxed ${
+                          className={`p-2.5 sm:p-3 rounded-2xl text-xs leading-relaxed break-words [overflow-wrap:anywhere] ${
                             msg.isMe
                               ? "bg-primary text-white rounded-br-xs shadow-xs"
                               : "bg-white dark:bg-[#1A1921] text-gray-800 dark:text-gray-100 border border-gray-200/80 dark:border-white/10 rounded-bl-xs shadow-xs"
@@ -835,24 +878,24 @@ const Communication: React.FC = () => {
 
                 {/* Preset Quick Options for Company Support */}
                 {!isStaffUser && (
-                  <div className="pt-2 pb-1 space-y-2 max-w-lg">
+                  <div className="pt-2 pb-1 space-y-2 w-full max-w-full sm:max-w-lg">
                     <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 px-1">
                       <LuSparkles className="text-primary dark:text-emerald-400" size={13} />
                       <span>Quick assistance & FAQs:</span>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
                       {PRESET_OPTIONS.map((preset) => (
                         <button
                           key={preset.id}
                           type="button"
                           onClick={() => handleSelectPreset(preset)}
-                          className={`text-left p-2.5 rounded-xl text-xs font-medium border transition cursor-pointer flex items-center justify-between group ${
+                          className={`text-left p-2 sm:p-2.5 rounded-xl text-xs font-medium border transition cursor-pointer flex items-center justify-between group ${
                             preset.action === "live_agent"
                               ? "bg-primary/10 dark:bg-primary/20 hover:bg-primary/20 border-primary/30 text-primary dark:text-emerald-400 font-semibold"
                               : "bg-white dark:bg-[#1A1921] hover:bg-gray-50 dark:hover:bg-white/5 border-gray-200/80 dark:border-white/10 text-gray-700 dark:text-gray-200 shadow-2xs"
                           }`}
                         >
-                          <span className="truncate pr-1">{preset.label}</span>
+                          <span className="truncate pr-1 text-[11px] sm:text-xs">{preset.label}</span>
                           {preset.action === "live_agent" && (
                             <LuHeadphones size={13} className="text-primary dark:text-emerald-400 shrink-0" />
                           )}
@@ -867,7 +910,7 @@ const Communication: React.FC = () => {
               {/* Message Input Bar */}
               <form
                 onSubmit={handleSendMessage}
-                className="p-3.5 bg-white dark:bg-[#131217] border-t border-gray-200/80 dark:border-white/10 flex items-center gap-2"
+                className="p-2.5 sm:p-3.5 bg-tertiary dark:bg-[#131217] border-t border-gray-200/80 dark:border-white/10 flex items-center gap-2 shrink-0"
               >
                 <input
                   ref={inputRef}
@@ -875,13 +918,13 @@ const Communication: React.FC = () => {
                   value={inputMsg}
                   onChange={(e) => setInputMsg(e.target.value)}
                   placeholder={`Message ${activeConversation.name}...`}
-                  className="flex-1 h-11 px-4 text-xs bg-secondary dark:bg-[#1A1921] border border-primary/10 dark:border-white/10 text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 rounded-xl focus:bg-white dark:focus:bg-[#131217] focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none transition"
+                  className="flex-1 min-w-0 h-10 sm:h-11 px-3 sm:px-4 text-xs bg-secondary dark:bg-[#1A1921] border border-primary/10 dark:border-white/10 text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 rounded-xl focus:bg-white dark:focus:bg-[#131217] focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none transition"
                 />
 
                 <button
                   type="submit"
                   disabled={!inputMsg.trim() || isSending}
-                  className="h-11 px-4 rounded-xl bg-primary hover:bg-primary/95 text-white disabled:bg-gray-200 dark:disabled:bg-white/10 disabled:text-gray-400 dark:disabled:text-gray-600 disabled:cursor-not-allowed font-semibold text-xs flex items-center gap-2 shadow-xs transition cursor-pointer"
+                  className="h-10 sm:h-11 px-3 sm:px-4 rounded-xl bg-primary hover:bg-primary/95 text-white disabled:bg-gray-200 dark:disabled:bg-white/10 disabled:text-gray-400 dark:disabled:text-gray-600 disabled:cursor-not-allowed font-semibold text-xs flex items-center gap-1.5 sm:gap-2 shadow-xs transition cursor-pointer shrink-0"
                 >
                   <span>Send</span>
                   {isSending ? (
@@ -893,7 +936,7 @@ const Communication: React.FC = () => {
               </form>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-gray-400 dark:text-gray-500 space-y-3">
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-6 sm:p-8 text-gray-400 dark:text-gray-500 space-y-3">
               <LuMessageSquare
                 size={48}
                 className="text-gray-300 dark:text-gray-600"
@@ -914,7 +957,7 @@ const Communication: React.FC = () => {
       {/* START NEW CHAT MODAL */}
       {openNewChatModal && (
         <Modal onClose={() => setOpenNewChatModal(false)} customMode>
-          <div className="bg-white dark:bg-[#131217] border border-gray-100 dark:border-white/10 rounded-2xl p-6 max-w-md w-full mx-auto shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-[#131217] border border-gray-100 dark:border-white/10 rounded-2xl p-4 sm:p-6 max-w-md w-full mx-auto shadow-2xl space-y-3 sm:space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/10">
               <h3 className="text-sm font-bold text-gray-900 dark:text-white">
                 Start a New Chat
@@ -935,7 +978,7 @@ const Communication: React.FC = () => {
                 value={userSearchTerm}
                 onChange={(e) => setUserSearchTerm(e.target.value)}
                 placeholder="Search staff, support or clients..."
-                className="w-full h-10 pl-8 pr-3 text-xs bg-gray-50 dark:bg-[#1A1921] border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 rounded-xl outline-none focus:border-primary"
+                className="w-full h-9 sm:h-10 pl-8 pr-3 text-xs bg-gray-50 dark:bg-[#1A1921] border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 rounded-xl outline-none focus:border-primary"
                 autoFocus
               />
             </div>
@@ -952,20 +995,23 @@ const Communication: React.FC = () => {
                     onClick={() => handleStartDM(chatUser)}
                     className="p-2.5 flex items-center justify-between hover:bg-primary/5 dark:hover:bg-white/5 rounded-xl cursor-pointer transition"
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-primary/15 dark:bg-primary/25 text-primary dark:text-emerald-400 font-bold text-xs flex items-center justify-center">
-                        {getAvatarInitials(chatUser.name)}
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-semibold text-gray-800 dark:text-white">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <AvatarDisplay
+                        name={chatUser.name}
+                        logo={chatUser.logo || chatUser.avatar}
+                        className="w-8 h-8 rounded-lg"
+                        textClassName="text-xs font-bold"
+                      />
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-semibold text-gray-800 dark:text-white truncate">
                           {chatUser.name}
                         </h4>
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
                           {chatUser.role}
                         </p>
                       </div>
                     </div>
-                    <span className="text-xs text-primary dark:text-emerald-400 font-semibold">
+                    <span className="text-xs text-primary dark:text-emerald-400 font-semibold shrink-0 ml-2">
                       Message
                     </span>
                   </div>
