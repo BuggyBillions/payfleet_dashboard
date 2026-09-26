@@ -2,14 +2,16 @@ import React, { useEffect, useState } from "react";
 import OverviewCards from "../../components/cards/OverviewCards";
 import ReusableTable from "../../utility/ReusableTable";
 import type { TableColumnProps } from "../../lib/interfaces";
-import { HiOutlineArrowTrendingUp } from "react-icons/hi2";
 import { LuUsersRound, LuWallet } from "react-icons/lu";
 import { TbReceiptDollar } from "react-icons/tb";
+import { FaMoneyBillWave } from "react-icons/fa6";
 import {
   formatterUtility,
   formatShortDate,
+  getUserDisplayName,
 } from "../../helpers/formatterUtility";
 import { useUser } from "../../hooks/useUser";
+import { useMyCompanyStats } from "../../hooks/useCompany";
 import { getEmployees } from "../../services/employeeService";
 import {
   getCompanyDeposits,
@@ -67,13 +69,14 @@ const normalizeStatus = (
 const Overview: React.FC = () => {
   const { user } = useUser();
   const companyId = user?.company_details?.id;
+  const displayName = getUserDisplayName(user as Record<string, unknown> | null);
 
   const [rows, setRows] = useState<DepositRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalEmployees, setTotalEmployees] = useState(0);
   const [totalPayroll, setTotalPayroll] = useState(0);
-  const [averagePay, setAveragePay] = useState(0);
-  const [successfulCount, setSuccessfulCount] = useState(0);
+
+  const { data: statsData } = useMyCompanyStats();
 
   useEffect(() => {
     let mounted = true;
@@ -92,7 +95,6 @@ const Overview: React.FC = () => {
         });
         setTotalEmployees(empData.totalItems ?? employees.length);
         setTotalPayroll(payroll);
-        setAveragePay(employees.length ? payroll / employees.length : 0);
 
         const mapped: DepositRow[] = deposits.map((t) => {
           const transaction = t.transaction ?? ({} as Record<string, unknown>);
@@ -124,9 +126,6 @@ const Overview: React.FC = () => {
         mapped.sort(
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
         );
-        setSuccessfulCount(
-          mapped.filter((d) => d.status === "successful").length,
-        );
         setRows(mapped);
       })
       .catch(() => undefined)
@@ -139,6 +138,12 @@ const Overview: React.FC = () => {
   }, [companyId]);
 
   const recentTransactions = rows.slice(0, 5);
+
+  // Prefer the /my-company-stats values, fall back to what we computed locally.
+  const statEmployees = statsData?.totalEmployees || totalEmployees;
+  const statEstimated = statsData?.estimatedSalary || totalPayroll;
+  const statTotalPaid = statsData?.totalPaid || 0;
+  const statBalance = statsData?.companyBalance || 0;
 
   const columns: TableColumnProps<DepositRow>[] = [
     {
@@ -168,7 +173,7 @@ const Overview: React.FC = () => {
   return (
     <div className="flex flex-col">
       <PageHeader
-        heading={`Welcome, ${user?.first_name}`}
+        heading={displayName ? `Welcome, ${displayName}` : "Welcome"}
         value="Here is your business breakdown"
       />
 
@@ -176,29 +181,25 @@ const Overview: React.FC = () => {
         <OverviewCards
           icon={LuUsersRound}
           title="Total Employees"
-          value={totalEmployees}
-          icon2={HiOutlineArrowTrendingUp}
-        />
-
-        <OverviewCards
-          icon={TbReceiptDollar}
-          title="Total Salary Paid"
-          value={formatterUtility(totalPayroll)}
-          icon2={HiOutlineArrowTrendingUp}
-        />
-
-        <OverviewCards
-          icon={LuWallet}
-          title="Completed Payments"
-          value={successfulCount}
-          icon2={HiOutlineArrowTrendingUp}
+          value={statEmployees}
         />
 
         <OverviewCards
           icon={TbReceiptDollar}
           title="Estimated Salary"
-          value={formatterUtility(averagePay)}
-          icon2={HiOutlineArrowTrendingUp}
+          value={formatterUtility(statEstimated)}
+        />
+
+        <OverviewCards
+          icon={FaMoneyBillWave}
+          title="Total Paid"
+          value={formatterUtility(statTotalPaid)}
+        />
+
+        <OverviewCards
+          icon={LuWallet}
+          title="Wallet Balance"
+          value={formatterUtility(statBalance)}
         />
       </div>
 

@@ -1,21 +1,23 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { LuCrown, LuLoader, LuUsersRound } from "react-icons/lu";
-import { HiOutlineArrowTrendingUp } from "react-icons/hi2";
 import Modal from "../../components/modal/Modal";
 import OverviewCards from "../../components/cards/OverviewCards";
 import ReusableTable from "../../utility/ReusableTable";
 import ActionCell from "../../components/ui/ActionCell";
+import UpgradeTierModal from "../../components/modal/tier/UpgradeTierModal";
 import type { TableColumnProps } from "../../lib/interfaces";
 import { getErrorMessage } from "../../helpers/api";
 import { useUser } from "../../hooks/useUser";
 import {
   getTiers,
   getEachTier,
-  moveTier,
   type Tier,
+  getTierRequirements,
 } from "../../services/tierService";
 import type { CompanyTierProp } from "../../lib/interfaces";
+
+const getRequirements = getTierRequirements;
 
 const getTierInfo = (
   value: unknown,
@@ -46,17 +48,6 @@ const formatDate = (value?: string): string => {
     year: "numeric",
   });
 };
-const getRequirements = (t: Partial<Tier>): string[] => {
-  const raw = t.requirements;
-  if (Array.isArray(raw)) return raw.map((r) => String(r));
-  if (typeof raw === "string")
-    return raw
-      .split(",")
-      .map((r) => r.trim())
-      .filter(Boolean);
-  return [];
-};
-
 const displayedFields = (tier: Partial<Tier>): Array<{ label: string; value: string }> => [
   { label: "Level", value: getTierLevel(tier) },
   { label: "No. of Staff", value: getTierStaff(tier) },
@@ -185,90 +176,6 @@ const TierDetailModal: React.FC<{
   );
 };
 
-const TierUpgradeModal: React.FC<{
-  tier: Tier;
-  onClose: () => void;
-  onUpgraded: () => void;
-}> = ({ tier, onClose, onUpgraded }) => {
-  const [saving, setSaving] = useState(false);
-
-  const handleUpgrade = async () => {
-    if (!tier.id) return;
-    setSaving(true);
-    try {
-      await moveTier(tier.id);
-      toast.success("Tier upgrade request sent successfully");
-      onUpgraded();
-      onClose();
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to request tier upgrade"));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Modal onClose={onClose}>
-      <div className="flex flex-col gap-6">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-            <LuCrown size={20} className="text-primary" />
-          </div>
-          <div className="flex flex-col">
-            <h2 className="text-lg font-bold text-textBlack capitalize">
-              Upgrade to {getTierName(tier)}?
-            </h2>
-            <p className="text-xs text-textBlack/60">
-              Level {getTierLevel(tier)} · {getTierStaff(tier)} staff
-            </p>
-          </div>
-        </div>
-
-        <p className="text-xs text-textBlack/70 leading-relaxed">
-          You are requesting to move your company to this tier. A confirmation
-          will be sent once the request is approved.
-        </p>
-
-        {getRequirements(tier).length > 0 && (
-          <div className="bg-secondary/50 p-4 rounded-lg border border-primary/10">
-            <p className="text-xs text-textBlack/60 font-medium mb-2">
-              Required documents
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {getRequirements(tier).map((req, index) => (
-                <span
-                  key={index}
-                  className="inline-flex px-2.5 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-semibold"
-                >
-                  {req}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="flex justify-end gap-3 pt-4 border-t border-primary/10">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2 text-sm rounded-lg border border-primary/10 bg-secondary hover:bg-primary/10 text-textBlack font-medium transition cursor-pointer"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleUpgrade}
-            disabled={saving}
-            className="px-5 py-2 text-sm rounded-lg bg-primary hover:bg-primary/90 text-white font-medium transition cursor-pointer disabled:opacity-60"
-          >
-            {saving ? "Sending..." : "Request Upgrade"}
-          </button>
-        </div>
-      </div>
-    </Modal>
-  );
-};
-
 const TierSettings: React.FC = () => {
   const { user } = useUser();
   const rawCompanyTier = user?.company_details?.tier ?? user?.tier;
@@ -371,7 +278,6 @@ const TierSettings: React.FC = () => {
           icon={LuCrown}
           title="Current Tier"
           value={currentTierLabel}
-          icon2={HiOutlineArrowTrendingUp}
         />
       </div>
 
@@ -405,10 +311,9 @@ const TierSettings: React.FC = () => {
       )}
 
       {upgrading && (
-        <TierUpgradeModal
-          tier={upgrading}
+        <UpgradeTierModal
+          defaultTier={upgrading.id}
           onClose={() => setUpgrading(null)}
-          onUpgraded={() => undefined}
         />
       )}
     </div>

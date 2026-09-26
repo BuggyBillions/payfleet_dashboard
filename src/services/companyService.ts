@@ -1,11 +1,20 @@
 import api from "../helpers/api";
 import type {
+  CompanyActivityLog,
+  CompanyActivityLogListResponse,
   CompanyProps,
   CompanyListResponse,
   GetCompaniesParams,
+  MyCompanyStatsResponse,
 } from "../lib/interfaces";
 
-export type { GetCompaniesParams, CompanyListResponse };
+export type {
+  GetCompaniesParams,
+  CompanyListResponse,
+  MyCompanyStatsResponse,
+  CompanyActivityLog,
+  CompanyActivityLogListResponse,
+};
 
 export interface UpdateCompanyDetailsPayload {
   name?: string;
@@ -108,6 +117,244 @@ export const updateCompanyDetails = async (
       : undefined,
   });
   return res.data?.data ?? res.data;
+};
+
+const pickNumber = (
+  data: Record<string, unknown>,
+  keys: string[],
+): number | undefined => {
+  for (const key of keys) {
+    const value = data[key];
+    if (value === undefined || value === null || value === "") continue;
+    const parsed = Number(value);
+    if (!Number.isNaN(parsed)) return parsed;
+  }
+  return undefined;
+};
+
+/**
+ * Company-scoped statistics for the logged-in company
+ * GET /my-company-stats
+ */
+export const getMyCompanyStatsService =
+  async (): Promise<MyCompanyStatsResponse> => {
+    const response = await api.get("/my-company-stats");
+    const resData = response.data;
+    const data = (resData?.data ?? resData ?? {}) as Record<string, unknown>;
+
+    // Collect every numeric field so the UI can render metrics the API adds later.
+    const metrics: Record<string, number> = {};
+    Object.entries(data).forEach(([key, value]) => {
+      const parsed = Number(value);
+      if (typeof value === "boolean" || value === null || value === "") return;
+      if (!Number.isNaN(parsed)) metrics[key] = parsed;
+    });
+
+    const totalEmployees = pickNumber(data, [
+      "no_of_employee",
+      "no_of_employees",
+      "total_employee",
+      "total_employees",
+      "totalEmployees",
+      "employees",
+      "employee_count",
+    ]);
+
+    const totalPayroll = pickNumber(data, [
+      "estimated_salary",
+      "estimatedSalary",
+      "total_payroll",
+      "totalPayroll",
+      "total_salary",
+      "totalSalary",
+    ]);
+
+    const completedPayments = pickNumber(data, [
+      "total_paid",
+      "totalPaid",
+      "total_paid_amount",
+      "paid_amount",
+      "completed_payments",
+      "successful_payments",
+    ]);
+
+    const totalPayments = pickNumber(data, [
+      "total_payments",
+      "totalPayments",
+      "no_of_payments",
+      "payments",
+      "payment_count",
+    ]);
+
+    return {
+      metrics,
+      totalEmployees: totalEmployees ?? 0,
+      totalStaff:
+        pickNumber(data, ["no_of_employee", "total_staff", "totalStaff"]) ?? 0,
+      totalPayroll: totalPayroll ?? 0,
+      estimatedSalary:
+        pickNumber(data, [
+          "estimated_salary",
+          "estimatedSalary",
+          "estimated_payroll",
+        ]) ?? 0,
+      totalPaid: completedPayments ?? 0,
+      totalSalaryPaid:
+        pickNumber(data, [
+          "estimated_salary",
+          "estimatedSalary",
+          "total_salary",
+          "totalSalary",
+        ]) ?? 0,
+      totalPayments: totalPayments ?? 0,
+      completedPayments: completedPayments ?? 0,
+      pendingPayments:
+        pickNumber(data, [
+          "pending_payments",
+          "pendingPayments",
+          "pending",
+        ]) ?? 0,
+      totalDeposits:
+        pickNumber(data, [
+          "total_deposits",
+          "totalDeposits",
+          "deposits",
+          "deposit_count",
+        ]) ?? 0,
+      totalDeductions:
+        pickNumber(data, [
+          "total_deductions",
+          "totalDeductions",
+          "deductions",
+          "total_deducted",
+        ]) ?? 0,
+      totalCompanies:
+        pickNumber(data, ["total_companies", "totalCompanies", "companies"]) ??
+        0,
+      companyBalance:
+        pickNumber(data, [
+          "balance",
+          "company_balance",
+          "companyBalance",
+          "wallet_balance",
+          "total_balance",
+        ]) ?? 0,
+      averageSalary:
+        pickNumber(data, [
+          "estimated_salary",
+          "estimatedSalary",
+          "average_salary",
+          "averageSalary",
+          "average_pay",
+          "avg_pay",
+        ]) ?? 0,
+      averagePay:
+        pickNumber(data, [
+          "estimated_salary",
+          "estimatedSalary",
+          "average_pay",
+          "averagePay",
+          "average_salary",
+          "averageSalary",
+        ]) ?? 0,
+      raw: data,
+    };
+  };
+
+export interface GetCompanyActivityLogsParams {
+  page?: number;
+  per_page?: number;
+  search?: string;
+  company_id?: number | string;
+}
+
+/**
+ * Audit trail of company activity
+ * GET /company-activity-logs?page=...
+ */
+export const getCompanyActivityLogsService = async (
+  params: GetCompanyActivityLogsParams = {},
+): Promise<CompanyActivityLogListResponse> => {
+  const res = await api.get("/company-activity-logs", {
+    params: {
+      company_id: params.company_id || undefined,
+      search: params.search?.trim() || undefined,
+      page: params.page ?? 1,
+      per_page: params.per_page ?? 10,
+    },
+  });
+
+  // { status, message, data: [...], pagination: { current_page, ... } }
+  const body = res.data?.data ?? res.data;
+  const raw: unknown[] = Array.isArray(body)
+    ? body
+    : Array.isArray(body?.data)
+      ? body.data
+      : Array.isArray(body?.logs)
+        ? body.logs
+        : Array.isArray(body?.activity_logs)
+          ? body.activity_logs
+          : [];
+
+  // Pagination is a sibling of `data`, not nested inside it.
+  const pagination = (res.data?.pagination ??
+    body?.pagination ??
+    {}) as Record<string, unknown>;
+
+  const items: CompanyActivityLog[] = raw.map((row, index) => {
+    const record = (row ?? {}) as Record<string, unknown>;
+    const actor = (record.user ?? record.actor ?? record.created_by) as
+      | Record<string, unknown>
+      | string
+      | null;
+    const actorName =
+      typeof actor === "string"
+        ? actor
+        : [actor?.first_name, actor?.last_name, actor?.name, actor?.email]
+            .filter(Boolean)
+            .join(" ") || String(record.user_name ?? "");
+
+    return {
+      id: (record.id ?? record.log_id ?? record.activity_id ?? index) as
+        | number
+        | string,
+      action: String(
+        record.action ?? record.event ?? record.title ?? record.name ?? "",
+      ),
+      description: String(
+        record.details ??
+          record.description ??
+          record.desc ??
+          record.message ??
+          "",
+      ),
+      type: String(record.type ?? record.category ?? record.module ?? ""),
+      subject: String(
+        record.subject ?? record.subject_type ?? record.model ?? "",
+      ),
+      actor: actorName,
+      ipAddress: String(record.ip_address ?? record.ip ?? ""),
+      status: String(record.status ?? record.state ?? record.result ?? ""),
+      createdAt: String(
+        record.created_at ?? record.date ?? record.timestamp ?? "",
+      ),
+      raw: record,
+    };
+  });
+
+  return {
+    items,
+    totalItems:
+      Number(pagination.total ?? body?.total ?? items.length) || items.length,
+    totalPages:
+      Number(
+        pagination.last_page ?? body?.last_page ?? body?.totalPages ?? 1,
+      ) || 1,
+    currentPage:
+      Number(
+        pagination.current_page ?? body?.current_page ?? params.page ?? 1,
+      ) || 1,
+  };
 };
 
 export interface CompanyStatsResponse {
