@@ -47,9 +47,8 @@ export const useSendUserMessage = () => {
  */
 export const useMarkMessagesAsRead = () => {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (payload?: Record<string, unknown>) =>
-      markMessagesAsReadService(payload),
+  return useMutation<void, Error, void>({
+    mutationFn: () => markMessagesAsReadService(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["support", "unread-count"] });
     },

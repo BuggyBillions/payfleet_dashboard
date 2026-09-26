@@ -15,6 +15,15 @@ import type { SettingsTab, PasswordFieldProps } from "../../lib/interfaces";
 
 type DocumentField = "logo" | "cac" | "mermat" | "status_report";
 
+// BVN/NIN are identifiers, not quantities. Keep them as digit strings so an
+// 11-digit value is never coerced into a JS number (precision loss) or a
+// numeric column (out-of-range). The API may still return them as numbers
+// while the DB column is numeric, so normalise defensively.
+const toDigitString = (value: string | number | null | undefined) => {
+  const trimmed = String(value ?? "").trim();
+  return /^\d+$/.test(trimmed) ? trimmed : undefined;
+};
+
 interface DocumentFieldProps {
   label: string;
   hint?: string;
@@ -177,8 +186,8 @@ const Settings: React.FC = () => {
     department: currentRole.toUpperCase(),
     address: user?.company_details?.address ?? "",
     about: user?.company_details?.about ?? "",
-    bvn: user?.company_details?.bvn ?? "",
-    nin: user?.company_details?.nin ?? "",
+    bvn: toDigitString(user?.company_details?.bvn) ?? "",
+    nin: toDigitString(user?.company_details?.nin) ?? "",
   });
 
   // Uploaded documents (sent as multipart only when a new file is picked)
@@ -225,9 +234,6 @@ const Settings: React.FC = () => {
   const handleDocumentChange = (key: DocumentField, file: File | null) =>
     setDocuments((prev) => ({ ...prev, [key]: file }));
 
-  const toNumeric = (value: string) =>
-    /^\d+$/.test(value.trim()) ? Number(value.trim()) : undefined;
-
   const handleSaveProfile = async () => {
     setSavingProfile(true);
     try {
@@ -237,8 +243,8 @@ const Settings: React.FC = () => {
         phone: profile.phoneNumber.trim() || undefined,
         address: profile.address.trim() || undefined,
         about: profile.about.trim() || undefined,
-        bvn: toNumeric(profile.bvn),
-        nin: toNumeric(profile.nin),
+        bvn: toDigitString(profile.bvn),
+        nin: toDigitString(profile.nin),
       };
 
       const pickedFiles = (Object.entries(documents) as [DocumentField, File | null][])

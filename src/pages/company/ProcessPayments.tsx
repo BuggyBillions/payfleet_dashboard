@@ -1,23 +1,18 @@
 import React, { useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import ReusableTable from "../../utility/ReusableTable";
 import type { TableColumnProps, Employee, EmployeeListResponse } from "../../lib/interfaces";
 import { formatterUtility } from "../../helpers/formatterUtility";
 import { toast } from "sonner";
 import { IoSearchOutline } from "react-icons/io5";
 import { FaMoneyBillWave } from "react-icons/fa6";
-import { FiMinusCircle } from "react-icons/fi";
 import ActionCell from "../../components/ui/ActionCell";
-import ReduceSalaryModal from "../../components/modal/ReduceSalaryModal";
 import { useUser } from "../../hooks/useUser";
 import { getEmployees } from "../../services/employeeService";
 
 const ProcessPayments: React.FC = () => {
-  const queryClient = useQueryClient();
   const { user } = useUser();
   const companyId = user?.company_details?.id;
-  const [reduceModalEmployee, setReduceModalEmployee] =
-    useState<Employee | null>(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedRowIds, setSelectedRowIds] = useState<
@@ -75,13 +70,7 @@ const ProcessPayments: React.FC = () => {
     setSelectedRowIds([]);
   };
 
-  const handleDeductSaved = () => {
-    setReduceModalEmployee(null);
-    queryClient.invalidateQueries({ queryKey: ["employees"] });
-  };
-
-  const columns: TableColumnProps<Employee>[] = [
-    {
+  const columns: TableColumnProps<Employee>[] = [    {
       label: "Full Name",
       render: (item) => (
         <span className="font-semibold text-inherit">
@@ -116,11 +105,6 @@ const ProcessPayments: React.FC = () => {
         <ActionCell
           rowId={item.id}
           otherActions={[
-            {
-              name: "Reduce Salary",
-              icon: <FiMinusCircle size={12} />,
-              action: () => setReduceModalEmployee(item),
-            },
             {
               name: "Pay",
               icon: <FaMoneyBillWave size={12} />,
@@ -188,14 +172,6 @@ const ProcessPayments: React.FC = () => {
           onToggleAllRows={handleToggleAll}
         />
       </div>
-
-      {reduceModalEmployee && (
-        <ReduceSalaryModal
-          employee={reduceModalEmployee}
-          onClose={() => setReduceModalEmployee(null)}
-          onSaved={handleDeductSaved}
-        />
-      )}
     </div>
   );
 };
