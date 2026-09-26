@@ -5,7 +5,8 @@ import ConfirmDialog from "../../components/modal/ConfirmDialog";
 import Modal from "../../components/modal/Modal";
 import OverviewCards from "../../components/cards/OverviewCards";
 import { toast } from "sonner";
-import { formatShortDate, formatterUtility } from "../../helpers/formatterUtility";
+import { formatDateTime, formatterUtility } from "../../helpers/formatterUtility";
+import { copyToClipboard } from "../../helpers/clipboardHelper";
 import type { TableColumnProps, DepositItemProps, ManageDepositProps } from "../../lib/interfaces";
 import { FiSearch } from "react-icons/fi";
 import { LuClock, LuCopy, LuCheck } from "react-icons/lu";
@@ -196,12 +197,12 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
 
   const [copiedRef, setCopiedRef] = useState<string | null>(null);
 
-  const handleCopyRef = (ref: string) => {
-    if (!ref || ref === "—") return;
-    navigator.clipboard.writeText(ref);
-    setCopiedRef(ref);
-    toast.success("Reference copied to clipboard");
-    setTimeout(() => setCopiedRef(null), 2000);
+  const handleCopyRef = async (ref: string) => {
+    const success = await copyToClipboard(ref, "Reference");
+    if (success) {
+      setCopiedRef(ref);
+      setTimeout(() => setCopiedRef(null), 2000);
+    }
   };
 
   const getInitials = (name?: string) => {
@@ -268,8 +269,8 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
       label: "Deposit Date",
       key: "date",
       render: (item: DepositItemProps) => (
-        <span className="text-xs text-textBlack/70 font-medium">
-          {formatShortDate(item.date)}
+        <span className="text-xs text-textBlack/70 font-medium whitespace-nowrap">
+          {formatDateTime(item.date)}
         </span>
       ),
     },
@@ -638,13 +639,13 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
                 </div>
               )}
               <div>
-                <span className="text-textBlack/60 block mb-0.5">Initiated Date</span>
-                <span className="text-textBlack/80">{formatShortDate(selectedDeposit.date)}</span>
+                <span className="text-textBlack/60 block mb-0.5">Initiated Date & Time</span>
+                <span className="text-textBlack/80">{formatDateTime(selectedDeposit.date)}</span>
               </div>
               {selectedDeposit.approvedAt && (
                 <div>
                   <span className="text-textBlack/60 block mb-0.5">Processed Timestamp</span>
-                  <span className="text-textBlack/80">{formatShortDate(selectedDeposit.approvedAt)}</span>
+                  <span className="text-textBlack/80">{formatDateTime(selectedDeposit.approvedAt)}</span>
                 </div>
               )}
               {selectedDeposit.rejectionReason && (

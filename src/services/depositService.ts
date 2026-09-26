@@ -15,8 +15,45 @@ export interface CompanyFundingResponse {
   reference_no?: string;
   transaction_reference?: string;
   ref?: string;
+  id?: number | string;
+  amount?: number;
+  checkout_amount?: number;
+  status?: string | boolean;
+  message?: string;
+  data?: {
+    id?: number | string;
+    company_id?: number | string;
+    reference?: string;
+    amount?: number;
+    status?: string;
+    previous_balance?: string;
+    current_balance?: string;
+    type?: string;
+    transaction_type?: string;
+    description?: string;
+    created_at?: string;
+    updated_at?: string;
+    [key: string]: unknown;
+  };
   [key: string]: unknown;
 }
+
+export const companyFunding = async (
+  payload: CompanyFundingPayload,
+): Promise<CompanyFundingResponse> => {
+  const res = await api.post("/company-funding", payload);
+  const raw = res.data;
+  const dataObj =
+    raw?.data && typeof raw.data === "object" && !Array.isArray(raw.data)
+      ? (raw.data as Record<string, unknown>)
+      : {};
+  return {
+    ...dataObj,
+    ...raw,
+    data: dataObj,
+    checkout_amount: raw?.checkout_amount ?? dataObj?.checkout_amount ?? raw?.amount ?? payload.amount,
+  } as CompanyFundingResponse;
+};
 
 export interface BankAccount {
   account_name?: string;
@@ -25,13 +62,6 @@ export interface BankAccount {
   bank_code?: string;
   [key: string]: unknown;
 }
-
-export const companyFunding = async (
-  payload: CompanyFundingPayload,
-): Promise<CompanyFundingResponse> => {
-  const res = await api.post("/company-funding", payload);
-  return (res.data?.data ?? res.data) as CompanyFundingResponse;
-};
 
 export const getAccount = async (
   company_id?: number | string,
@@ -294,6 +324,7 @@ export const getAllDepositsService = async ({
 
   // If a specific status filter is active and custom searchTerm was searched, filter items
   let finalItems = items;
+  let isClientFiltered = false;
   if (status && status !== "all") {
     const targetStatus = status.toLowerCase().includes("success")
       ? "successful"
@@ -303,6 +334,7 @@ export const getAllDepositsService = async ({
 
     if (querySearch && querySearch !== "pending" && querySearch !== "successfull" && querySearch !== "failed") {
       finalItems = items.filter((item) => item.status === targetStatus);
+      isClientFiltered = true;
     }
   }
 
@@ -310,14 +342,24 @@ export const getAllDepositsService = async ({
   let currentPage = page;
   let totalPages = Math.max(1, Math.ceil(totalItems / per_page));
 
-  if (resData?.pagination) {
-    totalItems = resData.pagination.total ?? totalItems;
-    totalPages = resData.pagination.last_page ?? totalPages;
-    currentPage = resData.pagination.current_page ?? currentPage;
-  } else if (resData?.data?.total !== undefined) {
-    totalItems = resData.data.total;
-    totalPages = resData.data.last_page ?? totalPages;
-    currentPage = resData.data.current_page ?? currentPage;
+  const hasServerPagination =
+    !isClientFiltered &&
+    (resData?.pagination != null || resData?.data?.total !== undefined);
+
+  if (hasServerPagination) {
+    if (resData?.pagination) {
+      totalItems = resData.pagination.total ?? totalItems;
+      totalPages = resData.pagination.last_page ?? totalPages;
+      currentPage = resData.pagination.current_page ?? currentPage;
+    } else if (resData?.data?.total !== undefined) {
+      totalItems = resData.data.total;
+      totalPages = resData.data.last_page ?? totalPages;
+      currentPage = resData.data.current_page ?? currentPage;
+    }
+  } else {
+    // Client-side slicing fallback when backend returns unpaginated array or when client filtered
+    const startIndex = (page - 1) * per_page;
+    finalItems = finalItems.slice(startIndex, startIndex + per_page);
   }
 
   return {

@@ -27,11 +27,13 @@ export const useStaffs = ({
   per_page = 10,
   role = "",
   status = "",
-}: GetStaffsParams = {}) => {
+  enabled = true,
+}: GetStaffsParams & { enabled?: boolean } = {}) => {
   return useQuery<StaffListResponse>({
     queryKey: ["staffs", page, searchTerm, per_page, role, status],
     queryFn: () =>
       getStaffsService({ page, searchTerm, per_page, role, status }),
+    enabled,
     placeholderData: (prev) => prev,
   });
 };

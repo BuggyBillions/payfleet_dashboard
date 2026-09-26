@@ -4,7 +4,7 @@ import AddBankModal from "../../components/modal/AddBankModal";
 import { useAccount } from "../../hooks/useBank";
 import { FaPlus, FaBuildingColumns } from "react-icons/fa6";
 import { LuCopy, LuCheck } from "react-icons/lu";
-import { toast } from "sonner";
+import { copyToClipboard } from "../../helpers/clipboardHelper";
 
 const ManageBanks: React.FC = () => {
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -18,13 +18,10 @@ const ManageBanks: React.FC = () => {
   } = useAccount();
 
   const handleCopy = async (text: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
+    const success = await copyToClipboard(text, label);
+    if (success) {
       setCopiedField(label);
-      toast.success(`${label} copied to clipboard`);
       setTimeout(() => setCopiedField(null), 2000);
-    } catch {
-      toast.error("Failed to copy");
     }
   };
 
@@ -63,7 +60,7 @@ const ManageBanks: React.FC = () => {
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-white/50">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-textBlack/50">
                       Active Settlement Account
                     </span>
                   </div>
