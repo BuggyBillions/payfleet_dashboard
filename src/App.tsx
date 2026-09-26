@@ -13,7 +13,6 @@ import NotFound from "./pages/view/NotFound";
 import Overview from "./pages/company/Overview";
 import Employees from "./pages/company/Employees";
 import AddEmployee from "./pages/company/AddEmployee";
-import Deposits from "./pages/company/Deposits";
 import ProcessPayments from "./pages/company/ProcessPayments";
 import PaymentHistory from "./pages/company/PaymentHistory";
 import Settings from "./pages/company/Settings";
@@ -33,6 +32,7 @@ import Communication from "./pages/chat/Communication";
 import Verifyemail from "./pages/auth/Verifyemail";
 import Notifications from "./pages/company/Notifications";
 import ManageCompanyVerification from "./pages/superadmin/ManageCompanyVerification";
+import Deposits from "./pages/company/Deposits";
 
 function App() {
   return (
@@ -72,17 +72,7 @@ function App() {
           element={
             <MainLayout
               pageName="All Deposits"
-              children={<Deposits defaultFilter="all" />}
-            />
-          }
-        />
-        <Route
-          index
-          path="/dashboard/deposits/pending"
-          element={
-            <MainLayout
-              pageName="Pending Deposits"
-              children={<Deposits defaultFilter="pending" />}
+              children={<Deposits   />}
             />
           }
         />
