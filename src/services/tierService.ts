@@ -9,6 +9,46 @@ export type { TierItem, TierFormData };
 export type Tier = TierItem;
 
 /**
+ * Normalise the `requirements` field returned by the tiers endpoints into a
+ * list of individual requirement names. The backend may send a comma separated
+ * string, an array of strings, or an array of objects with a name/label key.
+ */
+export const getTierRequirements = (tier: unknown): string[] => {
+  if (!tier || typeof tier !== "object") return [];
+
+  const raw = (tier as { requirements?: unknown }).requirements;
+
+  const normalizeEntry = (entry: unknown): string => {
+    if (typeof entry === "string") return entry.trim();
+    if (typeof entry === "number") return String(entry);
+    if (entry && typeof entry === "object") {
+      const obj = entry as Record<string, unknown>;
+      const value = obj.name ?? obj.label ?? obj.title ?? obj.requirement;
+      return typeof value === "string" ? value.trim() : "";
+    }
+    return "";
+  };
+
+  const split = (value: string) =>
+    value
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+
+  if (Array.isArray(raw)) {
+    return raw.flatMap((entry) => {
+      const value = normalizeEntry(entry);
+      if (!value) return [];
+      return typeof entry === "string" ? split(value) : [value];
+    });
+  }
+
+  if (typeof raw === "string") return split(raw);
+
+  return [];
+};
+
+/**
  * Fetch all tiers configured on the platform (Admin & Company)
  * GET /all-tiers?search=...
  */
@@ -157,6 +197,7 @@ export interface RequestTierUpgradePayload {
   director_phone?: string;
   reason?: string;
   document?: File | null;
+  documents?: File[];
   document_url?: string;
 }
 
@@ -166,16 +207,24 @@ export interface RequestTierUpgradePayload {
 export const requestTierUpgradeService = async (payload: RequestTierUpgradePayload) => {
   let resData;
   try {
+    const files = (payload.documents ?? []).filter(
+      (file): file is File => file instanceof File,
+    );
+
     const formData = new FormData();
     Object.entries(payload).forEach(([key, val]) => {
+      if (key === "document" || key === "documents") return;
       if (val !== undefined && val !== null) {
-        if (key === "document" && val instanceof File) {
-          formData.append("document", val);
-        } else {
-          formData.append(key, String(val));
-        }
+        formData.append(key, String(val));
       }
     });
+
+    // `documents[]` carries every file the tier asked for. The first file is
+    // also sent as `document` so a single-file backend keeps working.
+    files.forEach((file) => formData.append("documents[]", file));
+    if (files.length > 0 && !payload.document) {
+      formData.append("document", files[0]);
+    }
 
     const response = await api.post("/tier/request-upgrade", formData, {
       headers: { "Content-Type": "multipart/form-data" },

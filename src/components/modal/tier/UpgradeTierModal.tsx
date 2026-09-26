@@ -3,7 +3,15 @@ import Modal from "../Modal";
 import ActionButton from "../../ui/ActionButton";
 import { useRequestTierUpgrade, useAllTiers } from "../../../hooks/useTier";
 import { useUser } from "../../../hooks/useUser";
-import { LuShieldCheck, LuUpload, LuCheck, LuLayers } from "react-icons/lu";
+import { getTierRequirements } from "../../../services/tierService";
+import {
+  LuShieldCheck,
+  LuUpload,
+  LuCheck,
+  LuLayers,
+  LuFileText,
+  LuX,
+} from "react-icons/lu";
 import { toast } from "sonner";
 import type { TierItem } from "../../../lib/interfaces";
 
@@ -51,12 +59,25 @@ const UpgradeTierModal: React.FC<UpgradeTierModalProps> = ({ onClose, defaultTie
     typeof user?.phone === "string" ? user.phone : ""
   );
   const [reason, setReason] = useState<string>("");
-  const [file, setFile] = useState<File | null>(null);
+  const [documents, setDocuments] = useState<Record<string, File>>({});
 
   const upgradeMutation = useRequestTierUpgrade();
 
   const targetPlan: Partial<TierItem> | undefined =
     allTiers.find((p) => Number(p.id) === selectedTierId) || upgradeableTiers[0];
+
+  // Documents the backend says this tier requires. These replace the old
+  // hardcoded CAC/TIN/director block, so the form always matches the tier.
+  const requiredDocuments = getTierRequirements(targetPlan);
+
+  const handleDocumentSelect = (requirement: string, file: File | null) => {
+    setDocuments((prev) => {
+      const next = { ...prev };
+      if (file) next[requirement] = file;
+      else delete next[requirement];
+      return next;
+    });
+  };
 
   const handleSubmit = (e?: React.FormEvent | React.MouseEvent) => {
     if (e) e.preventDefault();
@@ -70,6 +91,20 @@ const UpgradeTierModal: React.FC<UpgradeTierModalProps> = ({ onClose, defaultTie
       toast.error("Please provide your CAC RC Number for verification.");
       return;
     }
+
+    const missing = requiredDocuments.filter(
+      (requirement) => !documents[requirement],
+    );
+    if (missing.length > 0) {
+      toast.error(
+        `Please upload the required document${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}`,
+      );
+      return;
+    }
+
+    const files = requiredDocuments
+      .map((requirement) => documents[requirement])
+      .filter((file): file is File => Boolean(file));
 
     upgradeMutation.mutate(
       {
@@ -87,7 +122,8 @@ const UpgradeTierModal: React.FC<UpgradeTierModalProps> = ({ onClose, defaultTie
         director_name: directorName,
         director_phone: directorPhone,
         reason,
-        document: file,
+        documents: files,
+        document: files[0] ?? null,
       },
       {
         onSuccess: () => {
@@ -130,6 +166,7 @@ const UpgradeTierModal: React.FC<UpgradeTierModalProps> = ({ onClose, defaultTie
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {upgradeableTiers.map((plan) => {
                 const isSelected = selectedTierId === Number(plan.id);
+                const planRequirements = getTierRequirements(plan);
                 return (
                   <button
                     key={plan.id}
@@ -158,9 +195,9 @@ const UpgradeTierModal: React.FC<UpgradeTierModalProps> = ({ onClose, defaultTie
                         </strong>
                       </span>
                     </div>
-                    {plan.requirements && (
+                    {planRequirements.length > 0 && (
                       <p className="text-[10px] text-textBlack/50 mt-1 line-clamp-1">
-                        Requires: {plan.requirements}
+                        Requires: {planRequirements.join(", ")}
                       </p>
                     )}
                   </button>
@@ -229,36 +266,69 @@ const UpgradeTierModal: React.FC<UpgradeTierModalProps> = ({ onClose, defaultTie
             </div>
           </div>
 
-          {/* Document Upload */}
-          <div>
-            <label className="block text-xs font-medium text-textBlack mb-1">
-              Upload Verification Document (CAC Certificate / Utility Bill / Director ID)
+          {/* Required documents - driven by the target tier's requirements */}
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold text-textBlack">
+              Required Documents
             </label>
-            <div className="border-2 border-dashed border-primary/20 hover:border-primary/40 rounded-xl p-4 text-center bg-secondary transition-colors cursor-pointer relative">
-              <input
-                type="file"
-                accept=".pdf,.png,.jpg,.jpeg"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files[0]) {
-                    setFile(e.target.files[0]);
-                  }
-                }}
-                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-              />
-              <LuUpload className="mx-auto text-2xl text-primary mb-1" />
-              {file ? (
-                <p className="text-xs font-semibold text-primary">{file.name}</p>
-              ) : (
-                <>
-                  <p className="text-xs font-medium text-textBlack">
-                    Click or drag file to upload document
-                  </p>
-                  <p className="text-[10px] text-textBlack/50 mt-0.5">
-                    PDF, PNG, JPG up to 10MB
-                  </p>
-                </>
-              )}
-            </div>
+            {requiredDocuments.length === 0 ? (
+              <p className="p-3 rounded-xl bg-secondary border border-primary/10 text-[11px] text-textBlack/60">
+                This tier has no additional document requirements.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {requiredDocuments.map((requirement) => {
+                  const selected = documents[requirement];
+                  return (
+                    <div
+                      key={requirement}
+                      className="border-2 border-dashed border-primary/20 hover:border-primary/40 rounded-xl p-3 bg-secondary transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="flex items-center gap-1.5 text-[11px] font-semibold text-textBlack">
+                          <LuFileText size={12} className="text-primary" />
+                          {requirement}
+                          <span className="text-red-500">*</span>
+                        </span>
+                        {selected && (
+                          <button
+                            type="button"
+                            onClick={() => handleDocumentSelect(requirement, null)}
+                            className="flex items-center gap-1 text-[10px] text-textBlack/50 hover:text-red-500 transition cursor-pointer"
+                          >
+                            <LuX size={11} />
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                      <label className="flex items-center gap-2 text-[10px] text-textBlack/60 cursor-pointer">
+                        <LuUpload size={13} className="text-primary shrink-0" />
+                        <span className="truncate">
+                          {selected ? (
+                            <span className="font-semibold text-primary">
+                              {selected.name}
+                            </span>
+                          ) : (
+                            "Click to choose a file (PDF, PNG, JPG)"
+                          )}
+                        </span>
+                        <input
+                          type="file"
+                          accept=".pdf,.png,.jpg,.jpeg"
+                          className="hidden"
+                          onChange={(e) =>
+                            handleDocumentSelect(
+                              requirement,
+                              e.currentTarget.files?.[0] ?? null,
+                            )
+                          }
+                        />
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Business Justification */}

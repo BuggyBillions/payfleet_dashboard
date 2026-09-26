@@ -5,6 +5,7 @@ import { assets } from "../../assets/assets";
 import ThemeToggle from "../ThemeToggle";
 import { useUser } from "../../hooks/useUser";
 import { getUserService } from "../../services/authService";
+import { getUserDisplayName } from "../../helpers/formatterUtility";
 import type { UserProps } from "../../lib/interfaces";
 import { useUnreadNotificationsCount } from "../../hooks/useNotifications";
 
@@ -42,16 +43,10 @@ const TopNav: React.FC = () => {
   const currentUser = user || fetchedUser;
 
   const displayName = useMemo(() => {
-    if (!currentUser) return "Payfleet User";
-    if (currentUser.full_name?.trim()) return currentUser.full_name.trim();
-    if (currentUser.name?.trim()) return currentUser.name.trim();
-    const fullName = `${currentUser.first_name || ""} ${currentUser.last_name || ""}`.trim();
-    if (fullName) return fullName;
-    if (currentUser.company_name?.trim()) return currentUser.company_name.trim();
-    if (currentUser.company_details?.name?.trim()) return currentUser.company_details.name.trim();
-    if (currentUser.username?.trim()) return currentUser.username.trim();
-    if (currentUser.email?.trim()) return currentUser.email.split("@")[0];
-    return "Payfleet User";
+    return (
+      getUserDisplayName(currentUser as Record<string, unknown> | null) ||
+      "Payfleet User"
+    );
   }, [currentUser]);
 
   const displayRole = useMemo(() => {

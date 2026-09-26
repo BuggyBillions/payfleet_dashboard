@@ -199,6 +199,47 @@ export interface CompanyTierProp {
   created_at?: string;
 }
 
+export interface MyCompanyStatsResponse {
+  /** Every numeric metric the API returned, keyed by its normalised name. */
+  metrics: Record<string, number>;
+  totalEmployees: number;
+  totalStaff: number;
+  totalPayroll: number;
+  estimatedSalary: number;
+  totalPaid: number;
+  totalSalaryPaid: number;
+  totalPayments: number;
+  completedPayments: number;
+  pendingPayments: number;
+  totalDeposits: number;
+  totalDeductions: number;
+  totalCompanies: number;
+  companyBalance: number;
+  averageSalary: number;
+  averagePay: number;
+  raw: Record<string, unknown>;
+}
+
+export interface CompanyActivityLog {
+  id: number | string;
+  action: string;
+  description: string;
+  type: string;
+  subject: string;
+  actor: string;
+  ipAddress: string;
+  status: string;
+  createdAt: string;
+  raw: Record<string, unknown>;
+}
+
+export interface CompanyActivityLogListResponse {
+  items: CompanyActivityLog[];
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+}
+
 export interface CompanyDetailsProps {
   id: number;
   name: string;

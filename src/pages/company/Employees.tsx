@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { LuUsersRound } from "react-icons/lu";
-import { HiOutlineArrowTrendingUp, HiOutlineArrowTrendingDown } from "react-icons/hi2";
 import { TbReceiptDollar } from "react-icons/tb";
 import { IoSearchOutline } from "react-icons/io5";
 import { FiMinusCircle } from "react-icons/fi";
@@ -354,25 +353,21 @@ const Employees: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6">
         <OverviewCards
           icon={LuUsersRound}
-          icon2={HiOutlineArrowTrendingUp}
           title="Total Employees"
           value={totalItems}
         />
         <OverviewCards
           icon={LuUsersRound}
-          icon2={HiOutlineArrowTrendingUp}
           title="On Payroll"
           value={onPayrollCount}
         />
         <OverviewCards
           icon={TbReceiptDollar}
-          icon2={HiOutlineArrowTrendingDown}
           title="Total Payroll"
           value={formatterUtility(totalPayroll)}
         />
         <OverviewCards
           icon={TbReceiptDollar}
-          icon2={HiOutlineArrowTrendingDown}
           title="Average Pay"
           value={formatterUtility(averagePay)}
         />

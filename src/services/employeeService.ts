@@ -209,8 +209,9 @@ export const getEmployeeDeductions = async (
 
 export const getBanks = async (search = ""): Promise<Bank[]> => {
   const res = await api.get("/all-banks", { params: { search } });
-  const data = res.data?.data ?? res.data;
-  if (!Array.isArray(data)) return [];
+  const raw =
+    res.data?.data?.data ?? res.data?.data ?? res.data?.banks ?? res.data;
+  const data = Array.isArray(raw) ? raw : [];
 
   return data
     .map((bank) => ({

@@ -15,6 +15,7 @@ import Employees from "./pages/company/Employees";
 import AddEmployee from "./pages/company/AddEmployee";
 import ProcessPayments from "./pages/company/ProcessPayments";
 import PaymentHistory from "./pages/company/PaymentHistory";
+import ActivityLog from "./pages/company/ActivityLog";
 import Settings from "./pages/company/Settings";
 import SuperAdminOverview from "./pages/superadmin/Overview";
 import FinancialOverview from "./pages/financial/Overview";
@@ -103,6 +104,16 @@ function App() {
             <MainLayout
               pageName="Notifications"
               children={<Notifications />}
+            />
+          }
+        />
+        <Route
+          index
+          path="/dashboard/activity-log"
+          element={
+            <MainLayout
+              pageName="Activity Log"
+              children={<ActivityLog />}
             />
           }
         />
