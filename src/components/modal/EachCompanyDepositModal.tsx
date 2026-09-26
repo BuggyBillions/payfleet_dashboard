@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import Modal from "./Modal";
 import { toast } from "sonner";
-import { LuLoader, LuWallet } from "react-icons/lu";
+import { LuLoader, LuWallet, LuCopy, LuCheck } from "react-icons/lu";
 import StatusBadge from "../ui/StatusBadge";
 import type { CompanyDeposit } from "../../services/depositService";
 import { getEachCompanyDeposit } from "../../services/depositService";
 import { getErrorMessage } from "../../helpers/api";
 import { formatterUtility } from "../../helpers/formatterUtility";
+import { copyToClipboard } from "../../helpers/clipboardHelper";
 
 interface EachCompanyDepositModalProps {
   depositId: number | string;
@@ -51,6 +52,15 @@ const EachCompanyDepositModal: React.FC<EachCompanyDepositModalProps> = ({
   const [deposit, setDeposit] = useState<Partial<CompanyDeposit> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const handleCopy = async (text: string, label: string) => {
+    const success = await copyToClipboard(text, label);
+    if (success) {
+      setCopiedField(label);
+      setTimeout(() => setCopiedField(null), 2000);
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -77,8 +87,8 @@ const EachCompanyDepositModal: React.FC<EachCompanyDepositModalProps> = ({
   const displayEmail = deposit?.company?.email || deposit?.email || "";
   const transactionDescription = deposit?.transaction?.description || "";
 
-  const details: Array<{ label: string; value: string }> = [
-    { label: "Reference", value: getReference(deposit || {}) },
+  const details: Array<{ label: string; value: string; copyable?: boolean }> = [
+    { label: "Reference", value: getReference(deposit || {}), copyable: true },
     { label: "Amount", value: formatterUtility(amount) },
     {
       label: "Method",
@@ -99,6 +109,7 @@ const EachCompanyDepositModal: React.FC<EachCompanyDepositModalProps> = ({
     {
       label: "Account Number",
       value: deposit?.account_number ? String(deposit.account_number) : "—",
+      copyable: Boolean(deposit?.account_number && deposit.account_number !== "—"),
     },
     {
       label: "Account Name",
@@ -161,9 +172,25 @@ const EachCompanyDepositModal: React.FC<EachCompanyDepositModalProps> = ({
                   key={item.label}
                   className="bg-secondary/50 p-3 rounded-lg border border-primary/10 space-y-1"
                 >
-                  <p className="text-xs text-textBlack/60 font-medium">
-                    {item.label}
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-textBlack/60 font-medium">
+                      {item.label}
+                    </p>
+                    {item.copyable && item.value && item.value !== "—" && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(item.value, item.label)}
+                        className="text-textBlack/40 hover:text-primary transition cursor-pointer p-0.5"
+                        title={`Copy ${item.label}`}
+                      >
+                        {copiedField === item.label ? (
+                          <LuCheck size={12} className="text-emerald-500" />
+                        ) : (
+                          <LuCopy size={12} />
+                        )}
+                      </button>
+                    )}
+                  </div>
                   <p className="text-sm font-medium text-textBlack truncate">
                     {item.value}
                   </p>

@@ -12,11 +12,12 @@ interface ChangeTierModalProps {
 
 const ChangeTierModal: React.FC<ChangeTierModalProps> = ({ company, onClose }) => {
   const { data: dynamicTiers = [], isLoading: loadingTiers } = useAllTiers();
-  const [selectedTier, setSelectedTier] = useState<number | string>(
-    typeof company.tier === "object" && company.tier !== null
-      ? (company.tier as { id?: number | string }).id || 1
-      : company.tier || 1
-  );
+  const [selectedTier, setSelectedTier] = useState<number | string>(() => {
+    if (typeof company.tier === "object" && company.tier !== null) {
+      return (company.tier as { id?: number | string }).id || 1;
+    }
+    return (company.tier as number | string) || 1;
+  });
   const [notes, setNotes] = useState<string>("");
 
   const updateMutation = useUpdateCompanyTier();

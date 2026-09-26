@@ -129,7 +129,7 @@ const MainLayout = ({
               {/* Left Navigation */}
               <button
                 type="button"
-                className="lg:hidden rounded-full block"
+                className="lg:hidden rounded-full block text-textBlack"
                 onClick={() => setIsOpen(false)}
               >
                 <FaXmark size={21} />

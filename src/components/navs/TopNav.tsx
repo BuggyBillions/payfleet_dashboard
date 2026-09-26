@@ -10,35 +10,32 @@ import type { UserProps } from "../../lib/interfaces";
 import { useUnreadNotificationsCount } from "../../hooks/useNotifications";
 
 const TopNav: React.FC = () => {
-  const { user, role, token, refreshUser } = useUser();
+  const { user, role, loading } = useUser();
   const [fetchedUser, setFetchedUser] = useState<UserProps | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const unreadCount = useUnreadNotificationsCount({ refetchInterval: 15000 });
 
-  // Fetch user details on mount
+  const isCompanyUser = (role || user?.role || "").toLowerCase() === "company";
+  const unreadCount = useUnreadNotificationsCount({
+    enabled: isCompanyUser,
+    refetchInterval: isCompanyUser ? 15000 : false,
+  });
+
+  // Fetch user details on mount if not already in context
   useEffect(() => {
     let mounted = true;
-    getUserService()
-      .then((data) => {
-        if (!mounted) return;
-        if (data) {
-          setFetchedUser(data);
-        }
-        if (token) {
-          return refreshUser(token);
-        }
-      })
-      .catch((error) => {
-        console.error("Failed to fetch user details:", error);
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
+    if (!user) {
+      getUserService()
+        .then((data) => {
+          if (!mounted) return;
+          if (data) {
+            setFetchedUser(data);
+          }
+        })
+        .catch(() => undefined);
+    }
     return () => {
       mounted = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user]);
 
   const currentUser = user || fetchedUser;
 

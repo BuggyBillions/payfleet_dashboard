@@ -31,7 +31,6 @@ import FinancialManageDeposit from "./pages/financial/ManageDeposit";
 import SupportManageCompany from "./pages/support/ManageCompany";
 import SupportManageCompanyVerification from "./pages/support/ManageCompanyVerification";
 import Communication from "./pages/chat/Communication";
-import Verifyemail from "./pages/auth/Verifyemail";
 import Notifications from "./pages/company/Notifications";
 import ManageCompanyVerification from "./pages/superadmin/ManageCompanyVerification";
 import Deposits from "./pages/company/Deposits";
@@ -43,7 +42,6 @@ function App() {
       <Routes>
         <Route index path="/" element={<Login />} />
         <Route path="/getstarted" element={<Register />} />
-        <Route path="/verify-email" element={<Verifyemail />} />
         <Route path="/forgotpassword" element={<Forgotpassword />} />
         <Route path="*" element={<NotFound />} />
         <Route

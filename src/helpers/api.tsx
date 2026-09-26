@@ -27,17 +27,41 @@ export const setupInterceptors = (logout: () => void) => {
       const isAuthEndpoint =
         url.includes("/login") ||
         url.includes("/register") ||
-        url.includes("/register") ||
         url.includes("/verify-otp") ||
         url.includes("/resend-otp") ||
         url.includes("/forgotpassword") ||
+        url.includes("/forgot-password") ||
         url.includes("/reset-password");
+
+      const isNonCriticalEndpoint =
+        url.includes("/company-notifications") ||
+        url.includes("/support/unread-count") ||
+        url.includes("/unread-count") ||
+        url.includes("/search");
 
       if (error.code === "ERR_NETWORK") {
         toast.error("No internet or server down");
-      } else if (error.response?.status === 401 && !isAuthEndpoint) {
-        toast.error("Session expired. Logging out...");
-        logout();
+      } else if (
+        error.response?.status === 401 &&
+        !isAuthEndpoint &&
+        !isNonCriticalEndpoint
+      ) {
+        // Only log out if token is actually rejected on core requests
+        const token = localStorage.getItem("token");
+        if (!token) {
+          logout();
+        } else {
+          // Check if error message explicitly indicates unauthenticated session
+          const msg = String(error.response?.data?.message || "").toLowerCase();
+          if (
+            msg.includes("unauthenticated") ||
+            msg.includes("token expired") ||
+            msg.includes("invalid token")
+          ) {
+            toast.error("Session expired. Please log in again.");
+            logout();
+          }
+        }
       }
       return Promise.reject(error);
     }
