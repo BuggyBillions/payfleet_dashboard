@@ -7,6 +7,7 @@ import ActionButton from "../../components/ui/ActionButton";
 import OverviewCards from "../../components/cards/OverviewCards";
 import { toast } from "sonner";
 import { formatShortDate, formatterUtility } from "../../helpers/formatterUtility";
+import { copyToClipboard } from "../../helpers/clipboardHelper";
 import type { TableColumnProps } from "../../lib/interfaces";
 import {
   getInitialCompanyPayments,
@@ -267,13 +268,10 @@ const SuperAdminManagePayments: React.FC = () => {
   };
 
   const handleCopy = async (text: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
+    const success = await copyToClipboard(text, label);
+    if (success) {
       setCopiedRef(text);
-      toast.success(`${label} copied to clipboard`);
       setTimeout(() => setCopiedRef(null), 2000);
-    } catch {
-      toast.error("Failed to copy");
     }
   };
 

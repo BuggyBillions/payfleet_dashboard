@@ -146,6 +146,25 @@ export const formatShortDate = (dateInput: string | Date) => {
   return formattedDate;
 };
 
+/**
+ * Formats a date string or Date object into localized "Month Day, Year, hh:mm AM/PM"
+ * e.g., "2026-09-26T07:09:19Z" -> "Sep 26, 2026, 08:09 AM"
+ */
+export const formatDateTime = (dateInput?: string | Date | null): string => {
+  if (!dateInput) return "—";
+  const dateObj = new Date(dateInput);
+  if (isNaN(dateObj.getTime())) return String(dateInput);
+
+  return dateObj.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
 export function getFormattedDate() {
   const now = new Date();
 

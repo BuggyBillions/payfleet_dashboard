@@ -16,11 +16,13 @@ export const useCompanies = ({
   searchTerm = "",
   per_page = 10,
   status = "all",
-}: GetCompaniesParams = {}) => {
+  enabled = true,
+}: GetCompaniesParams & { enabled?: boolean } = {}) => {
   return useQuery<CompanyListResponse>({
     queryKey: ["companies", page, searchTerm, per_page, status],
     queryFn: () => getCompaniesService({ page, searchTerm, per_page, status }),
     placeholderData: (prev) => prev,
+    enabled,
   });
 };
 

@@ -2,7 +2,6 @@ import React from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { toast } from "sonner";
-import { FiShield } from "react-icons/fi";
 import Modal from "./Modal";
 import api, { getErrorMessage } from "../../helpers/api";
 
@@ -53,9 +52,7 @@ const OtpModal: React.FC<OtpModalProps> = ({
   return (
     <Modal onClose={onClose}>
       <div className="py-4 flex flex-col items-center text-center">
-        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-          <FiShield size={22} className="text-primary" />
-        </div>
+       
 
         <h2 className="text-lg font-semibold">{title}</h2>
         <p className="text-sm text-gray-500 max-w-xs">

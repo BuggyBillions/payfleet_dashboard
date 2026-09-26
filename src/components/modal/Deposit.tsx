@@ -13,6 +13,7 @@ import {
   LuLoader,
   LuChevronRight,
   LuChevronLeft,
+  LuShieldCheck,
   LuClock,
 } from "react-icons/lu";
 import { BsArrowLeftRight } from "react-icons/bs";
@@ -64,9 +65,8 @@ const Deposit: React.FC<DepositModalProps> = ({
 
   // Simulation verification state in waiting screen
   const [isReceived, setIsReceived] = useState(false);
-  const [reference, setReference] = useState(
-    () => `PF-DEP-${Math.floor(100000 + Math.random() * 900000)}`
-  );
+  const [reference, setReference] = useState("");
+  const [depositStatus, setDepositStatus] = useState<"pending" | "successful">("pending");
 
   // Bank search and account queries (/all-banks and /get-account)
   const [bankSearchTerm, setBankSearchTerm] = useState("");
@@ -85,6 +85,11 @@ const Deposit: React.FC<DepositModalProps> = ({
       setIsInitialLoading(false);
     }, 5000);
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const randomRef = `PF-DEP-${Math.floor(100000 + Math.random() * 900000)}`;
+    setReference(randomRef);
   }, []);
 
   // Expiry timer for transfer details
@@ -114,6 +119,7 @@ const Deposit: React.FC<DepositModalProps> = ({
     // Simulate approval completing after 5 minutes (300 seconds) out of the 10 minutes
     const approvalTimer = setTimeout(() => {
       setIsReceived(true);
+      setDepositStatus("successful");
 
       // Transition to success screen after 1.2 seconds of showing Received checkmark
       setTimeout(() => {
@@ -205,6 +211,7 @@ const Deposit: React.FC<DepositModalProps> = ({
     setView("waiting_confirmation");
     setWaitingSeconds(TOTAL_WAITING_SECONDS);
     setIsReceived(false);
+    setDepositStatus("pending");
 
     // Immediately record the pending deposit
     const pendingDeposit: DemoDeposit = {
@@ -223,6 +230,7 @@ const Deposit: React.FC<DepositModalProps> = ({
     const elapsedSeconds = TOTAL_WAITING_SECONDS - waitingSeconds;
     if (elapsedSeconds < APPROVAL_WAIT_SECONDS) {
       const remainingForApproval = APPROVAL_WAIT_SECONDS - elapsedSeconds;
+      const response = api.
       toast.info(
         `Transaction is under review by Finance team (Pending). Estimated approval in ${formatTime(
           remainingForApproval
