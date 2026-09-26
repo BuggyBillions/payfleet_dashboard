@@ -21,6 +21,7 @@ import {
   useMarkMessagesAsRead,
 } from "../../hooks/useSupportChat";
 import { useUser } from "../../hooks/useUser";
+import Modal from "../modal/Modal";
 
 export interface PresetOption {
   id: string;
@@ -236,17 +237,16 @@ const FloatingContactWidget: React.FC = () => {
             <div className="bg-primary text-textWhite px-5 py-4 flex items-center justify-between shadow-xs">
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-textWhite/15 border border-textWhite/20 flex items-center justify-center text-textWhite">
+                  <div className="w-10 h-10 rounded-full bg-textWhite/15 border border-textWhite/20 flex items-center justify-center text-white">
                     <RiCustomerService2Fill size={22} />
                   </div>
-                  {/* <span className=" rounded-full bg-green-400 border-2 border-primary" /> */}
                   <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-400 animate-pulse" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-sm leading-tight text-textWhite">
+                  <h4 className="font-semibold text-sm leading-tight text-white">
                     Payfleet Help Desk
                   </h4>
-                  <div className="flex items-center gap-1.5 text-[11px] text-textWhite/80">
+                  <div className="flex items-center gap-1.5 text-[11px] text-white/80">
                     <span>Support Agents Online</span>
                   </div>
                 </div>
@@ -255,7 +255,7 @@ const FloatingContactWidget: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="w-8 h-8 rounded-full bg-textWhite/10 hover:bg-textWhite/20 text-textWhite flex items-center justify-center transition cursor-pointer"
+                className="w-8 h-8 rounded-full bg-textWhite/10 hover:bg-textWhite/20 text-white flex items-center justify-center transition cursor-pointer"
               >
                 <LuX size={18} />
               </button>
@@ -267,8 +267,8 @@ const FloatingContactWidget: React.FC = () => {
                 type="button"
                 onClick={() => setActiveTab("chat")}
                 className={`py-2.5 text-center transition border-b-2 cursor-pointer ${activeTab === "chat"
-                    ? "border-primary text-primary bg-textWhite font-bold"
-                    : "border-transparent text-textBlack/50 hover:text-textBlack/80"
+                  ? "border-primary text-primary bg-textWhite font-bold"
+                  : "border-b border-textBlack bg-tertiary text-textBlack/50 hover:text-textBlack/80"
                   }`}
               >
                 Live Chat
@@ -277,8 +277,8 @@ const FloatingContactWidget: React.FC = () => {
                 type="button"
                 onClick={() => setActiveTab("contact")}
                 className={`py-2.5 text-center transition border-b-2 cursor-pointer ${activeTab === "contact"
-                    ? "border-primary text-primary bg-textWhite font-bold"
-                    : "border-transparent text-textBlack/50 hover:text-textBlack/80"
+                  ? "border-primary text-primary bg-textWhite font-bold"
+                  : "border-b border-textBlack bg-tertiary text-textBlack/50 hover:text-textBlack/80"
                   }`}
               >
                 Contact Channels
@@ -287,7 +287,7 @@ const FloatingContactWidget: React.FC = () => {
 
             {/* TAB 1: LIVE CHAT */}
             {activeTab === "chat" && (
-              <div className="flex-1 flex flex-col justify-between overflow-hidden bg-gray-50/50">
+              <div className="flex-1 flex flex-col justify-between overflow-hidden bg-tertiary/50">
                 {/* Messages List */}
                 <div className="flex-1 p-4 overflow-y-auto space-y-3 styled-scrollbar">
                   {loadingMessages &&
@@ -307,8 +307,8 @@ const FloatingContactWidget: React.FC = () => {
                         >
                           <div
                             className={`max-w-[84%] px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed ${msg.sender === "user"
-                                ? "bg-primary text-textWhite rounded-br-xs shadow-xs"
-                                : "bg-textWhite text-textBlack/80 rounded-bl-xs shadow-2xs"
+                              ? "bg-primary text-white rounded-br-xs shadow-xs"
+                              : "bg-textWhite text-textBlack/80 rounded-bl-xs shadow-2xs"
                               }`}
                           >
                             <p>{msg.text}</p>
@@ -337,8 +337,8 @@ const FloatingContactWidget: React.FC = () => {
                             type="button"
                             onClick={() => handleSelectPreset(preset)}
                             className={`text-left p-2.5 rounded-xl text-xs font-medium border transition cursor-pointer flex items-center justify-between group ${preset.action === "live_agent"
-                                ? "bg-primary/10 hover:bg-primary/15 border-primary/30 text-primary font-semibold"
-                                : "bg-textWhite hover:bg-gray-50 border-gray-200/80 text-gray-700 shadow-2xs"
+                              ? "bg-primary/10 hover:bg-primary/15 border-primary/30 text-primary font-semibold"
+                              : "bg-textWhite  text-textBlack/50 shadow-2xs"
                               }`}
                           >
                             <span className="truncate pr-1">{preset.label}</span>
@@ -353,7 +353,7 @@ const FloatingContactWidget: React.FC = () => {
 
                   {/* Sending Indicator */}
                   {sendMessageMutation.isPending && (
-                    <div className="flex items-center gap-1 bg-textWhite border border-gray-100 px-3 py-2 rounded-2xl w-14 shadow-2xs">
+                    <div className="flex items-center gap-1 px-3 py-2 rounded-2xl w-14 shadow-2xs">
                       <span className="w-1.5 h-1.5 rounded-full bg-textBlack animate-bounce" />
                       <span className="w-1.5 h-1.5 rounded-full bg-textBlack animate-bounce [animation-delay:0.2s]" />
                       <span className="w-1.5 h-1.5 rounded-full bg-textBlack animate-bounce [animation-delay:0.4s]" />
@@ -373,14 +373,14 @@ const FloatingContactWidget: React.FC = () => {
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     placeholder="Type your message to an agent..."
-                    className="flex-1 h-10 px-3.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-textWhite focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none transition"
+                    className="flex-1 h-10 px-3.5 text-xs bg-tertiary border text-textBlack border-gray-200 rounded-xl focus:bg-textWhite focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none transition"
                   />
                   <button
                     type="submit"
                     disabled={
                       !inputValue.trim() || sendMessageMutation.isPending
                     }
-                    className="w-10 h-10 rounded-xl bg-primary text-textWhite flex items-center justify-center hover:bg-primary/95 disabled:bg-gray-200 disabled:text-textBlack disabled:cursor-not-allowed transition cursor-pointer shrink-0 shadow-xs"
+                    className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center hover:bg-primary/95 disabled:bg-gray-200 disabled:text-white disabled:cursor-not-allowed transition cursor-pointer shrink-0 shadow-xs"
                     title="Send message to live agent"
                   >
                     <LuSend size={15} />
@@ -391,7 +391,7 @@ const FloatingContactWidget: React.FC = () => {
 
             {/* TAB 2: CONTACT CHANNELS */}
             {activeTab === "contact" && (
-              <div className="flex-1 p-5 overflow-y-auto space-y-4 bg-gray-50/50">
+              <div className="flex-1 p-5 overflow-y-auto space-y-4 bg-tertiary/50 styled-scrollbar">
                 <div className="space-y-1">
                   <h4 className="text-xs font-bold text-textBlack/80">
                     Direct Support Lines
