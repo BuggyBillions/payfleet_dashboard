@@ -8,7 +8,6 @@ import { IoSearchOutline } from "react-icons/io5";
 import { FiMinusCircle } from "react-icons/fi";
 import ReusableTable from "../../utility/ReusableTable";
 import OverviewCards from "../../components/cards/OverviewCards";
-import EditEmployeeModal from "../../components/modal/EditEmployeeModal";
 import ReduceSalaryModal from "../../components/modal/ReduceSalaryModal";
 import ConfirmDialog from "../../components/modal/ConfirmDialog";
 import ActionCell from "../../components/ui/ActionCell";
@@ -48,7 +47,6 @@ const Employees: React.FC = () => {
   const [debouncedDeductionSearch, setDebouncedDeductionSearch] = useState("");
   const [deductionPage, setDeductionPage] = useState(1);
   const [deductionItemsPerPage, setDeductionItemsPerPage] = useState(5);
-  const [editing, setEditing] = useState<Employee | null>(null);
   const [deductTarget, setDeductTarget] = useState<Employee | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
 
@@ -168,11 +166,6 @@ const Employees: React.FC = () => {
     },
   });
 
-  const handleSaved = () => {
-    setEditing(null);
-    invalidate();
-  };
-
   const handleDeductSaved = () => {
     setDeductTarget(null);
   };
@@ -193,11 +186,7 @@ const Employees: React.FC = () => {
     { label: "Job Title", key: "job_title" },
     {
       label: "Employment Type",
-      render: (item) => (
-        <span className="inline-flex items-center px-2 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-medium capitalize">
-          {item.employment_type}
-        </span>
-      ),
+      render: (item) => <span className="capitalize">{item.employment_type}</span>,
     },
     {
       label: "Pay",
@@ -212,23 +201,14 @@ const Employees: React.FC = () => {
       render: (item) => {
         const row = deductionByEmployee.get(String(item.id));
         const amount = Number(row?.amount ?? item.deduction_amount ?? 0);
-        const months = Number(row?.no_of_month ?? 0);
 
         if (!amount) {
           return <span className="text-textBlack/40">—</span>;
         }
 
         return (
-          <span className="inline-flex items-center gap-1.5">
-
-            <span className="font-semibold text-red-600">
-              -{formatterUtility(amount)}
-            </span>
-            {months > 0 && (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-600 text-[10px] font-medium">
-                {months} {months === 1 ? "month" : "months"}
-              </span>
-            )}
+          <span className="font-semibold text-red-600">
+            -{formatterUtility(amount)}
           </span>
         );
       },
@@ -238,7 +218,7 @@ const Employees: React.FC = () => {
       render: (item) => (
         <ActionCell
           rowId={item.id}
-          onEdit={() => setEditing(item)}
+          onEdit={(rowId) => navigate(`/dashboard/employees/edit/${rowId}`)}
           onDelete={() => setDeleteTarget(item)}
           otherActions={[
             {
@@ -292,7 +272,7 @@ const Employees: React.FC = () => {
     {
       label: "Months",
       render: (item) => (
-        <span className="inline-flex items-center px-2 py-1 rounded-full bg-red-500/10 text-red-600 text-[10px] font-medium">
+        <span>
           {item.no_of_month} {item.no_of_month === 1 ? "month" : "months"}
         </span>
       ),
@@ -452,14 +432,6 @@ const Employees: React.FC = () => {
             setItemsPerPage={setDeductionItemsPerPage}
           />
         </div>
-      )}
-
-      {editing && (
-        <EditEmployeeModal
-          employee={editing}
-          onClose={() => setEditing(null)}
-          onSaved={handleSaved}
-        />
       )}
 
       {deductTarget && (
