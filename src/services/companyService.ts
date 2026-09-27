@@ -119,6 +119,24 @@ export const updateCompanyDetails = async (
   return res.data?.data ?? res.data;
 };
 
+/**
+ * Update the 4-digit PIN that authorises employee payouts and wallet debits.
+ * The response is passed through as the backend sends it.
+ */
+export const updateCompanyPin = async (payload: {
+  current_pin: string;
+  new_pin: string;
+}): Promise<{ message?: string; [key: string]: unknown }> => {
+  const res = await api.post("/update-company-pin", {
+    current_pin: String(payload.current_pin),
+    new_pin: String(payload.new_pin),
+  });
+  return (res.data?.data ?? res.data) as {
+    message?: string;
+    [key: string]: unknown;
+  };
+};
+
 const pickNumber = (
   data: Record<string, unknown>,
   keys: string[],
