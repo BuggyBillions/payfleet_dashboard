@@ -1,14 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { LuCrown, LuLayers, LuLoader, LuFileText, LuUsersRound } from "react-icons/lu";
 import Modal from "../../components/modal/Modal";
 import OverviewCards from "../../components/cards/OverviewCards";
 import ReusableTable from "../../utility/ReusableTable";
 import ActionCell from "../../components/ui/ActionCell";
-import UpgradeTierModal from "../../components/modal/tier/UpgradeTierModal";
+import ConfirmDialog from "../../components/modal/ConfirmDialog";
 import type { TableColumnProps } from "../../lib/interfaces";
 import { getErrorMessage } from "../../helpers/api";
 import { useUser } from "../../hooks/useUser";
+import { useMyTierRequests, useRequestTierUpgrade } from "../../hooks/useTier";
 import {
   getTiers,
   getEachTier,
@@ -17,9 +18,18 @@ import {
   findCompanyTier,
   getCompanyLevel,
   sortTiersByLevel,
+  getMissingTierRequirements,
+  normalizeTierRequest,
 } from "../../services/tierService";
 
 const getRequirements = getTierRequirements;
+
+const humanize = (value: string): string =>
+  value
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 
 const getTierName = (t: Partial<Tier>): string => String(t.name ?? "");
 const getTierLevel = (t: Partial<Tier>): string => String(t.level ?? "—");
@@ -162,15 +172,37 @@ const TierDetailModal: React.FC<{
   );
 };
 
-const TierSettings: React.FC = () => {
-  const { user } = useUser();
+const TierSettings: React.FC<{ onGoToProfile?: () => void }> = ({ onGoToProfile }) => {
+  const { user, token, refreshUser } = useUser();
 
   const [tiers, setTiers] = useState<Tier[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [detail, setDetail] = useState<{ id: number | string; fallback: Tier | null } | null>(null);
-  const [upgrading, setUpgrading] = useState<Tier | null>(null);
+  const [pendingUpgrade, setPendingUpgrade] = useState<{ tier: Tier; missing: string[] } | null>(null);
+  const [upgradingId, setUpgradingId] = useState<number | string | null>(null);
+
+  const upgradeMutation = useRequestTierUpgrade();
+
+  // The company's own pending tier requests, so an upgrade that is awaiting
+  // review is visible on the page as well as right after submitting.
+  const { data: myRequests = [], isLoading: loadingRequests, refetch: refetchRequests } =
+    useMyTierRequests("pending");
+
+  const loadTiers = useCallback(() => {
+    setLoading(true);
+    return getTiers()
+      .then((data: Tier[]) => {
+        setTiers(sortTiersByLevel(data));
+      })
+      .catch(() => {
+        toast.error("Failed to load tiers");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -198,9 +230,58 @@ const TierSettings: React.FC = () => {
       ? `Level ${currentLevel}`
       : "—";
 
+  const pendingRequests = useMemo(
+    () => myRequests.map((r) => normalizeTierRequest(r, tiers)),
+    [myRequests, tiers],
+  );
+
+  const pendingTierIds = useMemo(
+    () =>
+      new Set(
+        pendingRequests
+          .map((r) => r.requestedTierId)
+          .filter((id): id is number => id !== null),
+      ),
+    [pendingRequests],
+  );
+
   const handleView = (id: number | string) => {
     const found = tiers.find((t) => t.id === id) ?? null;
     setDetail({ id, fallback: found });
+  };
+
+  const submitUpgrade = (tier: Tier) => {
+    // The id space is shared with `/me` (`company_details.tier.id`), so the
+    // target plan is addressed by the id from the `/all-tiers` table.
+    const requestedTier = Number(tier.id);
+    if (!Number.isFinite(requestedTier) || requestedTier <= 0) {
+      toast.error("This plan has an invalid id and cannot be requested.");
+      return;
+    }
+
+    setUpgradingId(tier.id ?? null);
+    upgradeMutation.mutate(
+      { requested_tier: requestedTier },
+      {
+        onSettled: () => setUpgradingId(null),
+        onSuccess: async () => {
+          setPendingUpgrade(null);
+          await Promise.all([loadTiers(), refetchRequests()]);
+          if (token) await refreshUser(token);
+        },
+      }
+    );
+  };
+
+  const handleUpgrade = (tier: Tier) => {
+    const missing = getMissingTierRequirements(tier, user?.company_details as Record<string, unknown> | undefined);
+
+    if (missing.length > 0) {
+      setPendingUpgrade({ tier, missing });
+      return;
+    }
+
+    submitUpgrade(tier);
   };
 
   const columns: TableColumnProps<Tier>[] = [
@@ -250,27 +331,38 @@ const TierSettings: React.FC = () => {
       render: (t) => {
         const tierLevel = Number(t.level ?? 0);
         const isCurrent = currentTierId !== null && Number(t.id) === currentTierId;
+        // The API rejects a second upgrade with 422 "You already have a pending
+        // tier upgrade request", so the action is withheld while one is open.
+        const isPending = t.id != null && pendingTierIds.has(Number(t.id));
         const canUpgrade =
           !isCurrent &&
+          !isPending &&
           (currentLevel === null || !Number.isFinite(tierLevel) || tierLevel > currentLevel);
 
         return (
-          <ActionCell
-            rowId={t.id ?? -1}
-            canView
-            onView={handleView}
-            otherActions={
-              canUpgrade
-                ? [
-                    {
-                      name: "Upgrade",
-                      icon: <LuCrown size={13} />,
-                      action: () => setUpgrading(t),
-                    },
-                  ]
-                : []
-            }
-          />
+          <div className="flex items-center gap-2">
+            {isPending && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-semibold whitespace-nowrap">
+                Pending Review
+              </span>
+            )}
+            <ActionCell
+              rowId={t.id ?? -1}
+              canView
+              onView={handleView}
+              otherActions={
+                canUpgrade
+                  ? [
+                      {
+                        name: upgradingId === (t.id ?? null) ? "Upgrading..." : "Upgrade",
+                        icon: <LuCrown size={13} />,
+                        action: () => handleUpgrade(t),
+                      },
+                    ]
+                  : []
+              }
+            />
+          </div>
         );
       },
     },
@@ -307,6 +399,51 @@ const TierSettings: React.FC = () => {
 
       <div className="bg-secondary rounded-xl p-4 border border-primary/10">
         <div className="flex flex-col mb-4">
+          <h3 className="font-semibold text-textBlack">My Tier Requests</h3>
+          <p className="text-xs text-textBlack/60">
+            Upgrade requests you have submitted and are awaiting review
+          </p>
+        </div>
+
+        {loadingRequests ? (
+          <div className="py-4 text-center text-xs text-textBlack/50 animate-pulse">
+            Loading tier requests...
+          </div>
+        ) : pendingRequests.length === 0 ? (
+          <div className="py-4 text-center text-xs text-textBlack/50">
+            You have no pending tier requests.
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {pendingRequests.map((request) => (
+              <div
+                key={request.id}
+                className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-primary/10 bg-white"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <LuLoader size={14} className="text-primary shrink-0" />
+                  <span className="text-xs font-semibold text-textBlack">
+                    {request.currentTierName}
+                    <span className="font-normal text-textBlack/50"> → </span>
+                    {request.requestedTierName}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-semibold uppercase">
+                    {request.status}
+                  </span>
+                  <span className="text-[11px] text-textBlack/50">
+                    {formatDate(request.createdAt)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-secondary rounded-xl p-4 border border-primary/10">
+        <div className="flex flex-col mb-4">
           <h3 className="font-semibold text-textBlack">Available Tiers</h3>
           <p className="text-xs text-textBlack/60">
             View available tiers and request an upgrade
@@ -334,10 +471,23 @@ const TierSettings: React.FC = () => {
         />
       )}
 
-      {upgrading && (
-        <UpgradeTierModal
-          defaultTier={upgrading.id}
-          onClose={() => setUpgrading(null)}
+      {pendingUpgrade && (
+        <ConfirmDialog
+          isOpen
+          title="Documents required"
+          cancelText="Cancel"
+          confirmText="Go to Profile"
+          isLoading={upgradeMutation.isPending}
+          message={`Before upgrading to ${getTierName(
+            pendingUpgrade.tier
+          )}, please upload the following on your company profile: ${pendingUpgrade.missing
+            .map(humanize)
+            .join(", ")}.`}
+          onCancel={() => setPendingUpgrade(null)}
+          onConfirm={() => {
+            setPendingUpgrade(null);
+            onGoToProfile?.();
+          }}
         />
       )}
     </div>

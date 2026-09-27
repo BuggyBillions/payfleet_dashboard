@@ -4,6 +4,7 @@ import type {
   TierItem,
   TierFormData,
 } from "../lib/interfaces";
+import type { DocumentKey } from "../lib/companyDocuments";
 
 export type { TierItem, TierFormData };
 export type Tier = TierItem;
@@ -83,6 +84,32 @@ const toPositiveNumber = (value: unknown): number | null => {
  *
  * Returns the company's level, or `null` when `/me` does not expose one.
  */
+/**
+ * The company's current tier id, taken from `GET /me`
+ * (`company_details.tier.id`). This is the same identifier space the
+ * `/all-tiers` table uses, so it is the authoritative match for "current plan".
+ */
+export const getCompanyTierId = (user: unknown): number | null => {
+  if (!user || typeof user !== "object") return null;
+
+  const u = user as Record<string, unknown>;
+  const company = (u.company_details ?? {}) as Record<string, unknown>;
+  const rawTier = company.tier ?? u.tier;
+  const tierObject =
+    rawTier && typeof rawTier === "object"
+      ? (rawTier as Record<string, unknown>)
+      : null;
+
+  return (
+    toPositiveNumber(tierObject?.id) ??
+    toPositiveNumber(company.tier_id) ??
+    toPositiveNumber(u.tier_id) ??
+    (typeof rawTier === "string" || typeof rawTier === "number"
+      ? toPositiveNumber(rawTier)
+      : null)
+  );
+};
+
 export const getCompanyLevel = (user: unknown): number | null => {
   if (!user || typeof user !== "object") return null;
 
@@ -113,8 +140,9 @@ export const getCompanyLevel = (user: unknown): number | null => {
 
 /**
  * Resolve the company's current plan from the tiers returned by `/all-tiers`.
- * Matching is done on `level` first (the authoritative signal), then falls back
- * to tier id and finally tier name so older `/me` payloads still resolve.
+ * Matching is done on tier id first (the id `/me` reports on
+ * `company_details.tier`), then falls back to level and finally tier name so
+ * older `/me` payloads still resolve.
  */
 export const findCompanyTier = (
   tiers: TierItem[] | null | undefined,
@@ -130,18 +158,18 @@ export const findCompanyTier = (
       ? (rawTier as Record<string, unknown>)
       : null;
 
-  // 1. Level match - the level the company is actually on.
+  // 1. Tier id match - the id `/me` reports for the current plan.
+  const currentId = getCompanyTierId(user);
+  if (currentId !== null) {
+    const byId = tiers.find((t) => toPositiveNumber(t?.id) === currentId);
+    if (byId) return byId;
+  }
+
+  // 2. Level match.
   const level = getCompanyLevel(user);
   if (level !== null) {
     const byLevel = tiers.find((t) => toPositiveNumber(t?.level) === level);
     if (byLevel) return byLevel;
-  }
-
-  // 2. Tier id match.
-  const id = toPositiveNumber(tierObject?.id);
-  if (id !== null) {
-    const byId = tiers.find((t) => toPositiveNumber(t?.id) === id);
-    if (byId) return byId;
   }
 
   // 3. Tier name match.
@@ -288,66 +316,57 @@ export const getTierConfig = (tier: unknown): FormattedTierConfig => {
 // ==========================================
 
 export interface RequestTierUpgradePayload {
-  company_id?: number | string;
-  company_name?: string;
-  company_email?: string;
-  current_tier?: number | string;
   requested_tier: number | string;
-  rc_number?: string;
-  tin_number?: string;
   director_name?: string;
   director_phone?: string;
   reason?: string;
+  rc_number?: string;
+  tin_number?: string;
   document?: File | null;
   documents?: File[];
   document_url?: string;
+  [key: string]: unknown
 }
 
 /**
- * Submit a tier upgrade request (Company)
+ * Move a company onto a different plan (Company).
+ * POST /move-tier  { "requested_tier": 2 }
+ *
+ * The endpoint only accepts the target plan id, so this sends plain JSON and no
+ * multipart body. Errors propagate so the mutation can surface a toast.
  */
-export const requestTierUpgradeService = async (payload: RequestTierUpgradePayload) => {
-  let resData;
-  try {
-    const files = (payload.documents ?? []).filter(
-      (file): file is File => file instanceof File,
-    );
-
-    const formData = new FormData();
-    Object.entries(payload).forEach(([key, val]) => {
-      if (key === "document" || key === "documents") return;
-      if (val !== undefined && val !== null) {
-        formData.append(key, String(val));
-      }
-    });
-
-    // `documents[]` carries every file the tier asked for. The first file is
-    // also sent as `document` so a single-file backend keeps working.
-    files.forEach((file) => formData.append("documents[]", file));
-    if (files.length > 0 && !payload.document) {
-      formData.append("document", files[0]);
-    }
-
-    const response = await api.post("/tier/request-upgrade", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-    resData = response.data;
-  } catch (err) {
-    // Graceful fallback for demo / mock environments
-    console.info("Tier upgrade API endpoint not found, recording locally:", err);
-  }
-
-
-  return resData;
+export const requestTierUpgradeService = async (
+  payload: RequestTierUpgradePayload,
+) => {
+  const response = await api.post("/move-tier", {
+    requested_tier: Number(payload.requested_tier),
+  });
+  return response.data;
 };
 
 /**
  * Get all tier upgrade requests (SuperAdmin / Admin)
  */
-export const getTierUpgradeRequestsService = async (): Promise<TierUpgradeRequest[]> => {
+export const getTierUpgradeRequestsService = async ({
+  searchTerm = "",
+  search = "",
+  page = 1,
+  per_page = 20,
+}: {
+  searchTerm?: string;
+  search?: string;
+  page?: number;
+  per_page?: number;
+} = {}): Promise<TierUpgradeRequest[]> => {
+  const querySearch = (searchTerm || search || "").trim();
+  const params: Record<string, unknown> = {
+    page,
+    search: querySearch || undefined,
+    per_page,
+  };
   try {
-    const response = await api.get("/tier-requests").catch(async () => {
-      return await api.get("/all-tier-requests");
+    const response = await api.get("/tier-requests", {
+      params,
     });
     const resData = response.data;
     const rawList =
@@ -355,7 +374,52 @@ export const getTierUpgradeRequestsService = async (): Promise<TierUpgradeReques
       resData?.data ||
       resData?.requests ||
       (Array.isArray(resData) ? resData : []);
-    return Array.isArray(rawList) ? rawList : [];
+
+    const items: TierUpgradeRequest[] = Array.isArray(rawList)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ? rawList.map((item: Record<string, any>) => {
+          const comp = item.company || {};
+          const curTier = item.current_tier || item.currentTier;
+          const reqTier = item.requested_tier || item.requestedTier;
+
+          return {
+            id: item.id,
+            companyId: item.company_id || comp.id || item.companyId,
+            company_id: item.company_id || comp.id || item.companyId,
+            companyName: comp.name || item.company_name || item.companyName || "Company",
+            companyEmail: comp.email || item.company_email || item.companyEmail || "N/A",
+            companyPhone: comp.phone || item.phone || item.companyPhone || "N/A",
+            companyLogo: comp.logo || item.logo || null,
+            currentTier: curTier,
+            requestedTier: reqTier,
+            current_tier: curTier,
+            requested_tier: reqTier,
+            bvn: comp.bvn || item.bvn,
+            nin: comp.nin || item.nin,
+            cac: comp.cac || item.cac,
+            mermat: comp.mermat || item.mermat,
+            status_report: comp.status_report || item.status_report,
+            directorName: item.director_name || item.directorName || comp.director_name,
+            directorPhone: item.director_phone || item.directorPhone || comp.phone,
+            documentUrl: item.document_url || item.documentUrl,
+            documentName: item.document_name || item.documentName,
+            reason: item.reason || item.admin_note || item.notes,
+            status: item.status || "pending",
+            rejectionReason: item.admin_note || item.rejection_reason || item.rejectionReason,
+            admin_note: item.admin_note,
+            reviewed_by: item.reviewed_by,
+            reviewed_at: item.reviewed_at,
+            createdAt: item.created_at || item.createdAt || new Date().toISOString(),
+            created_at: item.created_at || item.createdAt,
+            updatedAt: item.updated_at || item.updatedAt,
+            updated_at: item.updated_at || item.updatedAt,
+            company: comp,
+            reviewer: item.reviewer,
+          };
+        })
+      : [];
+
+    return items;
   } catch (error) {
     console.warn("Could not fetch tier requests:", error);
     return [];
@@ -363,10 +427,98 @@ export const getTierUpgradeRequestsService = async (): Promise<TierUpgradeReques
 };
 
 /**
+ * The signed-in company's own tier requests.
+ * `GET /my-tier-request?search=<status>`
+ */
+export const getMyTierRequestsService = async (
+  search?: string,
+): Promise<TierUpgradeRequest[]> => {
+  try {
+    const response = await api.get("/my-tier-request", {
+      params: search ? { search } : undefined,
+    });
+    const resData = response.data;
+    const rawList =
+      resData?.data?.data ||
+      resData?.data ||
+      resData?.requests ||
+      (Array.isArray(resData) ? resData : []);
+    return Array.isArray(rawList) ? (rawList as TierUpgradeRequest[]) : [];
+  } catch (error) {
+    console.warn("Could not fetch my tier requests:", error);
+    return [];
+  }
+};
+
+const pick = (
+  obj: Record<string, unknown>,
+  ...keys: string[]
+): unknown => {
+  for (const key of keys) {
+    const value = obj[key];
+    if (value !== undefined && value !== null && value !== "") return value;
+  }
+  return undefined;
+};
+
+export interface MyTierRequest {
+  id: number | string;
+  status: string;
+  currentTierId: number | null;
+  requestedTierId: number | null;
+  currentTierName: string;
+  requestedTierName: string;
+  createdAt: string;
+  reason?: string;
+}
+
+/**
+ * Flatten a `/my-tier-request` row into a display shape. The endpoint returns
+ * snake_case while the app's own types are camelCase, and the tier columns hold
+ * ids, so plan names are resolved against the `/all-tiers` list.
+ */
+export const normalizeTierRequest = (
+  raw: unknown,
+  tiers: TierItem[] = [],
+): MyTierRequest => {
+  const r = (raw ?? {}) as Record<string, unknown>;
+
+  const currentTierId = toPositiveNumber(
+    pick(r, "current_tier", "currentTier", "current_tier_id", "from_tier", "old_tier"),
+  );
+  const requestedTierId = toPositiveNumber(
+    pick(r, "requested_tier", "requestedTier", "requested_tier_id", "tier_id", "tier"),
+  );
+
+  const nameFor = (id: number | null): string => {
+    if (id === null) return "—";
+    const match = tiers.find((t) => toPositiveNumber(t?.id) === id);
+    if (match?.name) return String(match.name);
+    const level = tiers.find((t) => toPositiveNumber(t?.level) === id);
+    return level?.name ? String(level.name) : `Tier ${id}`;
+  };
+
+  const reason = pick(r, "reason", "note", "notes", "comment");
+
+  return {
+    id: (pick(r, "id") ?? "") as number | string,
+    status: String(pick(r, "status", "state") ?? "pending").toLowerCase(),
+    currentTierId,
+    requestedTierId,
+    currentTierName: nameFor(currentTierId),
+    requestedTierName: nameFor(requestedTierId),
+    createdAt: String(
+      pick(r, "created_at", "createdAt", "requested_at", "date") ?? "",
+    ),
+    reason: reason === undefined ? undefined : String(reason),
+  };
+};
+
+/**
  * Get company's active tier upgrade requests
  */
 export const getCompanyTierRequestsService = async (companyId?: number | string): Promise<TierUpgradeRequest[]> => {
-  const all = await getTierUpgradeRequestsService();
+  const all = await getTierUpgradeRequestsService({});
   if (!Array.isArray(all)) return [];
   if (!companyId) return all;
   return all.filter((r) => String(r.companyId) === String(companyId) || String(r.companyId) === "current");
@@ -417,7 +569,7 @@ export const reviewTierRequestService = async ({
   companyId,
 }: {
   requestId: number | string;
-  status: "approved" | "rejected" | "approve" | "reject" | string;
+  status:  "approve" | "reject" | string;
   rejectionReason?: string;
   targetTier?: number | string;
   companyId?: number | string;
@@ -426,7 +578,7 @@ export const reviewTierRequestService = async ({
   try {
     const response = await api.post(`/review-tier-upgrade/${requestId}`, {
       action: status,
-      rejection_reason: rejectionReason,
+      admin_note: rejectionReason,
       tier: targetTier,
     });
     resData = response.data;
@@ -435,7 +587,7 @@ export const reviewTierRequestService = async ({
   }
 
   // If approved and companyId is provided, update company tier
-  if ((status === "approve" || status === "approved") && companyId && targetTier) {
+  if ((status === "approved") && companyId && targetTier) {
     await updateCompanyTierService({ companyId, tier: targetTier }).catch(() => { });
   }
 
@@ -444,14 +596,46 @@ export const reviewTierRequestService = async ({
 };
 
 /**
- * Move / upgrade company tier directly (alias for updateCompanyTierService)
+ * Move / upgrade company tier directly. Delegates to the same POST /move-tier
+ * endpoint the company upgrade modal uses.
  */
-export const moveTier = async (
-  tier: number | string,
-  companyId?: number | string
-) => {
-  return updateCompanyTierService({
-    companyId: companyId ?? "current",
-    tier,
+export const moveTier = async (tier: number | string) => {
+  return requestTierUpgradeService({ requested_tier: tier });
+};
+
+/**
+ * Map a tier requirement (e.g. "CAC", "MERMAT", "status_report") onto the
+ * company field that satisfies it. Tiers declare requirements as free text, so
+ * matching is done on keywords.
+ */
+export const requirementField = (
+  requirement: string,
+): DocumentKey | "bvn" | "nin" | null => {
+  const key = requirement.toLowerCase();
+  if (key.includes("cac")) return "cac";
+  if (key.includes("mermat") || key.includes("memart")) return "mermat";
+  if (key.includes("status")) return "status_report";
+  if (key.includes("logo")) return "logo";
+  if (key.includes("bvn")) return "bvn";
+  if (key.includes("nin")) return "nin";
+  return null;
+};
+
+/**
+ * Return the subset of a tier's requirements that the company has not
+ * satisfied yet. Requirements that cannot be mapped to a company field are
+ * ignored so they never block an upgrade.
+ */
+export const getMissingTierRequirements = (
+  tier: unknown,
+  companyDetails?: Record<string, unknown> | null,
+): string[] => {
+  const details = (companyDetails ?? {}) as Record<string, unknown>;
+
+  return getTierRequirements(tier).filter((requirement) => {
+    const field = requirementField(requirement);
+    if (!field) return false;
+    const value = details[field];
+    return !value || String(value).trim() === "";
   });
 };

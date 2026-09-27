@@ -1,5 +1,6 @@
 import React from "react";
 import type { IconType } from "react-icons/lib";
+import type { FormattedTierConfig } from "../services/tierService";
 
 // ==========================================
 // 1. CORE UI & COMPONENT TYPES
@@ -139,6 +140,7 @@ export interface OtherActionProps {
   name: string;
   icon?: React.ReactNode;
   action: () => void;
+  disabled?: boolean;
 }
 
 export interface ActionCellProps {
@@ -259,6 +261,8 @@ export interface CompanyDetailsProps {
   balance?: string | number;
   created_at?: string;
   updated_at?: string;
+  documentUrl?: string;
+  document_url?: string;
 }
 
 export interface UserProps {
@@ -396,10 +400,6 @@ export interface CompanyProps {
   updated_at?: string;
   address?: string;
   registeredAddress?: string;
-  rc_number?: string;
-  rcNumber?: string;
-  tin_number?: string;
-  tinNumber?: string;
   industry?: string;
   staffCount?: number;
   balance?: string | number;
@@ -688,21 +688,37 @@ export interface TierConfig {
 export interface TierUpgradeRequest {
   id: number | string;
   companyId: number | string;
+  company_id?: number | string;
   companyName: string;
   companyEmail: string;
-  currentTier: number | string;
-  requestedTier: number | string;
-  rcNumber?: string;
-  tinNumber?: string;
+  companyPhone?: string;
+  companyLogo?: string | null;
+  currentTier: number | string | TierItem | FormattedTierConfig;
+  requestedTier: number | string | TierItem | FormattedTierConfig;
+  current_tier?: TierItem | null;
+  requested_tier?: TierItem | null;
+  bvn?: string | null;
+  nin?: string | null;
+  cac?: string | null;
+  mermat?: string | null;
+  status_report?: string | null;
   directorName?: string;
   directorPhone?: string;
   documentUrl?: string;
   documentName?: string;
   reason?: string;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | string;
   rejectionReason?: string;
+  admin_note?: string | null;
+  reviewed_by?: string | number | null;
+  reviewed_at?: string | null;
   createdAt: string;
+  created_at?: string;
   updatedAt?: string;
+  updated_at?: string;
+  company?: CompanyProps;
+  reviewer?: unknown;
+  [key: string]: unknown;
 }
 
 export type VerificationStatus =
@@ -717,8 +733,6 @@ export interface CompanyVerificationItem {
   email: string;
   phone?: string;
   phoneNumber?: string;
-  rcNumber: string;
-  tinNumber: string;
   industry: string;
   staffCount: number;
   tier: string | number | CompanyTierProp;
@@ -806,6 +820,69 @@ export interface DemoPayment {
   method: string;
   status: StatusType;
   date: string;
+}
+
+export interface SalaryPaymentEmployee {
+  id: number | string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  job_title: string;
+  employment_type: string;
+  bank_name: string;
+  account_name: string;
+  account_number: string;
+  bank_code?: string;
+  estimate_pay: number | string;
+  deduction_amount: number | string | null;
+  paying?: string | number;
+}
+
+export interface SalaryPayment {
+  id: number | string;
+  employee_id: number | string;
+  employee_name: string;
+  amount: number;
+  payment_date: string;
+  reference: string;
+  status: StatusType;
+  created_at?: string;
+  updated_at?: string;
+  employee?: SalaryPaymentEmployee;
+}
+
+export interface SalaryPaymentMonth {
+  month: string;
+  month_key: string;
+  count: number;
+  total_amount: number;
+  successful_amount: number;
+  pending_amount: number;
+  failed_amount: number;
+  payments: SalaryPayment[];
+}
+
+export interface SalaryPaymentFilters {
+  search: string | null;
+  status: string;
+  month: string | null;
+  date_from: string | null;
+  date_to: string | null;
+}
+
+export interface SalaryPaymentResponse {
+  company: { id: number | string; name: string };
+  filters: SalaryPaymentFilters;
+  months: SalaryPaymentMonth[];
+  pagination: {
+    current_page: number;
+    per_page: number;
+    total_groups: number;
+    last_page: number;
+    has_more: boolean;
+  };
 }
 
 export interface DepositItemProps {

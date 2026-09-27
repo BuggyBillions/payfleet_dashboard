@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   DepositsProps,
   DemoDeposit,
@@ -17,6 +17,7 @@ import { FaPlus } from "react-icons/fa6";
 import { LuWallet, LuClock, LuCheck, LuCopy } from "react-icons/lu";
 import { copyToClipboard } from "../../helpers/clipboardHelper";
 import EachCompanyDepositModal from "../../components/modal/EachCompanyDepositModal";
+import Deposit from "../../components/modal/Deposit";
 import { useUser } from "../../hooks/useUser";
 import {
   getCompanyDeposits,
@@ -160,11 +161,10 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
     },
   ];
 
-  useEffect(() => {
-    let mounted = true;
-    getCompanyDeposits(companyId)
+  const loadDeposits = useCallback(() => {
+    setLoading(true);
+    return getCompanyDeposits(companyId)
       .then((items) => {
-        if (!mounted) return;
         const mapped: DepositRow[] = items.map((t) => {
           const transaction = t.transaction ?? ({} as Record<string, unknown>);
           const reference = String(
@@ -203,12 +203,13 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
       })
       .catch(() => undefined)
       .finally(() => {
-        if (mounted) setLoading(false);
+        setLoading(false);
       });
-    return () => {
-      mounted = false;
-    };
   }, [companyId]);
+
+  useEffect(() => {
+    loadDeposits();
+  }, [loadDeposits]);
 
   const totalBalance = useMemo(() => {
     return deposits
@@ -244,8 +245,12 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
     return Math.ceil(filteredDeposits.length / itemsPerPage) || 1;
   }, [filteredDeposits.length, itemsPerPage]);
 
+  // Clamp during render instead of syncing it back in an effect, so a search
+  // or filter that shrinks the result set cannot leave an empty page.
+  const safePage = Math.min(currentPage, totalPages);
+
   const paginatedDeposits = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
+    const start = (safePage - 1) * itemsPerPage;
     return filteredDeposits.slice(start, start + itemsPerPage);
   }, [filteredDeposits, currentPage, itemsPerPage]);
 
@@ -272,7 +277,7 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
           <ActionButton
             text="Deposit Funds"
             icon={<FaPlus />}
-            onClick={handleNavigate}
+            onClick={openDepositModal}
           />
         </div>
       </div>
@@ -309,7 +314,7 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
           data={paginatedDeposits}
           isLoading={loading}
           error={null}
-          currentPage={currentPage}
+          currentPage={safePage}
           totalPages={totalPages}
           totalItems={filteredDeposits.length}
           itemsPerPage={itemsPerPage}
@@ -322,6 +327,16 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
         <EachCompanyDepositModal
           depositId={viewDepositId}
           onClose={() => setViewDepositId(null)}
+        />
+      )}
+
+      {showDepositModal && (
+        <Deposit
+          companyId={companyId}
+          onClose={() => setShowDepositModal(false)}
+          onDepositSuccess={() => {
+            void loadDeposits();
+          }}
         />
       )}
     </div>

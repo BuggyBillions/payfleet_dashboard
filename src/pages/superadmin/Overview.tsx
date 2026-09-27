@@ -14,6 +14,7 @@ import { useCompanies, useCompanyStats } from "../../hooks/useCompany";
 import { useDeposits, useDepositStats } from "../../hooks/useDeposit";
 import { useStaffs, useStaffStats } from "../../hooks/useStaff";
 import { useAllTiers } from "../../hooks/useTier";
+import { useAdminStats } from "../../hooks/useAdminStats";
 import { useAdminSupportConversations } from "../../hooks/useSupportChat";
 import {
   getInitialCompanyPayments,
@@ -46,7 +47,10 @@ const SuperAdminOverview: React.FC = () => {
   const { user } = useUser();
   const navigate = useNavigate();
 
-  // 1. Company Data & Stats
+  // 1. Admin Platform Stats (GET /admin-stats)
+  const { data: adminStats, isLoading: isAdminStatsLoading } = useAdminStats();
+
+  // 2. Company Data & Stats
   const {
     data: companiesData,
     isLoading: isCompaniesLoading,
@@ -54,7 +58,7 @@ const SuperAdminOverview: React.FC = () => {
   } = useCompanies({ page: 1, per_page: 5 });
   const { data: companyStats } = useCompanyStats();
 
-  // 2. Deposits Data & Stats
+  // 3. Deposits Data & Stats
   const {
     data: depositsData,
     isLoading: isDepositsLoading,
@@ -62,17 +66,17 @@ const SuperAdminOverview: React.FC = () => {
   } = useDeposits({ page: 1, per_page: 5 });
   const { data: depositStats } = useDepositStats();
 
-  // 3. Staff Data & Stats
+  // 4. Staff Data & Stats
   const { data: staffData } = useStaffs({ page: 1, per_page: 5 });
   const { data: staffStats } = useStaffStats();
 
-  // 4. Tiers Data
+  // 5. Tiers Data
   const { data: tiersData } = useAllTiers();
 
-  // 5. Live Support Conversations
+  // 6. Live Support Conversations
   const { data: recentConversations = [] } = useAdminSupportConversations();
 
-  // 6. Recent Disbursements
+  // 7. Recent Disbursements
   const [payments] = useState<CompanyPaymentItem[]>(() =>
     getInitialCompanyPayments()
   );
@@ -84,45 +88,57 @@ const SuperAdminOverview: React.FC = () => {
   const tiersList: TierItem[] = Array.isArray(tiersData) ? tiersData : [];
 
   const totalCompanies =
-    companyStats?.totalCompanies ?? (companiesData?.totalItems || 0);
-  const activeCompanies = companyStats?.activeCompanies ?? 0;
-  const verifiedCompanies = companyStats?.verifiedCompanies ?? 0;
-  const pendingCompanies = companyStats?.pendingCompanies ?? 0;
+    adminStats?.totalCompanies ||
+    companyStats?.totalCompanies ||
+    (companiesData?.totalItems || 0);
+  const activeCompanies =
+    adminStats?.activeCompanies ?? (companyStats?.activeCompanies ?? 0);
+  const verifiedCompanies =
+    adminStats?.verifiedCompanies ?? (companyStats?.verifiedCompanies ?? 0);
+  const pendingCompanies =
+    adminStats?.pendingCompanies ?? (companyStats?.pendingCompanies ?? 0);
 
-  const totalClearedDeposits = depositStats?.successfulVolume ?? 0;
-  const pendingDepositsCount = depositStats?.pendingCount ?? 0;
-  const pendingDepositsVolume = depositStats?.pendingVolume ?? 0;
+  const totalClearedDeposits =
+    adminStats?.totalClearedDeposits || (depositStats?.successfulVolume ?? 0);
+  const pendingDepositsCount =
+    adminStats?.pendingDepositsCount ?? (depositStats?.pendingCount ?? 0);
+  const pendingDepositsVolume =
+    adminStats?.pendingDepositsVolume ?? (depositStats?.pendingVolume ?? 0);
 
   const successfulPayments = payments.filter((p) => p.status === "successful");
-  const totalDisbursed = successfulPayments.reduce(
-    (sum, p) => sum + p.amount,
-    0
-  );
+  const totalDisbursed =
+    adminStats?.totalDisbursed ||
+    successfulPayments.reduce((sum, p) => sum + p.amount, 0);
 
-  const totalPlatformVolume = totalClearedDeposits + totalDisbursed;
+  const totalPlatformVolume =
+    adminStats?.totalPlatformVolume ||
+    (totalClearedDeposits + totalDisbursed);
 
   const totalStaffCount =
-    staffStats?.totalStaff ?? (staffData?.totalItems || staffList.length);
-  const activeStaffCount = staffStats?.activeStaff ?? totalStaffCount;
+    adminStats?.totalStaff ||
+    staffStats?.totalStaff ||
+    (staffData?.totalItems || staffList.length);
+  const activeStaffCount =
+    adminStats?.activeStaff ?? (staffStats?.activeStaff ?? totalStaffCount);
   const financeOfficersCount =
-    staffStats?.financeStaff ??
-    (staffList.filter((s) => s.role?.toLowerCase().includes("finance")).length ||
-      6);
+    adminStats?.financeStaff ??
+    (staffStats?.financeStaff ??
+      (staffList.filter((s) => s.role?.toLowerCase().includes("finance")).length ||
+        6));
   const supportOfficersCount =
-    staffStats?.supportStaff ??
-    (staffList.filter((s) => s.role?.toLowerCase().includes("support")).length ||
-      4);
+    adminStats?.supportStaff ??
+    (staffStats?.supportStaff ??
+      (staffList.filter((s) => s.role?.toLowerCase().includes("support")).length ||
+        4));
   const superAdminsCount =
-    staffStats?.totalStaff
+    adminStats?.superAdmins ??
+    (staffStats?.totalStaff
       ? Math.max(
-        0,
-        staffStats.totalStaff -
-        (staffStats.financeStaff + staffStats.supportStaff)
-      ) || 2
-      : staffList.filter(
-        (s) =>
-          s.role?.toLowerCase().includes("admin")
-      ).length || 2;
+          0,
+          staffStats.totalStaff -
+            (staffStats.financeStaff + staffStats.supportStaff)
+        ) || 2
+      : staffList.filter((s) => s.role?.toLowerCase().includes("admin")).length || 2);
 
   // Recent 5 payments
   const recentPayments = payments.slice(0, 5);

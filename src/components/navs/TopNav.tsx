@@ -12,7 +12,7 @@ import { useUnreadNotificationsCount } from "../../hooks/useNotifications";
 import { CompanyLogoAvatar } from "../../helpers/logoHelper";
 
 const TopNav: React.FC = () => {
-  const { user, role, loading } = useUser();
+  const { user, role, token, loading } = useUser();
   const [fetchedUser, setFetchedUser] = useState<UserProps | null>(null);
 
   const isCompanyUser = (role || user?.role || "").toLowerCase() === "company";
@@ -25,7 +25,7 @@ const TopNav: React.FC = () => {
   useEffect(() => {
     let mounted = true;
     if (!user) {
-      getUserService()
+      getUserService(token ?? "")
         .then((data) => {
           if (!mounted) return;
           if (data) {
@@ -37,7 +37,7 @@ const TopNav: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, [user]);
+  }, [user, token]);
 
   const currentUser = user || fetchedUser;
 
@@ -49,8 +49,25 @@ const TopNav: React.FC = () => {
   }, [currentUser]);
 
   const displayRole = useMemo(() => {
+    // `GET /me` nests the plan as company_details.tier, which may be an object
+    // ({ id, name, level }) or a plain string on other payloads.
+    const rawTier =
+      (currentUser?.company_details?.tier as unknown) ??
+      (currentUser?.tier as unknown);
+
+    const tierName =
+      typeof rawTier === "string"
+        ? rawTier
+        : rawTier && typeof rawTier === "object"
+          ? String(
+              (rawTier as Record<string, unknown>).name ??
+                (rawTier as Record<string, unknown>).tier_name ??
+                "",
+            )
+          : "";
+
     return (
-      currentUser?.tier ||
+      tierName ||
       currentUser?.role ||
       role ||
       "starter"
