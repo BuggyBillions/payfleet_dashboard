@@ -44,9 +44,9 @@ function App() {
       <Routes>
         <Route
           index
-          path="/payment"
+          path="/payment/:token"
           element={
-            <Deposit onClose={() => navigate('/dashboard/deposits')} />
+            <Deposit onClose={() => navigate('/')}  />
           }
         />
         <Route index path="/" element={<Login />} />

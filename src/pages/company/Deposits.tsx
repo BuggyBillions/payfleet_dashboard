@@ -21,6 +21,7 @@ import {
 } from "../../services/depositService";
 import { FiSearch } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+import { decryptToken, encryptToken } from "../../helpers/tokenHelper";
 
 interface DepositRow extends Omit<DemoDeposit, "id"> {
   id: number | string;
@@ -46,7 +47,7 @@ const normalizeStatus = (status: CompanyDeposit["status"]): DemoDeposit["status"
 const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
 
   const navigate = useNavigate();
-  const { user } = useUser();
+  const { user, token } = useUser();
   const companyId = user?.company_details?.id;
   const [deposits, setDeposits] = useState<DepositRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,6 +55,12 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [viewDepositId, setViewDepositId] = useState<number | string | null>(null);
   const [copiedRef, setCopiedRef] = useState<string | null>(null);
+
+  const handleNavigate = async ()=> {
+    const encryptedToken = await encryptToken(token!);
+    navigate(`/payment/${encryptedToken}`)
+  
+  }
 
   const handleCopyRef = async (ref: string) => {
     const success = await copyToClipboard(ref, "Reference");
@@ -242,7 +249,7 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
           <ActionButton
             text="Deposit Funds"
             icon={<FaPlus />}
-            onClick={() => navigate("/payment")}
+            onClick={handleNavigate}
           />
         </div>
       </div>

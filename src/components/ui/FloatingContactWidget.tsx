@@ -290,7 +290,7 @@ const FloatingContactWidget: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveTab("chat")}
-                className={`py-2.5 text-center transition border-b-2 cursor-pointer ${activeTab === "chat"
+                className={`py-2.5 text-center transition border-b cursor-pointer ${activeTab === "chat"
                   ? "border-primary text-primary bg-textWhite font-bold"
                   : "border-b border-textBlack bg-tertiary text-textBlack/50 hover:text-textBlack/80"
                   }`}
@@ -300,7 +300,7 @@ const FloatingContactWidget: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveTab("contact")}
-                className={`py-2.5 text-center transition border-b-2 cursor-pointer ${activeTab === "contact"
+                className={`py-2.5 text-center transition border-b cursor-pointer ${activeTab === "contact"
                   ? "border-primary text-primary bg-textWhite font-bold"
                   : "border-b border-textBlack bg-tertiary text-textBlack/50 hover:text-textBlack/80"
                   }`}
@@ -340,7 +340,7 @@ const FloatingContactWidget: React.FC = () => {
                           <div className="flex items-center gap-1 mt-1 px-1 text-[9px] text-textBlack/60">
                             {msg.time && <span>{msg.time}</span>}
                             {msg.sender === "user" && (
-                              <span className="flex items-center inline-flex">
+                              <span className="flex items-center">
                                 {renderWidgetStatusTick(msg.status)}
                               </span>
                             )}
@@ -495,23 +495,23 @@ const FloatingContactWidget: React.FC = () => {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen((prev) => !prev)}
-        className="relative group h-14 px-4 rounded-full bg-primary hover:bg-primary/95 text-white shadow-xl hover:shadow-2xl flex items-center gap-2.5 transition cursor-pointer border-2 border-textWhite/20"
+        className="relative group p-2 md:p-4 rounded-full bg-primary hover:bg-primary/95 text-white shadow-xl hover:shadow-2xl flex items-center gap-2.5 transition cursor-pointer border-2 border-textWhite/20 group outline-none"
       >
         {/* Pulsing online indicator */}
         <span className="relative flex h-3 w-3">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-green-400 border border-textWhite" />
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 " />
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-green-400 border border-none" />
         </span>
 
         {isOpen ? (
           <>
             <LuX size={20} className="text-white" />
-            <span className="text-xs font-bold pr-1">Close</span>
+            <span className="text-xs font-bold pr-1 hidden group-hover:flex">Close</span>
           </>
         ) : (
           <>
             <BsChatDotsFill size={18} className="text-white" />
-            <span className="text-xs font-bold pr-1">Support Chat</span>
+            <span className="text-xs font-bold pr-1 hidden group-hover:flex">Support Chat</span>
             {unreadCount > 0 && (
               <span className="px-1.5 py-0.5 text-[10px] font-bold bg-amber-400 text-white rounded-full animate-bounce">
                 {unreadCount}
