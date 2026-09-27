@@ -8,6 +8,7 @@ import {
   deleteTierService,
   getTierUpgradeRequestsService,
   getCompanyTierRequestsService,
+  getMyTierRequestsService,
   requestTierUpgradeService,
   updateCompanyTierService,
   reviewTierRequestService,
@@ -16,6 +17,18 @@ import {
 } from "../services/tierService";
 import { getErrorMessage } from "../helpers/api";
 
+
+/**
+ * Hook to fetch the signed-in company's tier requests
+ * GET /my-tier-request?search=...
+ */
+export const useMyTierRequests = (search?: string) => {
+  return useQuery({
+    queryKey: ["tiers", "my-requests", search ?? "all"],
+    queryFn: () => getMyTierRequestsService(search),
+    staleTime: 30000,
+  });
+};
 
 /**
  * Hook to fetch all configured platform tiers
@@ -120,13 +133,18 @@ export const useRequestTierUpgrade = () => {
 
   return useMutation({
     mutationFn: (payload: RequestTierUpgradePayload) => requestTierUpgradeService(payload),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["tiers"] });
       queryClient.invalidateQueries({ queryKey: ["tier"] });
       queryClient.invalidateQueries({ queryKey: ["companies"] });
-      toast.success("Tier upgrade request submitted successfully! Our compliance team will review your application.");
+      queryClient.invalidateQueries({ queryKey: ["auth"] });
+      toast.success(res?.message || "Plan upgraded successfully!");
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error, "Failed to submit tier upgrade request"));
+      // A 422 here means an upgrade is already in review, so re-sync the
+      // company's request list to reflect it.
+      queryClient.invalidateQueries({ queryKey: ["tiers", "my-requests"] });
+      toast.error(getErrorMessage(error, "Failed to upgrade plan"));
     },
   });
 };

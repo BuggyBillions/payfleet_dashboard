@@ -8,17 +8,21 @@ import {
   LuCrown,
 } from "react-icons/lu";
 import { useUser } from "../../hooks/useUser";
-import { updateCompanyDetails, updateCompanyPassword } from "../../services/companyService";
+import { updateCompanyDetails, updateCompanyPassword, updateCompanyPin } from "../../services/companyService";
 import { getErrorMessage } from "../../helpers/api";
-import { formatterUtility } from "../../helpers/formatterUtility";
 import TierSettings from "./TierSettings";
 import EditProfileModal, {
   type ProfileFormValues,
 } from "../../components/modal/EditProfileModal";
+import {
+  DOCUMENT_FIELDS,
+  type DocumentFiles,
+  type DocumentKey,
+} from "../../lib/companyDocuments";
 import type { SettingsTab, PasswordFieldProps } from "../../lib/interfaces";
 import { TbLockPassword } from "react-icons/tb";
 
-type DocumentField = "logo" | "cac" | "mermat" | "status_report";
+type DocumentField = DocumentKey;
 
 const toDigitString = (value: string | number | null | undefined) => {
   const trimmed = String(value ?? "").trim();
@@ -128,15 +132,15 @@ const Settings: React.FC = () => {
 
   const [hiddenFields, setHiddenFields] = useState<Record<string, boolean>>({});
 
-  const [profile, setProfile] = useState<ProfileFormValues>({
+  const buildProfileFromUser = (): ProfileFormValues => ({
     name:
       user?.company_name ||
-      user?.name ||
       user?.company_details?.name ||
+      user?.name ||
       "",
     firstName: user?.first_name || "",
     lastName: user?.last_name || "",
-    email: user?.email || "",
+    email: user?.company_details?.email || user?.email || "",
     phoneNumber:
       user?.phone ||
       user?.phone_number ||
@@ -149,16 +153,17 @@ const Settings: React.FC = () => {
     nin: toDigitString(user?.company_details?.nin) ?? "",
   });
 
-  const [savedProfile, setSavedProfile] = useState(profile);
+  const profileValues = buildProfileFromUser();
 
-  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [draft, setDraft] = useState<ProfileFormValues | null>(null);
 
   const isProfileDirty = useMemo(
     () =>
-      (Object.keys(profile) as (keyof ProfileFormValues)[]).some(
-        (key) => profile[key] !== savedProfile[key],
+      draft !== null &&
+      (Object.keys(draft) as (keyof ProfileFormValues)[]).some(
+        (key) => draft[key] !== profileValues[key],
       ),
-    [profile, savedProfile],
+    [draft, profileValues],
   );
 
   const existingDocuments: Record<DocumentField, string | null> = {
@@ -168,8 +173,6 @@ const Settings: React.FC = () => {
     status_report: user?.company_details?.status_report ?? null,
   };
 
-  const companyBalance = Number(user?.company_details?.balance ?? 0);
-
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPin, setSavingPin] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
@@ -177,7 +180,6 @@ const Settings: React.FC = () => {
   const [pin, setPin] = useState({
     current_pin: "",
     new_pin: "",
-    confirm_pin: "",
   });
 
   const [passwordState, setPasswordState] = useState({
@@ -192,33 +194,51 @@ const Settings: React.FC = () => {
     setHiddenFields((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const handleProfileChange = (key: keyof ProfileFormValues, value: string) => {
-    setProfile((prev) => ({ ...prev, [key]: value }));
+    setDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
+  };
+
+  const openEditProfile = () => {
+    setDraft(buildProfileFromUser());
   };
 
   const closeEditProfile = () => {
-    setProfile(savedProfile);
-    setIsEditProfileOpen(false);
+    setDraft(null);
   };
 
-  const handleSaveProfile = async () => {
-    if (!isProfileDirty) return;
+  const handleSaveProfile = async (files: DocumentFiles = {}) => {
+    if (!draft) return;
+    if (!isProfileDirty && Object.keys(files).length === 0) return;
 
     setSavingProfile(true);
     try {
-      await updateCompanyDetails({
-        name: profile.name.trim() || undefined,
-        email: profile.email.trim() || undefined,
-        phone: profile.phoneNumber.trim() || undefined,
-        address: profile.address.trim() || undefined,
-        about: profile.about.trim() || undefined,
-        bvn: toDigitString(profile.bvn),
-        nin: toDigitString(profile.nin),
-      });
+      const textFields: Record<string, string | undefined> = {
+        name: draft.name.trim() || undefined,
+        email: draft.email.trim() || undefined,
+        phone: draft.phoneNumber.trim() || undefined,
+        address: draft.address.trim() || undefined,
+        about: draft.about.trim() || undefined,
+        bvn: toDigitString(draft.bvn),
+        nin: toDigitString(draft.nin),
+      };
 
-      setSavedProfile(profile);
-      setIsEditProfileOpen(false);
+      const hasFiles = Object.values(files).some(Boolean);
+
+      if (hasFiles) {
+        const formData = new FormData();
+        Object.entries(textFields).forEach(([key, value]) => {
+          if (value !== undefined) formData.append(key, value);
+        });
+        Object.entries(files).forEach(([key, file]) => {
+          if (file) formData.append(key, file);
+        });
+        await updateCompanyDetails(formData);
+      } else {
+        await updateCompanyDetails(textFields);
+      }
+
+      setDraft(null);
       toast.success("Company profile updated successfully.");
-      if (token) refreshUser(token).catch(() => undefined);
+      if (token) await refreshUser(token);
     } catch (error) {
       toast.error(getErrorMessage(error, "Failed to update company details"));
     } finally {
@@ -227,19 +247,29 @@ const Settings: React.FC = () => {
   };
 
   const handleUpdatePin = async () => {
-    if (!pin.new_pin || pin.new_pin.length !== 4) {
-      toast.error("PIN must be exactly 4 digits");
+    if (!/^\d{4}$/.test(pin.current_pin)) {
+      toast.error("Current PIN must be exactly 4 digits");
       return;
     }
-    if (pin.new_pin !== pin.confirm_pin) {
-      toast.error("New PIN and Confirm PIN do not match");
+    if (!/^\d{4}$/.test(pin.new_pin)) {
+      toast.error("New PIN must be exactly 4 digits");
+      return;
+    }
+    if (pin.current_pin === pin.new_pin) {
+      toast.error("New PIN must be different from the current PIN");
       return;
     }
     setSavingPin(true);
     try {
-      await updateCompanyDetails({ pin: pin.new_pin });
-      toast.success("Transaction PIN updated successfully");
-      setPin({ current_pin: "", new_pin: "", confirm_pin: "" });
+      const res = await updateCompanyPin({
+        current_pin: pin.current_pin,
+        new_pin: pin.new_pin,
+      });
+      toast.success(res?.message || "Transaction PIN updated successfully");
+      setPin({ current_pin: "", new_pin: "" });
+      ["pin_current", "pin_new"].forEach((key) =>
+        setHiddenFields((prev) => ({ ...prev, [key]: true })),
+      );
     } catch (error) {
       toast.error(getErrorMessage(error, "Failed to update transaction PIN"));
     } finally {
@@ -312,48 +342,67 @@ const Settings: React.FC = () => {
               {existingDocuments.logo ? (
                 <img
                   src={existingDocuments.logo}
-                  alt={profile.name || "Company logo"}
+                  alt={profileValues.name || "Company logo"}
                   className="w-14 h-14 rounded-full object-cover shrink-0"
                 />
               ) : (
                 <div className="w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center font-bold text-lg shrink-0">
-                  {profile.name?.[0] || profile.firstName?.[0] || "U"}
-                  {!profile.name ? (profile.lastName?.[0] || "") : ""}
+                  {profileValues.name?.[0] || profileValues.firstName?.[0] || "U"}
+                  {!profileValues.name ? (profileValues.lastName?.[0] || "") : ""}
                 </div>
               )}
               <div className="flex flex-col">
                 <span className="font-semibold text-sm text-textBlack">
-                  {profile.name ||
-                    (profile.firstName || "") + " " + (profile.lastName || "")}
+                  {profileValues.name ||
+                    (profileValues.firstName || "") + " " + (profileValues.lastName || "")}
                 </span>
-                <span className="text-xs text-textBlack/60">{profile.email}</span>
-                <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary capitalize w-fit">
-                    Role: {currentRole}
-                  </span>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary w-fit">
-                    Balance: {formatterUtility(companyBalance)}
-                  </span>
-                </div>
+                <span className="text-xs text-textBlack/60">{profileValues.email}</span>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <DetailRow label="Company Name" value={profile.name} />
-              <DetailRow label="Company Email" value={profile.email} />
-              <DetailRow label="Phone Number" value={profile.phoneNumber} />
-              <DetailRow label="Company Address" value={profile.address} />
-              <DetailRow label="BVN" value={profile.bvn} />
-              <DetailRow label="NIN" value={profile.nin} />
+              <DetailRow label="Company Name" value={profileValues.name} />
+              <DetailRow label="Company Email" value={profileValues.email} />
+              <DetailRow label="Phone Number" value={profileValues.phoneNumber} />
+              <DetailRow label="Company Address" value={profileValues.address} />
+              <DetailRow label="BVN" value={profileValues.bvn} />
+              <DetailRow label="NIN" value={profileValues.nin} />
               <div className="sm:col-span-2">
-                <DetailRow label="About / Description" value={profile.about} />
+                <DetailRow label="About / Description" value={profileValues.about} />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <span className="font-medium text-xs text-textBlack">
+                Company Documents
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                {DOCUMENT_FIELDS.map((doc) => (
+                  <div
+                    key={doc.key}
+                    className="flex flex-col gap-0.5 p-2.5 rounded-lg border border-primary/10 bg-secondary/40"
+                  >
+                    <span className="text-[10px] text-textBlack/60 truncate">
+                      {doc.label}
+                    </span>
+                    <span
+                      className={`text-[11px] font-medium truncate ${
+                        existingDocuments[doc.key]
+                          ? "text-emerald-600"
+                          : "text-textBlack/40"
+                      }`}
+                    >
+                      {existingDocuments[doc.key] ? "Uploaded" : "Not Uploaded"}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                onClick={() => setIsEditProfileOpen(true)}
+                onClick={openEditProfile}
                 className={`${submitClass} flex items-center gap-1.5`}
               >
                 <LuPencil size={13} />
@@ -378,7 +427,7 @@ const Settings: React.FC = () => {
                 label="Current 4-Digit PIN"
                 value={pin.current_pin}
                 onChange={(value) =>
-                  setPin((prev) => ({ ...prev, current_pin: value }))
+                  setPin((prev) => ({ ...prev, current_pin: value.replace(/\D/g, "") }))
                 }
                 visible={isFieldVisible("pin_current")}
                 onToggle={() => toggleField("pin_current")}
@@ -389,23 +438,12 @@ const Settings: React.FC = () => {
                 label="New 4-Digit PIN"
                 value={pin.new_pin}
                 onChange={(value) =>
-                  setPin((prev) => ({ ...prev, new_pin: value }))
+                  setPin((prev) => ({ ...prev, new_pin: value.replace(/\D/g, "") }))
                 }
                 visible={isFieldVisible("pin_new")}
                 onToggle={() => toggleField("pin_new")}
                 maxLength={4}
                 placeholder="Enter new 4-digit PIN"
-              />
-              <PasswordField
-                label="Confirm New PIN"
-                value={pin.confirm_pin}
-                onChange={(value) =>
-                  setPin((prev) => ({ ...prev, confirm_pin: value }))
-                }
-                visible={isFieldVisible("pin_confirm")}
-                onToggle={() => toggleField("pin_confirm")}
-                maxLength={4}
-                placeholder="Re-enter new PIN"
               />
             </div>
             <button
@@ -428,7 +466,7 @@ const Settings: React.FC = () => {
                 Check your current subscription tier and request an upgrade
               </p>
             </div>
-            <TierSettings />
+            <TierSettings onGoToProfile={() => setActiveTab("profile")} />
           </div>
         );
 
@@ -524,14 +562,15 @@ const Settings: React.FC = () => {
         {renderTabContent()}
       </div>
 
-      {isEditProfileOpen && (
+      {draft && (
         <EditProfileModal
-          values={profile}
+          values={draft}
           onChange={handleProfileChange}
           onSubmit={handleSaveProfile}
           onClose={closeEditProfile}
           saving={savingProfile}
           isDirty={isProfileDirty}
+          existingDocuments={existingDocuments}
         />
       )}
     </div>

@@ -139,6 +139,7 @@ export interface OtherActionProps {
   name: string;
   icon?: React.ReactNode;
   action: () => void;
+  disabled?: boolean;
 }
 
 export interface ActionCellProps {
@@ -806,6 +807,69 @@ export interface DemoPayment {
   method: string;
   status: StatusType;
   date: string;
+}
+
+export interface SalaryPaymentEmployee {
+  id: number | string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  job_title: string;
+  employment_type: string;
+  bank_name: string;
+  account_name: string;
+  account_number: string;
+  bank_code?: string;
+  estimate_pay: number | string;
+  deduction_amount: number | string | null;
+  paying?: string | number;
+}
+
+export interface SalaryPayment {
+  id: number | string;
+  employee_id: number | string;
+  employee_name: string;
+  amount: number;
+  payment_date: string;
+  reference: string;
+  status: StatusType;
+  created_at?: string;
+  updated_at?: string;
+  employee?: SalaryPaymentEmployee;
+}
+
+export interface SalaryPaymentMonth {
+  month: string;
+  month_key: string;
+  count: number;
+  total_amount: number;
+  successful_amount: number;
+  pending_amount: number;
+  failed_amount: number;
+  payments: SalaryPayment[];
+}
+
+export interface SalaryPaymentFilters {
+  search: string | null;
+  status: string;
+  month: string | null;
+  date_from: string | null;
+  date_to: string | null;
+}
+
+export interface SalaryPaymentResponse {
+  company: { id: number | string; name: string };
+  filters: SalaryPaymentFilters;
+  months: SalaryPaymentMonth[];
+  pagination: {
+    current_page: number;
+    per_page: number;
+    total_groups: number;
+    last_page: number;
+    has_more: boolean;
+  };
 }
 
 export interface DepositItemProps {

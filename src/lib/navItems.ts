@@ -118,7 +118,7 @@ export const navItems: NavItem[] = [
     role: ["admin"],
   },
 
-  // --- Financial Navigation ---
+  // --- Financial Navigation --
   {
     name: "Dashboard",
     icon: RxDashboard,
