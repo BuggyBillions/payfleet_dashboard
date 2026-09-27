@@ -3,7 +3,7 @@ import Modal from "../Modal";
 import ActionButton from "../../ui/ActionButton";
 import { useRequestTierUpgrade, useAllTiers } from "../../../hooks/useTier";
 import { useUser } from "../../../hooks/useUser";
-import { getTierRequirements } from "../../../services/tierService";
+import { getTierRequirements, findCompanyTier, getCompanyLevel } from "../../../services/tierService";
 import {
   LuShieldCheck,
   LuUpload,
@@ -24,19 +24,10 @@ const UpgradeTierModal: React.FC<UpgradeTierModalProps> = ({ onClose, defaultTie
   const { user } = useUser();
   const { data: allTiers = [], isLoading: loadingTiers } = useAllTiers();
 
-  const rawTier = user?.company_details?.tier ?? user?.tier;
-  const currentTier = allTiers.find((t) => {
-    if (typeof rawTier === "object" && rawTier !== null) {
-      return String(t.id) === String((rawTier as { id?: number | string }).id);
-    }
-    return (
-      String(t.id) === String(rawTier) ||
-      String(t.level) === String(rawTier) ||
-      String(t.name).toLowerCase() === String(rawTier).toLowerCase()
-    );
-  });
-
-  const currentLevel = Number(currentTier?.level ?? currentTier?.id ?? 1) || 1;
+  // Resolved the same way as the Tier settings page: match the company's
+  // `level` against each tier's `level` from `/all-tiers`.
+  const currentTier = findCompanyTier(allTiers, user);
+  const currentLevel = getCompanyLevel(user) ?? (Number(currentTier?.level ?? 1) || 1);
 
   // Higher tiers available for upgrade
   const upgradeableTiers = allTiers.filter(

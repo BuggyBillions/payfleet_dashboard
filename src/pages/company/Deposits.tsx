@@ -68,7 +68,6 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
 
   const openView = (id: number | string) => setViewDepositId(id);
 
-  // Debounce search input
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(searchTerm);

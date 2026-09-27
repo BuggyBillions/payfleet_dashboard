@@ -37,14 +37,12 @@ const Notifications: React.FC = () => {
   const totalItems = notifications.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
-  // Keep currentPage valid if totalPages shrinks
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(totalPages);
     }
   }, [currentPage, totalPages]);
 
-  // Client-side pagination slicing
   const paginatedNotifications = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return notifications.slice(startIndex, startIndex + itemsPerPage);

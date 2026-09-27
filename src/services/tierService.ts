@@ -51,6 +51,9 @@ export const getTierRequirements = (tier: unknown): string[] => {
 /**
  * Fetch all tiers configured on the platform (Admin & Company)
  * GET /all-tiers?search=...
+ *
+ * `GET /all-tiers` answers with a Laravel paginator envelope, so the tier rows
+ * live at `data.data` rather than directly on `data`.
  */
 export const getAllTiersService = async (params?: { search?: string; searchTerm?: string }): Promise<TierItem[]> => {
   const querySearch = params?.search || params?.searchTerm;
@@ -64,6 +67,105 @@ export const getAllTiersService = async (params?: { search?: string; searchTerm?
     (Array.isArray(resData) ? resData : []);
   return Array.isArray(list) ? list : [];
 };
+
+const toPositiveNumber = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === "") return null;
+  const num = Number(value);
+  return Number.isFinite(num) && num > 0 ? num : null;
+};
+
+/**
+ * The company's plan is identified by its `level`, not by tier id or name.
+ * `/all-tiers` returns every tier with its own `level` (1, 2, 3 ...), and the
+ * authenticated user carries a matching `level` from `GET /me`. Levels are not
+ * interchangeable with ids: in the sample payload `Basic` is id 5 / level 1 and
+ * `Gen 1 Tier` is id 1 / level 2.
+ *
+ * Returns the company's level, or `null` when `/me` does not expose one.
+ */
+export const getCompanyLevel = (user: unknown): number | null => {
+  if (!user || typeof user !== "object") return null;
+
+  const u = user as Record<string, unknown>;
+  const company = (u.company_details ?? {}) as Record<string, unknown>;
+  const rawTier = company.tier ?? u.tier;
+  const tierObject =
+    rawTier && typeof rawTier === "object"
+      ? (rawTier as Record<string, unknown>)
+      : null;
+
+  const candidates: unknown[] = [
+    u.level,
+    company.level,
+    tierObject?.level,
+    // Some `/me` payloads put the level on the tier object only.
+    tierObject?.id,
+    rawTier,
+  ];
+
+  for (const candidate of candidates) {
+    const level = toPositiveNumber(candidate);
+    if (level !== null) return level;
+  }
+
+  return null;
+};
+
+/**
+ * Resolve the company's current plan from the tiers returned by `/all-tiers`.
+ * Matching is done on `level` first (the authoritative signal), then falls back
+ * to tier id and finally tier name so older `/me` payloads still resolve.
+ */
+export const findCompanyTier = (
+  tiers: TierItem[] | null | undefined,
+  user: unknown,
+): TierItem | null => {
+  if (!Array.isArray(tiers) || tiers.length === 0) return null;
+
+  const u = (user && typeof user === "object" ? user : {}) as Record<string, unknown>;
+  const company = (u.company_details ?? {}) as Record<string, unknown>;
+  const rawTier = company.tier ?? u.tier;
+  const tierObject =
+    rawTier && typeof rawTier === "object"
+      ? (rawTier as Record<string, unknown>)
+      : null;
+
+  // 1. Level match - the level the company is actually on.
+  const level = getCompanyLevel(user);
+  if (level !== null) {
+    const byLevel = tiers.find((t) => toPositiveNumber(t?.level) === level);
+    if (byLevel) return byLevel;
+  }
+
+  // 2. Tier id match.
+  const id = toPositiveNumber(tierObject?.id);
+  if (id !== null) {
+    const byId = tiers.find((t) => toPositiveNumber(t?.id) === id);
+    if (byId) return byId;
+  }
+
+  // 3. Tier name match.
+  const name =
+    typeof tierObject?.name === "string"
+      ? tierObject.name
+      : typeof rawTier === "string" && Number.isNaN(Number(rawTier))
+        ? rawTier
+        : null;
+  if (name) {
+    const byName = tiers.find(
+      (t) => String(t?.name ?? "").toLowerCase() === name.toLowerCase(),
+    );
+    if (byName) return byName;
+  }
+
+  return null;
+};
+
+/** Sort tiers by level so the table always reads Basic -> highest plan. */
+export const sortTiersByLevel = (tiers: TierItem[]): TierItem[] =>
+  [...tiers].sort(
+    (a, b) => (toPositiveNumber(a?.level) ?? 0) - (toPositiveNumber(b?.level) ?? 0),
+  );
 
 /**
  * Fetch single tier by ID
