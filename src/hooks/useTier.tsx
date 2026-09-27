@@ -112,10 +112,10 @@ export const useDeleteTier = () => {
   });
 };
 
-export const useTierRequests = () => {
+export const useTierRequests = (params: { search?: string; searchTerm?: string; page?: number; per_page?: number } = {}) => {
   return useQuery({
-    queryKey: ["tier", "requests"],
-    queryFn: () => getTierUpgradeRequestsService(),
+    queryKey: ["tier", "requests", params.search, params.searchTerm, params.page, params.per_page],
+    queryFn: () => getTierUpgradeRequestsService(params),
     refetchInterval: 30000,
   });
 };
@@ -185,7 +185,7 @@ export const useReviewTierRequest = () => {
       companyId,
     }: {
       requestId: number | string;
-      status: "approved" | "rejected";
+      status: "approve" | "reject";
       rejectionReason?: string;
       targetTier?: number | string;
       companyId?: number | string;
@@ -200,7 +200,7 @@ export const useReviewTierRequest = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["companies"] });
       queryClient.invalidateQueries({ queryKey: ["tier"] });
-      if (variables.status === "approved") {
+      if (variables.status === "approve") {
         toast.success("Tier upgrade application approved successfully!");
       } else {
         toast.info("Tier upgrade application rejected.");

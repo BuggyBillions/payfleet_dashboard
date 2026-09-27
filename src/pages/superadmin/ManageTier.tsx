@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import OverviewCards from "../../components/cards/OverviewCards";
 import ReusableTable from "../../utility/ReusableTable";
 import ConfirmDialog from "../../components/modal/ConfirmDialog";
+import StatusBadge from "../../components/ui/StatusBadge";
 import type {
   CompanyProps,
   TableColumnProps,
@@ -10,6 +11,9 @@ import type {
 } from "../../lib/interfaces";
 import { useCompanyStats } from "../../hooks/useCompany";
 import { useTierRequests, useAllTiers, useDeleteTier } from "../../hooks/useTier";
+import { getTierConfig } from "../../services/tierService";
+import { CompanyLogoAvatar } from "../../helpers/logoHelper";
+import { formatPrettyDate } from "../../helpers/formatterUtility";
 import ChangeTierModal from "../../components/modal/tier/ChangeTierModal";
 import ReviewTierRequestModal from "../../components/modal/tier/ReviewTierRequestModal";
 import CreateEditTierModal from "../../components/modal/tier/CreateEditTierModal";
@@ -23,11 +27,18 @@ import {
   LuTrash2,
   LuLayers,
   LuEye,
+  LuFileText,
 } from "react-icons/lu";
 import { FiSearch } from "react-icons/fi";
 
 const ManageTier: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<"tiers" | "requests">("tiers");
   const [tierSearchTerm, setTierSearchTerm] = useState("");
+  const [requestSearchTerm, setRequestSearchTerm] = useState("");
+  const [debouncedRequestSearch, setDebouncedRequestSearch] = useState("");
+  const [requestStatusFilter, setRequestStatusFilter] = useState<string>("all");
+  const [requestCurrentPage, setRequestCurrentPage] = useState(1);
+  const [requestItemsPerPage, setRequestItemsPerPage] = useState(10);
 
   // Modals state
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -37,6 +48,15 @@ const ManageTier: React.FC = () => {
   const [selectedCompanyForTier, setSelectedCompanyForTier] = useState<CompanyProps | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<TierUpgradeRequest | null>(null);
 
+  // Debounce requests search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedRequestSearch(requestSearchTerm);
+      setRequestCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [requestSearchTerm]);
+
   // Dynamic Tiers query from GET /all-tiers?search=...
   const { data: allTiersList = [], isLoading: loadingTiers } = useAllTiers(tierSearchTerm);
 
@@ -44,7 +64,16 @@ const ManageTier: React.FC = () => {
   const deleteTierMutation = useDeleteTier();
 
   const { data: statsData } = useCompanyStats();
-  const { data: rawTierRequests } = useTierRequests();
+  const {
+    data: rawTierRequests,
+    isLoading: loadingRequests,
+    isFetching: isFetchingRequests,
+    error: requestsError,
+    refetch: refetchRequests,
+  } = useTierRequests({
+    search: debouncedRequestSearch,
+  });
+
   const tierRequests: TierUpgradeRequest[] = useMemo(() => {
     if (Array.isArray(rawTierRequests)) return rawTierRequests;
     if (rawTierRequests && typeof rawTierRequests === "object" && Array.isArray((rawTierRequests as any).data)) {
@@ -53,11 +82,59 @@ const ManageTier: React.FC = () => {
     return [];
   }, [rawTierRequests]);
 
+  // Filter tier upgrade requests by status & search
+  const filteredRequests = useMemo(() => {
+    let result = tierRequests;
+
+    if (requestStatusFilter !== "all") {
+      result = result.filter((req) => req.status?.toLowerCase() === requestStatusFilter.toLowerCase());
+    }
+
+    if (debouncedRequestSearch.trim()) {
+      const q = debouncedRequestSearch.toLowerCase().trim();
+      result = result.filter((req) => {
+        const cName = (req.companyName || req.company?.name || "").toLowerCase();
+        const cEmail = (req.companyEmail || req.company?.email || "").toLowerCase();
+        const curTier = (getTierConfig(req.current_tier || req.currentTier).name).toLowerCase();
+        const reqTier = (getTierConfig(req.requested_tier || req.requestedTier).name).toLowerCase();
+        return (
+          cName.includes(q) ||
+          cEmail.includes(q) ||
+          curTier.includes(q) ||
+          reqTier.includes(q)
+        );
+      });
+    }
+
+    return result;
+  }, [tierRequests, requestStatusFilter, debouncedRequestSearch]);
+
   // Dynamic statistics
   const totalCompaniesCount = statsData?.totalCompanies ?? statsData?.totalItems;
   const pendingRequestsCount = useMemo(() => {
     return tierRequests.filter((r) => r.status === "pending").length;
   }, [tierRequests]);
+  const approvedRequestsCount = useMemo(() => {
+    return tierRequests.filter((r) => r.status === "approved").length;
+  }, [tierRequests]);
+  const rejectedRequestsCount = useMemo(() => {
+    return tierRequests.filter((r) => r.status === "rejected").length;
+  }, [tierRequests]);
+
+  const requestStatusTabs = [
+    { label: "All", value: "all", count: tierRequests.length },
+    { label: "Pending", value: "pending", count: pendingRequestsCount },
+    { label: "Approved", value: "approved", count: approvedRequestsCount },
+    { label: "Rejected", value: "rejected", count: rejectedRequestsCount },
+  ];
+
+  // Pagination for Requests
+  const requestTotalItems = filteredRequests.length;
+  const requestTotalPages = Math.max(1, Math.ceil(requestTotalItems / requestItemsPerPage));
+  const paginatedRequests = useMemo(() => {
+    const start = (requestCurrentPage - 1) * requestItemsPerPage;
+    return filteredRequests.slice(start, start + requestItemsPerPage);
+  }, [filteredRequests, requestCurrentPage, requestItemsPerPage]);
 
   const handleDeleteTier = () => {
     if (!tierToDelete?.id) return;
@@ -157,9 +234,7 @@ const ManageTier: React.FC = () => {
     },
   ];
 
-  // Table Columns for Tier Upgrade Requests
 
-  // Table Columns for Company Directory
 
   return (
     <div className="space-y-6">
@@ -209,9 +284,9 @@ const ManageTier: React.FC = () => {
       </div>
 
 
-
       <div className="bg-tertiary rounded-2xl p-5 border border-primary/10 shadow-xs space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          
 
           {/* Search Tiers: /all-tiers?search=... */}
           <div className="relative">

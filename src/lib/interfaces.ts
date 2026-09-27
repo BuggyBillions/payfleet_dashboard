@@ -1,5 +1,6 @@
 import React from "react";
 import type { IconType } from "react-icons/lib";
+import type { FormattedTierConfig } from "../services/tierService";
 
 // ==========================================
 // 1. CORE UI & COMPONENT TYPES
@@ -260,6 +261,8 @@ export interface CompanyDetailsProps {
   balance?: string | number;
   created_at?: string;
   updated_at?: string;
+  documentUrl?: string;
+  document_url?: string;
 }
 
 export interface UserProps {
@@ -397,10 +400,6 @@ export interface CompanyProps {
   updated_at?: string;
   address?: string;
   registeredAddress?: string;
-  rc_number?: string;
-  rcNumber?: string;
-  tin_number?: string;
-  tinNumber?: string;
   industry?: string;
   staffCount?: number;
   balance?: string | number;
@@ -689,21 +688,37 @@ export interface TierConfig {
 export interface TierUpgradeRequest {
   id: number | string;
   companyId: number | string;
+  company_id?: number | string;
   companyName: string;
   companyEmail: string;
-  currentTier: number | string;
-  requestedTier: number | string;
-  rcNumber?: string;
-  tinNumber?: string;
+  companyPhone?: string;
+  companyLogo?: string | null;
+  currentTier: number | string | TierItem | FormattedTierConfig;
+  requestedTier: number | string | TierItem | FormattedTierConfig;
+  current_tier?: TierItem | null;
+  requested_tier?: TierItem | null;
+  bvn?: string | null;
+  nin?: string | null;
+  cac?: string | null;
+  mermat?: string | null;
+  status_report?: string | null;
   directorName?: string;
   directorPhone?: string;
   documentUrl?: string;
   documentName?: string;
   reason?: string;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | string;
   rejectionReason?: string;
+  admin_note?: string | null;
+  reviewed_by?: string | number | null;
+  reviewed_at?: string | null;
   createdAt: string;
+  created_at?: string;
   updatedAt?: string;
+  updated_at?: string;
+  company?: CompanyProps;
+  reviewer?: unknown;
+  [key: string]: unknown;
 }
 
 export type VerificationStatus =
@@ -718,8 +733,6 @@ export interface CompanyVerificationItem {
   email: string;
   phone?: string;
   phoneNumber?: string;
-  rcNumber: string;
-  tinNumber: string;
   industry: string;
   staffCount: number;
   tier: string | number | CompanyTierProp;
