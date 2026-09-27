@@ -9,11 +9,21 @@ import {
   LuMail,
   LuSparkles,
   LuHeadphones,
+  LuCheck,
+  LuCheckCheck,
 } from "react-icons/lu";
 import { BsChatDotsFill } from "react-icons/bs";
 import { RiCustomerService2Fill } from "react-icons/ri";
 
-import type { FloatingWidgetMessage as Message } from "../../lib/interfaces";
+export interface FloatingWidgetMessage {
+  id: number | string;
+  sender: "user" | "support";
+  text: string;
+  time: string;
+  status?: "sent" | "delivered" | "read";
+}
+
+type Message = FloatingWidgetMessage;
 import {
   useSupportMessages,
   useSendUserMessage,
@@ -116,6 +126,7 @@ const FloatingContactWidget: React.FC = () => {
       sender: m.isMe ? "user" : "support",
       text: m.text,
       time: m.timestamp || "Just now",
+      status: m.status || (m.isMe ? "read" : undefined),
     }));
   }, [serverMessages]);
 
@@ -167,6 +178,7 @@ const FloatingContactWidget: React.FC = () => {
       sender: "user",
       text: userText,
       time: timeString,
+      status: "sent",
     };
 
     setPendingUserMessages((prev) => [...prev, optimisticMsg]);
@@ -195,6 +207,7 @@ const FloatingContactWidget: React.FC = () => {
       sender: "user",
       text: preset.question,
       time: timeString,
+      status: "sent",
     };
 
     const botReply: Message = {
@@ -202,6 +215,7 @@ const FloatingContactWidget: React.FC = () => {
       sender: "support",
       text: preset.answer,
       time: timeString,
+      status: "read",
     };
 
     setPendingUserMessages((prev) => [...prev, userMsg, botReply]);
@@ -216,6 +230,17 @@ const FloatingContactWidget: React.FC = () => {
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 50);
+  };
+
+  const renderWidgetStatusTick = (status?: "sent" | "delivered" | "read") => {
+    const norm = (status || "sent").toLowerCase();
+    if (norm === "read" || norm === "seen") {
+      return <LuCheckCheck size={12} className="text-primary shrink-0" title="Read" />;
+    }
+    if (norm === "delivered" || norm === "received") {
+      return <LuCheckCheck size={12} className="text-textBlack/40 shrink-0" title="Delivered" />;
+    }
+    return <LuCheck size={11} className="text-textBlack/40 shrink-0" title="Sent" />;
   };
 
   if (isStaff) return null;
@@ -312,11 +337,14 @@ const FloatingContactWidget: React.FC = () => {
                           >
                             <p>{msg.text}</p>
                           </div>
-                          {msg.time && (
-                            <span className="text-[9px] text-textBlack mt-1 px-1">
-                              {msg.time}
-                            </span>
-                          )}
+                          <div className="flex items-center gap-1 mt-1 px-1 text-[9px] text-textBlack/60">
+                            {msg.time && <span>{msg.time}</span>}
+                            {msg.sender === "user" && (
+                              <span className="flex items-center inline-flex">
+                                {renderWidgetStatusTick(msg.status)}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </>

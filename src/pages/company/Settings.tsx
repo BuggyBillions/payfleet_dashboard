@@ -8,7 +8,7 @@ import {
   LuCrown,
 } from "react-icons/lu";
 import { useUser } from "../../hooks/useUser";
-import { updateCompanyDetails } from "../../services/companyService";
+import { updateCompanyDetails, updateCompanyPassword } from "../../services/companyService";
 import { getErrorMessage } from "../../helpers/api";
 import { formatterUtility } from "../../helpers/formatterUtility";
 import TierSettings from "./TierSettings";
@@ -66,7 +66,7 @@ const inputClass =
 const readOnlyInputClass = `${inputClass} opacity-70 cursor-not-allowed`;
 
 const submitClass =
-  "bg-primary hover:bg-primary/90 text-textWhite text-xs rounded-lg font-medium px-6 h-10 cursor-pointer shadow-xs transition disabled:opacity-60 disabled:cursor-not-allowed";
+  "bg-primary hover:bg-primary/90 text-textBlack text-xs rounded-lg font-medium px-6 h-10 cursor-pointer shadow-xs transition disabled:opacity-60 disabled:cursor-not-allowed";
 
 const secondarySubmitClass =
   "text-textBlack border border-primary/20 bg-secondary hover:bg-primary/10 text-xs rounded-lg font-medium px-6 h-10 cursor-pointer transition";
@@ -171,12 +171,20 @@ const Settings: React.FC = () => {
 
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPin, setSavingPin] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
 
   // PIN Form State
   const [pin, setPin] = useState({
     current_pin: "",
     new_pin: "",
     confirm_pin: "",
+  });
+
+  // Password Form State
+  const [passwordState, setPasswordState] = useState({
+    current_password: "",
+    new_password: "",
+    confirm_password: "",
   });
 
   const isFieldVisible = (key: string) => hiddenFields[key] === true;
@@ -239,6 +247,47 @@ const Settings: React.FC = () => {
       toast.error(getErrorMessage(error, "Failed to update transaction PIN"));
     } finally {
       setSavingPin(false);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!passwordState.current_password) {
+      toast.error("Please enter your current password");
+      return;
+    }
+    if (!passwordState.new_password) {
+      toast.error("Please enter your new password");
+      return;
+    }
+    if (passwordState.new_password.length < 6) {
+      toast.error("New password must be at least 6 characters");
+      return;
+    }
+    if (passwordState.new_password !== passwordState.confirm_password) {
+      toast.error("New password and confirm password do not match");
+      return;
+    }
+    if (passwordState.current_password === passwordState.new_password) {
+      toast.error("New password must be different from current password");
+      return;
+    }
+
+    setSavingPassword(true);
+    try {
+      await updateCompanyPassword({
+        current_password: passwordState.current_password,
+        new_password: passwordState.new_password,
+      });
+      toast.success("Password updated successfully");
+      setPasswordState({
+        current_password: "",
+        new_password: "",
+        confirm_password: "",
+      });
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to update password"));
+    } finally {
+      setSavingPassword(false);
     }
   };
 
@@ -463,7 +512,7 @@ const Settings: React.FC = () => {
               type="button"
               onClick={handleUpdatePin}
               disabled={savingPin}
-              className={`${submitClass} self-start disabled:opacity-60 disabled:cursor-not-allowed`}
+              className={`${submitClass} text-textBlack self-start disabled:opacity-60 disabled:cursor-not-allowed`}
             >
               {savingPin ? "Updating..." : "Update Transaction PIN"}
             </button>
@@ -487,54 +536,51 @@ const Settings: React.FC = () => {
         return (
           <div className="flex flex-col gap-6 max-w-xl">
             <div className="flex flex-col">
-              <h3 className="font-semibold text-base text-textBlack">Transaction PIN</h3>
+              <h3 className="font-semibold text-base text-textBlack">Change Password</h3>
               <p className="text-xs text-textBlack/60">
-                Update your 4-digit numerical PIN used to authorize employee payouts and wallet debits
+                Update your account password to keep your account secure. Make sure to choose a strong and unique password.
               </p>
             </div>
 
             <div className="flex flex-col gap-y-4">
               <PasswordField
-                label="Current 4-Digit PIN"
-                value={pin.current_pin}
+                label="Current Password"
+                value={passwordState.current_password}
                 onChange={(value) =>
-                  setPin((prev) => ({ ...prev, current_pin: value }))
+                  setPasswordState((prev) => ({ ...prev, current_password: value }))
                 }
-                visible={isFieldVisible("pin_current")}
-                onToggle={() => toggleField("pin_current")}
-                maxLength={4}
-                placeholder="Enter current PIN"
+                visible={isFieldVisible("pwd_current")}
+                onToggle={() => toggleField("pwd_current")}
+                placeholder="Enter current password"
               />
               <PasswordField
-                label="New 4-Digit PIN"
-                value={pin.new_pin}
+                label="New Password"
+                value={passwordState.new_password}
                 onChange={(value) =>
-                  setPin((prev) => ({ ...prev, new_pin: value }))
+                  setPasswordState((prev) => ({ ...prev, new_password: value }))
                 }
-                visible={isFieldVisible("pin_new")}
-                onToggle={() => toggleField("pin_new")}
-                maxLength={4}
-                placeholder="Enter new 4-digit PIN"
+                visible={isFieldVisible("pwd_new")}
+                onToggle={() => toggleField("pwd_new")}
+                placeholder="Enter new password"
               />
               <PasswordField
-                label="Confirm New PIN"
-                value={pin.confirm_pin}
+                label="Confirm New Password"
+                value={passwordState.confirm_password}
                 onChange={(value) =>
-                  setPin((prev) => ({ ...prev, confirm_pin: value }))
+                  setPasswordState((prev) => ({ ...prev, confirm_password: value }))
                 }
-                visible={isFieldVisible("pin_confirm")}
-                onToggle={() => toggleField("pin_confirm")}
-                maxLength={4}
-                placeholder="Re-enter new PIN"
+                visible={isFieldVisible("pwd_confirm")}
+                onToggle={() => toggleField("pwd_confirm")}
+                placeholder="Re-enter new password"
               />
             </div>
             <button
               type="button"
-              onClick={handleUpdatePin}
-              disabled={savingPin}
-              className={`${submitClass} self-start disabled:opacity-60 disabled:cursor-not-allowed`}
+              onClick={handleUpdatePassword}
+              disabled={savingPassword}
+              className={`${submitClass} text-textBlack self-start disabled:opacity-60 disabled:cursor-not-allowed`}
             >
-              {savingPin ? "Updating..." : "Update Transaction PIN"}
+              {savingPassword ? "Updating..." : "Update Password"}
             </button>
           </div>
         );

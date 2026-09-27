@@ -285,131 +285,24 @@ const SupportManageCompanyVerification: React.FC = () => {
         />
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-primary/10 pb-2">
-        <button
-          onClick={() => setActiveTab("requests")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-            activeTab === "requests"
-              ? "bg-primary text-white shadow-xs"
-              : "text-textBlack/70 hover:text-textBlack hover:bg-secondary"
-          }`}
-        >
-          <LuClock className="text-sm" />
-          <span>Verification & Upgrade Queue</span>
-          {pendingRequestsCount > 0 && (
-            <span
-              className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                activeTab === "requests"
-                  ? "bg-white text-primary font-bold"
-                  : "bg-amber-500 text-white font-bold"
-              }`}
-            >
-              {pendingRequestsCount}
-            </span>
-          )}
-        </button>
 
-        <button
-          onClick={() => setActiveTab("companies")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-            activeTab === "companies"
-              ? "bg-primary text-white shadow-xs"
-              : "text-textBlack/70 hover:text-textBlack hover:bg-secondary"
-          }`}
-        >
-          <LuUsersRound className="text-sm" />
-          <span>Enrolled Companies Directory</span>
-        </button>
+
+      <div className="bg-tertiary rounded-2xl p-5 border border-primary/10 shadow-xs space-y-4">
+
+        <ReusableTable
+          columns={requestColumns}
+          data={tierRequests}
+          isLoading={loadingRequests}
+          error={null}
+          currentPage={1}
+          totalPages={1}
+          totalItems={tierRequests.length}
+          itemsPerPage={20}
+          setCurrentPage={() => { }}
+          setItemsPerPage={() => { }}
+          hasSerialNo={true}
+        />
       </div>
-
-      {/* TAB 1: TIER UPGRADE & VERIFICATION APPLICATIONS */}
-      {activeTab === "requests" && (
-        <div className="bg-tertiary rounded-2xl p-5 border border-primary/10 shadow-xs space-y-4">
-          <div>
-            <h3 className="text-sm font-semibold text-textBlack">
-              Corporate Verification & Upgrade Queue
-            </h3>
-            <p className="text-xs text-textBlack/60">
-              Review submitted CAC documents, tax identification, and corporate director details
-            </p>
-          </div>
-
-          <ReusableTable
-            columns={requestColumns}
-            data={tierRequests}
-            isLoading={loadingRequests}
-            error={null}
-            currentPage={1}
-            totalPages={1}
-            totalItems={tierRequests.length}
-            itemsPerPage={20}
-            setCurrentPage={() => {}}
-            setItemsPerPage={() => {}}
-            hasSerialNo={true}
-          />
-        </div>
-      )}
-
-      {/* TAB 2: COMPANY TIER DIRECTORY */}
-      {activeTab === "companies" && (
-        <div className="bg-tertiary rounded-2xl p-5 border border-primary/10 shadow-xs space-y-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div>
-              <h3 className="text-sm font-semibold text-textBlack">
-                Enrolled Corporate Accounts
-              </h3>
-              <p className="text-xs text-textBlack/60">
-                Inspect company profiles, view enrolled staff rosters, and adjust tier allocations
-              </p>
-            </div>
-
-            {/* Filters */}
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-textBlack/40 text-sm" />
-                <input
-                  type="text"
-                  value={companySearchTerm}
-                  onChange={(e) => setCompanySearchTerm(e.target.value)}
-                  placeholder="Search company..."
-                  className="h-9 pl-9 pr-3 rounded-lg border border-primary/10 bg-secondary text-xs text-textBlack outline-none w-48 md:w-60 focus:border-primary/30"
-                />
-              </div>
-
-              <div className="flex items-center gap-1.5 bg-secondary border border-primary/10 rounded-lg px-2 py-1">
-                <LuListFilter className="text-primary text-xs" />
-                <select
-                  value={tierFilter}
-                  onChange={(e) => setTierFilter(e.target.value)}
-                  className="bg-transparent text-xs text-textBlack outline-none cursor-pointer"
-                >
-                  <option value="all">All Tiers</option>
-                  {allTiersList.map((tier) => (
-                    <option key={tier.id} value={String(tier.level || tier.id)}>
-                      Level {tier.level} ({tier.name})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <ReusableTable
-            columns={companyColumns}
-            data={filteredCompanies}
-            isLoading={loadingCompanies}
-            error={null}
-            currentPage={companyPage}
-            totalPages={companiesData?.totalPages ?? 1}
-            totalItems={companiesData?.totalItems ?? filteredCompanies.length}
-            itemsPerPage={companyItemsPerPage}
-            setCurrentPage={setCompanyPage}
-            setItemsPerPage={setCompanyItemsPerPage}
-            hasSerialNo={true}
-          />
-        </div>
-      )}
 
       {/* View Company Details Modal: Shows full details, CAC files, and enrolled staff roster */}
       {selectedCompanyForView && (

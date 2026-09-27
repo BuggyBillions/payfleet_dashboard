@@ -612,6 +612,107 @@ const Communication: React.FC = () => {
     setProfileModalOpen(true);
   };
 
+  const isMessageOnRight = (msg: ChatMessage): boolean => {
+    // 1. Check sender_type / role / senderRole on the message object (including sender_id object)
+    const senderObj =
+      (msg as any).sender_id && typeof (msg as any).sender_id === "object"
+        ? (msg as any).sender_id
+        : (msg as any).sender && typeof (msg as any).sender === "object"
+        ? (msg as any).sender
+        : null;
+
+    const roleOrType = String(
+      senderObj?.role ||
+      (msg as any).sender_type ||
+      (msg as any).senderType ||
+      (msg as any).role ||
+      (msg as any).senderRole ||
+      (msg as any).sender_role ||
+      ""
+    ).toLowerCase();
+
+    if (
+      roleOrType.includes("admin") ||
+      roleOrType.includes("support") ||
+      roleOrType.includes("finance") ||
+      roleOrType.includes("financial") ||
+      roleOrType.includes("staff") ||
+      roleOrType.includes("superadmin")
+    ) {
+      return true; // Admin, Support, Finance -> ALWAYS ON THE RIGHT
+    }
+
+    if (
+      roleOrType.includes("company") ||
+      roleOrType.includes("client")
+    ) {
+      return false; // Company -> ALWAYS ON THE LEFT
+    }
+
+    // 2. Check senderName
+    const name = String(
+      senderObj?.name ||
+      msg.senderName ||
+      ""
+    ).toLowerCase();
+
+    if (
+      name.includes("support") ||
+      name.includes("admin") ||
+      name.includes("finance") ||
+      name.includes("payfleet") ||
+      name.includes("helpdesk") ||
+      name.includes("blanchard")
+    ) {
+      return true;
+    }
+
+    // 3. Known support/admin IDs
+    if (msg.senderId === 101 || msg.senderId === 1 || msg.senderId === 13) return true;
+
+    // 4. Fallback based on viewer context and isMe
+    // When staff is viewing: isMe messages are staff (RIGHT), !isMe messages are company (LEFT)
+    if (isStaffUser) {
+      return Boolean(msg.isMe);
+    }
+
+    // When company is viewing: isMe messages are company (LEFT), !isMe messages are support/admin (RIGHT)
+    if (!isStaffUser) {
+      return !msg.isMe;
+    }
+
+    return false;
+  };
+
+  const renderStatusTick = (status?: "sent" | "delivered" | "read" | string) => {
+    const norm = (status || "sent").toLowerCase();
+    if (norm === "read" || norm === "seen") {
+      return (
+        <LuCheckCheck
+          size={13}
+          className="text-primary dark:text-emerald-400 shrink-0"
+          title="Read"
+        />
+      );
+    }
+    if (norm === "delivered" || norm === "received") {
+      return (
+        <LuCheckCheck
+          size={13}
+          className="text-gray-400 dark:text-gray-500 shrink-0"
+          title="Delivered"
+        />
+      );
+    }
+    return (
+      <LuCheck
+        size={12}
+        className="text-gray-400 dark:text-gray-500 shrink-0"
+        title="Sent"
+      />
+    );
+  };
+
   const isLoading = isStaffUser ? loadingConversations : loadingCompanyMessages;
 
   return (
@@ -792,8 +893,10 @@ const Communication: React.FC = () => {
                   {activeConversation.email && (
                     <a
                       href={`mailto:${activeConversation.email}`}
-                      className="p-1.5 sm:p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-xl transition cursor-pointer"
+                      target="_blank"
+                      rel="noreferrer"
                       title="Send Email"
+                      className="p-1.5 sm:p-2 text-gray-500 hover:text-primary hover:bg-primary/10 rounded-xl transition cursor-pointer inline-flex items-center"
                     >
                       <BsEnvelope size={15} />
                     </a>
@@ -828,52 +931,48 @@ const Communication: React.FC = () => {
                     </p>
                   </div>
                 ) : (
-                  displayedMessages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex flex-col ${
-                        msg.isMe ? "items-end" : "items-start"
-                      }`}
-                    >
-                      <div className="flex items-end gap-1.5 sm:gap-2 max-w-[90%] sm:max-w-[80%] md:max-w-[75%]">
-                        {!msg.isMe && (
-                          <AvatarDisplay
-                            name={msg.senderName}
-                            logo={msg.logo || msg.avatar || getConversationLogo(activeConversation)}
-                            className="w-6 h-6 rounded-lg mb-1"
-                            textClassName="text-[10px] font-bold"
-                          />
-                        )}
+                  displayedMessages.map((msg) => {
+                    const isRight = isMessageOnRight(msg);
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`flex flex-col ${
+                          isRight ? "items-end" : "items-start"
+                        }`}
+                      >
+                        <div className="flex items-end gap-1.5 sm:gap-2 max-w-[90%] sm:max-w-[80%] md:max-w-[75%]">
+                          {!isRight && (
+                            <AvatarDisplay
+                              name={msg.senderName || activeConversation.name}
+                              logo={msg.logo || msg.avatar || getConversationLogo(activeConversation)}
+                              className="w-6 h-6 rounded-lg mb-1 shrink-0"
+                              textClassName="text-[10px] font-bold"
+                            />
+                          )}
 
-                        <div
-                          className={`p-2.5 sm:p-3 rounded-2xl text-xs leading-relaxed break-words [overflow-wrap:anywhere] ${
-                            msg.isMe
-                              ? "bg-primary text-white rounded-br-xs shadow-xs"
-                              : "bg-white dark:bg-[#1A1921] text-gray-800 dark:text-gray-100 border border-gray-200/80 dark:border-white/10 rounded-bl-xs shadow-xs"
-                          }`}
-                        >
-                          <p>{msg.text}</p>
+                          <div
+                            className={`p-2.5 sm:p-3 rounded-2xl text-xs leading-relaxed break-words [overflow-wrap:anywhere] ${
+                              isRight
+                                ? "bg-primary text-white rounded-br-xs shadow-xs"
+                                : "bg-white dark:bg-[#1A1921] text-gray-800 dark:text-gray-100 border border-gray-200/80 dark:border-white/10 rounded-bl-xs shadow-xs"
+                            }`}
+                          >
+                            <p>{msg.text}</p>
+                          </div>
+                        </div>
+
+                        {/* Timestamp & delivery status */}
+                        <div className="flex items-center gap-1 mt-1 px-1 text-[10px] text-gray-400 dark:text-gray-500">
+                          <span>{msg.timestamp}</span>
+                          {(isRight || msg.isMe) && (
+                            <span className="flex items-center inline-flex">
+                              {renderStatusTick(msg.status)}
+                            </span>
+                          )}
                         </div>
                       </div>
-
-                      {/* Timestamp & delivery status */}
-                      <div className="flex items-center gap-1 mt-1 px-1 text-[10px] text-gray-400 dark:text-gray-500">
-                        <span>{msg.timestamp}</span>
-                        {msg.isMe && (
-                          <span>
-                            {msg.status === "read" ? (
-                              <LuCheckCheck
-                                size={12}
-                                className="text-primary dark:text-emerald-400"
-                              />
-                            ) : (
-                              <LuCheck size={12} />
-                            )}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
 
                 {/* Preset Quick Options for Company Support */}

@@ -810,8 +810,10 @@ export interface DepositItemProps {
   id: number | string;
   company_id?: number | string;
   companyId?: number | string;
+  transaction_id?: number | string;
   companyName: string;
   email: string;
+  phone?: string;
   reference: string;
   amount: number;
   method: string;
@@ -821,6 +823,42 @@ export interface DepositItemProps {
   date: string;
   rejectionReason?: string;
   approvedAt?: string;
+  companyLogo?: string | null;
+  previous_balance?: string | number | null;
+  current_balance?: string | number | null;
+  description?: string;
+  company?: {
+    id?: number | string;
+    name?: string;
+    logo?: string | null;
+    about?: string;
+    phone?: string;
+    email?: string;
+    address?: string;
+    balance?: string | number;
+    tier?: number;
+    bvn?: string | null;
+    nin?: string | null;
+    cac?: string | null;
+    mermat?: string | null;
+    status_report?: string | null;
+    [key: string]: unknown;
+  };
+  transaction?: {
+    id?: number | string;
+    company_id?: number | string;
+    reference?: string;
+    amount?: string | number;
+    previous_balance?: string | number;
+    current_balance?: string | number;
+    type?: string;
+    transaction_type?: string;
+    status?: string;
+    description?: string;
+    created_at?: string;
+    updated_at?: string;
+    [key: string]: unknown;
+  };
   [key: string]: unknown;
 }
 
@@ -894,6 +932,10 @@ export interface ChatMessage {
   status?: "sent" | "delivered" | "read";
   avatar?: string | null;
   logo?: string | null;
+  role?: string;
+  senderRole?: string;
+  sender_type?: string;
+  senderType?: string;
 }
 
 export interface Conversation {

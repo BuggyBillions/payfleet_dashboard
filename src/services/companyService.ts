@@ -547,3 +547,15 @@ export const getCompanyStatsService = async (): Promise<CompanyStatsResponse> =>
     };
   }
 };
+
+export interface UpdateCompanyPasswordPayload {
+  current_password: string;
+  new_password: string;
+}
+
+export const updateCompanyPassword = async (
+  payload: UpdateCompanyPasswordPayload
+) => {
+  const response = await api.post("/update-company-password", payload);
+  return response.data;
+};

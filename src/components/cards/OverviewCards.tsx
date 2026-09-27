@@ -14,7 +14,7 @@ const OverviewCards: React.FC<OverviewCardsProps> = ({
         {Icon2 && <Icon2 size={16} className="text-textBlack/40" />}
       </div>
       <p className="text-xs text-textBlack/70 font-medium">{title}</p>
-      <p className="text-xl text-textBlack font-bold tracking-tight">{value}</p>
+      <div className="text-xl text-textBlack font-bold tracking-tight">{value}</div>
     </div>
   );
 };

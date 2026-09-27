@@ -31,18 +31,14 @@ import {
   TbBuildingBank,
   TbCash,
   TbArrowUpRight,
-  TbFileInvoice,
 } from "react-icons/tb";
 import {
   LuUsersRound,
   LuShieldAlert,
   LuShieldCheck,
   LuArrowDownToLine,
-  LuHeadphones,
-  LuLayers,
   LuPlus,
 } from "react-icons/lu";
-import { HiOutlineBuildingOffice2 } from "react-icons/hi2";
 import { FaMoneyBillWave } from "react-icons/fa6";
 import { BsChatText } from "react-icons/bs";
 
@@ -119,14 +115,14 @@ const SuperAdminOverview: React.FC = () => {
   const superAdminsCount =
     staffStats?.totalStaff
       ? Math.max(
-          0,
-          staffStats.totalStaff -
-            (staffStats.financeStaff + staffStats.supportStaff)
-        ) || 2
+        0,
+        staffStats.totalStaff -
+        (staffStats.financeStaff + staffStats.supportStaff)
+      ) || 2
       : staffList.filter(
-          (s) =>
-            s.role?.toLowerCase().includes("admin")
-        ).length || 2;
+        (s) =>
+          s.role?.toLowerCase().includes("admin")
+      ).length || 2;
 
   // Recent 5 payments
   const recentPayments = payments.slice(0, 5);
@@ -423,7 +419,6 @@ const SuperAdminOverview: React.FC = () => {
             <div className="flex items-center justify-between border-b border-primary/10 pb-3 flex-wrap gap-2">
               <div>
                 <h3 className="font-semibold text-base text-textBlack flex items-center gap-2">
-                  <TbFileInvoice className="text-primary" size={18} />
                   Inbound Company Deposits
                 </h3>
                 <p className="text-xs text-textBlack/60">
@@ -448,8 +443,8 @@ const SuperAdminOverview: React.FC = () => {
               totalPages={1}
               totalItems={depositsList.length}
               itemsPerPage={5}
-              setCurrentPage={() => {}}
-              setItemsPerPage={() => {}}
+              setCurrentPage={() => { }}
+              setItemsPerPage={() => { }}
               hasSerialNo={true}
             />
           </div>
@@ -459,7 +454,6 @@ const SuperAdminOverview: React.FC = () => {
             <div className="flex items-center justify-between border-b border-primary/10 pb-3 flex-wrap gap-2">
               <div>
                 <h3 className="font-semibold text-base text-textBlack flex items-center gap-2">
-                  <HiOutlineBuildingOffice2 className="text-primary" size={18} />
                   Registered Corporate Entities
                 </h3>
                 <p className="text-xs text-textBlack/60">
@@ -495,8 +489,8 @@ const SuperAdminOverview: React.FC = () => {
               totalPages={1}
               totalItems={companiesList.length}
               itemsPerPage={5}
-              setCurrentPage={() => {}}
-              setItemsPerPage={() => {}}
+              setCurrentPage={() => { }}
+              setItemsPerPage={() => { }}
               hasSerialNo={true}
             />
           </div>
@@ -506,7 +500,6 @@ const SuperAdminOverview: React.FC = () => {
             <div className="flex items-center justify-between border-b border-primary/10 pb-3 flex-wrap gap-2">
               <div>
                 <h3 className="font-semibold text-base text-textBlack flex items-center gap-2">
-                  <FaMoneyBillWave className="text-primary" size={16} />
                   Recent Payroll & Vendor Disbursements
                 </h3>
                 <p className="text-xs text-textBlack/60">
@@ -531,8 +524,8 @@ const SuperAdminOverview: React.FC = () => {
               totalPages={1}
               totalItems={recentPayments.length}
               itemsPerPage={5}
-              setCurrentPage={() => {}}
-              setItemsPerPage={() => {}}
+              setCurrentPage={() => { }}
+              setItemsPerPage={() => { }}
               hasSerialNo={true}
             />
           </div>
@@ -545,7 +538,6 @@ const SuperAdminOverview: React.FC = () => {
             <div className="flex items-center justify-between border-b border-primary/10 pb-3">
               <div>
                 <h3 className="font-semibold text-sm text-textBlack flex items-center gap-2">
-                  <LuLayers className="text-primary" size={16} />
                   Platform Tier Distribution
                 </h3>
                 <p className="text-[11px] text-textBlack/60">
@@ -627,7 +619,6 @@ const SuperAdminOverview: React.FC = () => {
             <div className="flex items-center justify-between border-b border-primary/10 pb-3">
               <div>
                 <h3 className="font-semibold text-sm text-textBlack flex items-center gap-2">
-                  <LuUsersRound className="text-primary" size={16} />
                   Operational Staff
                 </h3>
                 <p className="text-[11px] text-textBlack/60">
@@ -676,7 +667,6 @@ const SuperAdminOverview: React.FC = () => {
             <div className="flex items-center justify-between border-b border-primary/10 pb-3">
               <div>
                 <h3 className="font-semibold text-sm text-textBlack flex items-center gap-2">
-                  <LuHeadphones className="text-primary" size={16} />
                   Live Client Inquiries
                 </h3>
                 <p className="text-[11px] text-textBlack/60">
