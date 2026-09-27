@@ -4,7 +4,10 @@ import type {
   DemoDeposit,
   TableColumnProps,
 } from "../../lib/interfaces";
-import { formatterUtility, formatDateTime } from "../../helpers/formatterUtility";
+import {
+  formatterUtility,
+  formatDateTime,
+} from "../../helpers/formatterUtility";
 import ActionButton from "../../components/ui/ActionButton";
 import OverviewCards from "../../components/cards/OverviewCards";
 import StatusBadge from "../../components/ui/StatusBadge";
@@ -21,13 +24,15 @@ import {
 } from "../../services/depositService";
 import { FiSearch } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
-import { decryptToken, encryptToken } from "../../helpers/tokenHelper";
+import { encryptToken } from "../../helpers/tokenHelper";
 
 interface DepositRow extends Omit<DemoDeposit, "id"> {
   id: number | string;
 }
 
-const normalizeStatus = (status: CompanyDeposit["status"]): DemoDeposit["status"] => {
+const normalizeStatus = (
+  status: CompanyDeposit["status"],
+): DemoDeposit["status"] => {
   if (typeof status === "number") {
     return status === 1 ? "successful" : status === 0 ? "pending" : "failed";
   }
@@ -35,17 +40,35 @@ const normalizeStatus = (status: CompanyDeposit["status"]): DemoDeposit["status"
     return status ? "successful" : "pending";
   }
   const s = String(status ?? "").toLowerCase();
-  if (["successful", "success", "completed", "succeeded", "approved", "paid", "credited"].includes(s)) {
+  if (
+    [
+      "successful",
+      "success",
+      "completed",
+      "succeeded",
+      "approved",
+      "paid",
+      "credited",
+    ].includes(s)
+  ) {
     return "successful";
   }
-  if (["pending", "processing", "initiated", "in_progress", "awaiting", "unsettled"].includes(s)) {
+  if (
+    [
+      "pending",
+      "processing",
+      "initiated",
+      "in_progress",
+      "awaiting",
+      "unsettled",
+    ].includes(s)
+  ) {
     return "pending";
   }
   return "failed";
 };
 
 const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
-
   const navigate = useNavigate();
   const { user, token } = useUser();
   const companyId = user?.company_details?.id;
@@ -53,14 +76,15 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [viewDepositId, setViewDepositId] = useState<number | string | null>(null);
+  const [viewDepositId, setViewDepositId] = useState<number | string | null>(
+    null,
+  );
   const [copiedRef, setCopiedRef] = useState<string | null>(null);
 
-  const handleNavigate = async ()=> {
+  const handleNavigate = async () => {
     const encryptedToken = await encryptToken(token!);
-    navigate(`/payment/${encryptedToken}`)
-  
-  }
+    navigate(`/payment/${encryptedToken}`);
+  };
 
   const handleCopyRef = async (ref: string) => {
     const success = await copyToClipboard(ref, "Reference");
@@ -88,7 +112,9 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
       label: "Reference",
       render: (d) => (
         <div className="flex items-center gap-1.5 mt-0.5">
-          <span className="text-[10px] text-textBlack/50 font-mono">{d.reference}</span>
+          <span className="text-[10px] text-textBlack/50 font-mono">
+            {d.reference}
+          </span>
           {d.reference && d.reference !== "—" && (
             <button
               type="button"
@@ -130,9 +156,7 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
     },
     {
       label: "Action",
-      render: (d) => (
-        <ActionCell rowId={d.id} canView onView={openView} />
-      ),
+      render: (d) => <ActionCell rowId={d.id} canView onView={openView} />,
     },
   ];
 
@@ -145,11 +169,11 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
           const transaction = t.transaction ?? ({} as Record<string, unknown>);
           const reference = String(
             transaction.reference ??
-            t.reference ??
-            t.reference_no ??
-            t.transaction_reference ??
-            t.ref ??
-            "",
+              t.reference ??
+              t.reference_no ??
+              t.transaction_reference ??
+              t.ref ??
+              "",
           );
           const amount = Number(transaction.amount ?? t.amount) || 0;
           const status = normalizeStatus(
@@ -157,9 +181,9 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
           );
           const createdAt = String(
             t.created_at ??
-            t.date ??
-            transaction.created_at ??
-            new Date().toISOString(),
+              t.date ??
+              transaction.created_at ??
+              new Date().toISOString(),
           );
           return {
             id: t.id ?? Date.now(),
@@ -231,7 +255,6 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
     }
   }, [currentPage, totalPages]);
 
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-start sm:items-center justify-between gap-4">
@@ -294,8 +317,6 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
           setItemsPerPage={setItemsPerPage}
         />
       </div>
-
-     
 
       {viewDepositId && (
         <EachCompanyDepositModal

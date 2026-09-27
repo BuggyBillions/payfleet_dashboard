@@ -25,7 +25,7 @@ const StepThree: React.FC<{
       try {
         resetPasswordMutation.mutate(values, {
           onSuccess: () => {
-            navigate("login");
+            navigate("/");
           },
         });
       } catch (error) {
