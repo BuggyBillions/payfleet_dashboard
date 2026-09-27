@@ -23,9 +23,13 @@ export const loginService = async (values: LoginValues) => {
   return response.data;
 };
 
-export const getUserService = async () => {
-  const response = await api.get(`/me`);
-  return response.data?.data ?? response.data;
+export const getUserService = async (token: string) => {
+    const response = await api.get(`/me`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+    return response.data?.data ?? response.data;
 };
 
 export const sendEmailVerificationCodeService = async (

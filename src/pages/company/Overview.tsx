@@ -139,7 +139,6 @@ const Overview: React.FC = () => {
 
   const recentTransactions = rows.slice(0, 5);
 
-  // Prefer the /my-company-stats values, fall back to what we computed locally.
   const statEmployees = statsData?.totalEmployees || totalEmployees;
   const statEstimated = statsData?.estimatedSalary || totalPayroll;
   const statTotalPaid = statsData?.totalPaid || 0;

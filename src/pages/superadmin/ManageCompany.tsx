@@ -10,6 +10,7 @@ import type { CompanyProps, TableColumnProps } from "../../lib/interfaces";
 import { useCompanies, useCompanyStats, useDeleteCompany } from "../../hooks/useCompany";
 import { getTierConfig } from "../../services/tierService";
 import { formatterUtility } from "../../helpers/formatterUtility";
+import { CompanyLogoAvatar } from "../../helpers/logoHelper";
 import ChangeTierModal from "../../components/modal/tier/ChangeTierModal";
 import { FiSearch } from "react-icons/fi";
 import { HiOutlineBuildingOffice2 } from "react-icons/hi2";
@@ -168,30 +169,18 @@ const ManageCompany: React.FC = () => {
     }
   };
 
-  const getInitials = (name?: string) => {
-    if (!name) return "CO";
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  };
-
   const columns: TableColumnProps<CompanyProps>[] = [
     {
       label: "Company",
       key: "name",
       render: (item: CompanyProps) => (
         <div className="flex items-center gap-2.5">
-          {item.logo ? (
-            <img
-              src={`https://api.payfleet.com.ng/storage/${item.logo}`}
-              alt={item.name || "Company Logo"}
-              className="w-8 h-8 rounded-lg object-cover border border-primary/10 bg-white shrink-0"
-            />
-          ) : (
-            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
-              {getInitials(item.name || item.companyName)}
-            </div>
-          )}
+          <CompanyLogoAvatar
+            name={item.name || item.companyName}
+            logo={item.logo}
+            className="w-8 h-8 rounded-lg"
+            textClassName="text-xs font-bold"
+          />
           <div className="flex flex-col min-w-0">
             <span className="font-semibold text-textBlack text-xs truncate">
               {item.name || item.companyName || "N/A"}

@@ -20,7 +20,7 @@ import ReusableTable from "../../utility/ReusableTable";
 import StatusBadge from "../../components/ui/StatusBadge";
 import NotificationModal from "../../components/modal/NotificationModal";
 import OverviewCards from "../../components/cards/OverviewCards";
-import { formatISODateToYYYYMMDD } from "../../helpers/formatterUtility";
+import { formatDateTime } from "../../helpers/formatterUtility";
 
 const Notifications: React.FC = () => {
   const { data: notifications = [], isLoading: loading } = useNotifications({
@@ -37,14 +37,12 @@ const Notifications: React.FC = () => {
   const totalItems = notifications.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
-  // Keep currentPage valid if totalPages shrinks
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(totalPages);
     }
   }, [currentPage, totalPages]);
 
-  // Client-side pagination slicing
   const paginatedNotifications = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return notifications.slice(startIndex, startIndex + itemsPerPage);
@@ -85,10 +83,18 @@ const Notifications: React.FC = () => {
   const getTime = (n: NotificationItem) => {
     const dateStr = n.created_at ?? n.date ?? n.updated_at ?? n.read_at;
     if (!dateStr) return "";
-    return formatISODateToYYYYMMDD(dateStr);
+    return formatDateTime(dateStr);
   };
 
   const columns: TableColumnProps<NotificationItem>[] = [
+    {
+      label: "Date",
+      render: (n) => (
+        <span className="text-[10px] text-textBlack/70 whitespace-nowrap">
+          {getTime(n)}
+        </span>
+      ),
+    },
     {
       label: "Message",
       render: (n) => {
@@ -109,14 +115,7 @@ const Notifications: React.FC = () => {
         );
       },
     },
-    {
-      label: "Date",
-      render: (n) => (
-        <span className="text-[10px] text-textBlack/70 whitespace-nowrap">
-          {getTime(n)}
-        </span>
-      ),
-    },
+
     {
       label: "Status",
       render: (n) =>
@@ -194,6 +193,7 @@ const Notifications: React.FC = () => {
           itemsPerPage={itemsPerPage}
           setCurrentPage={setCurrentPage}
           setItemsPerPage={setItemsPerPage}
+          hasSerialNo={false}
         />
       </div>
 

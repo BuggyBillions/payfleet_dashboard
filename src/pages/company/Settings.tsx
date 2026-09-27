@@ -1,25 +1,25 @@
 import React, { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { FiEye, FiEyeOff } from "react-icons/fi";
-import { LuPencil, LuX } from "react-icons/lu";
+import { LuPencil } from "react-icons/lu";
 import {
   LuUser,
   LuShieldCheck,
   LuCrown,
 } from "react-icons/lu";
 import { useUser } from "../../hooks/useUser";
-import { updateCompanyDetails } from "../../services/companyService";
+import { updateCompanyDetails, updateCompanyPassword } from "../../services/companyService";
 import { getErrorMessage } from "../../helpers/api";
 import { formatterUtility } from "../../helpers/formatterUtility";
 import TierSettings from "./TierSettings";
+import EditProfileModal, {
+  type ProfileFormValues,
+} from "../../components/modal/EditProfileModal";
 import type { SettingsTab, PasswordFieldProps } from "../../lib/interfaces";
+import { TbLockPassword } from "react-icons/tb";
 
 type DocumentField = "logo" | "cac" | "mermat" | "status_report";
 
-// BVN/NIN are identifiers, not quantities. Keep them as digit strings so an
-// 11-digit value is never coerced into a JS number (precision loss) or a
-// numeric column (out-of-range). The API may still return them as numbers
-// while the DB column is numeric, so normalise defensively.
 const toDigitString = (value: string | number | null | undefined) => {
   const trimmed = String(value ?? "").trim();
   return /^\d+$/.test(trimmed) ? trimmed : undefined;
@@ -46,6 +46,12 @@ const TABS: TabConfig[] = [
     roles: ["company"],
   },
   {
+    key: "password",
+    label: "Password",
+    icon: TbLockPassword,
+    roles: ["company", "finance", "support", "admin"],
+  },
+  {
     key: "tier",
     label: "Tier & Plan",
     icon: LuCrown,
@@ -56,13 +62,20 @@ const TABS: TabConfig[] = [
 const inputClass =
   "w-full text-textBlack border border-primary/10 bg-secondary rounded-lg px-4 h-11 text-xs outline-0 placeholder:text-textBlack/40 focus:border-primary/40 transition";
 
-const readOnlyInputClass = `${inputClass} opacity-70 cursor-not-allowed`;
-
 const submitClass =
-  "bg-primary hover:bg-primary/90 text-textWhite text-xs rounded-lg font-medium px-6 h-10 cursor-pointer shadow-xs transition disabled:opacity-60 disabled:cursor-not-allowed";
+  "bg-primary hover:bg-primary/90 text-textBlack text-xs rounded-lg font-medium px-6 h-10 cursor-pointer shadow-xs transition disabled:opacity-60 disabled:cursor-not-allowed";
 
-const secondarySubmitClass =
-  "text-textBlack border border-primary/20 bg-secondary hover:bg-primary/10 text-xs rounded-lg font-medium px-6 h-10 cursor-pointer transition";
+const DetailRow: React.FC<{ label: string; value?: string | null }> = ({
+  label,
+  value,
+}) => (
+  <div className="flex flex-col gap-0.5 p-3 rounded-lg border border-primary/10 bg-secondary/40">
+    <span className="text-[11px] font-medium text-textBlack/60">{label}</span>
+    <span className="text-xs font-medium text-textBlack break-words">
+      {value?.trim() ? value : "—"}
+    </span>
+  </div>
+);
 
 const PasswordField: React.FC<PasswordFieldProps> = ({
   label,
@@ -100,7 +113,6 @@ const Settings: React.FC = () => {
   const { user, role, token, refreshUser } = useUser();
   const currentRole = (role || user?.role || "company").toLowerCase().trim();
 
-  // Filter allowed tabs based on user's active role
   const allowedTabs = useMemo(() => {
     return TABS.filter((tab) => {
       if (!tab.roles || tab.roles.length === 0) return true;
@@ -116,8 +128,7 @@ const Settings: React.FC = () => {
 
   const [hiddenFields, setHiddenFields] = useState<Record<string, boolean>>({});
 
-  // Profile Form State
-  const [profile, setProfile] = useState({
+  const [profile, setProfile] = useState<ProfileFormValues>({
     name:
       user?.company_name ||
       user?.name ||
@@ -138,16 +149,13 @@ const Settings: React.FC = () => {
     nin: toDigitString(user?.company_details?.nin) ?? "",
   });
 
-  // Snapshot of the last persisted values. Edits are staged locally and only
-  // committed on save, so the snapshot drives both the dirty check and Cancel.
   const [savedProfile, setSavedProfile] = useState(profile);
 
-  // Profile is read-only until Edit is pressed, so the Save action is explicit.
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
   const isProfileDirty = useMemo(
     () =>
-      (Object.keys(profile) as (keyof typeof profile)[]).some(
+      (Object.keys(profile) as (keyof ProfileFormValues)[]).some(
         (key) => profile[key] !== savedProfile[key],
       ),
     [profile, savedProfile],
@@ -164,12 +172,18 @@ const Settings: React.FC = () => {
 
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPin, setSavingPin] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
 
-  // PIN Form State
   const [pin, setPin] = useState({
     current_pin: "",
     new_pin: "",
     confirm_pin: "",
+  });
+
+  const [passwordState, setPasswordState] = useState({
+    current_password: "",
+    new_password: "",
+    confirm_password: "",
   });
 
   const isFieldVisible = (key: string) => hiddenFields[key] === true;
@@ -177,15 +191,13 @@ const Settings: React.FC = () => {
   const toggleField = (key: string) =>
     setHiddenFields((prev) => ({ ...prev, [key]: !prev[key] }));
 
-  const handleProfileChange = (key: keyof typeof profile, value: string) => {
+  const handleProfileChange = (key: keyof ProfileFormValues, value: string) => {
     setProfile((prev) => ({ ...prev, [key]: value }));
   };
 
-  const startEditingProfile = () => setIsEditingProfile(true);
-
-  const cancelEditingProfile = () => {
+  const closeEditProfile = () => {
     setProfile(savedProfile);
-    setIsEditingProfile(false);
+    setIsEditProfileOpen(false);
   };
 
   const handleSaveProfile = async () => {
@@ -204,7 +216,7 @@ const Settings: React.FC = () => {
       });
 
       setSavedProfile(profile);
-      setIsEditingProfile(false);
+      setIsEditProfileOpen(false);
       toast.success("Company profile updated successfully.");
       if (token) refreshUser(token).catch(() => undefined);
     } catch (error) {
@@ -235,6 +247,47 @@ const Settings: React.FC = () => {
     }
   };
 
+  const handleUpdatePassword = async () => {
+    if (!passwordState.current_password) {
+      toast.error("Please enter your current password");
+      return;
+    }
+    if (!passwordState.new_password) {
+      toast.error("Please enter your new password");
+      return;
+    }
+    if (passwordState.new_password.length < 6) {
+      toast.error("New password must be at least 6 characters");
+      return;
+    }
+    if (passwordState.new_password !== passwordState.confirm_password) {
+      toast.error("New password and confirm password do not match");
+      return;
+    }
+    if (passwordState.current_password === passwordState.new_password) {
+      toast.error("New password must be different from current password");
+      return;
+    }
+
+    setSavingPassword(true);
+    try {
+      await updateCompanyPassword({
+        current_password: passwordState.current_password,
+        new_password: passwordState.new_password,
+      });
+      toast.success("Password updated successfully");
+      setPasswordState({
+        current_password: "",
+        new_password: "",
+        confirm_password: "",
+      });
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to update password"));
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
   const renderTabContent = () => {
     if (!allowedTabs.some((t) => t.key === effectiveTab)) {
       return (
@@ -255,7 +308,6 @@ const Settings: React.FC = () => {
               </p>
             </div>
 
-            {/* Profile badge header */}
             <div className="flex items-center gap-4 p-4 rounded-xl bg-secondary border border-primary/10">
               {existingDocuments.logo ? (
                 <img
@@ -286,124 +338,27 @@ const Settings: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <label className="flex flex-col space-y-1.5">
-                <span className="font-medium text-xs text-textBlack">Company Name</span>
-                <input
-                  type="text"
-                  value={profile.name}
-                  onChange={(e) => handleProfileChange("name", e.target.value)}
-                  disabled={!isEditingProfile}
-                  className={isEditingProfile ? inputClass : readOnlyInputClass}
-                />
-              </label>
-              <label className="flex flex-col space-y-1.5">
-                <span className="font-medium text-xs text-textBlack">Company Email</span>
-                <input
-                  type="email"
-                  value={profile.email}
-                  onChange={(e) => handleProfileChange("email", e.target.value)}
-                  disabled={!isEditingProfile}
-                  className={isEditingProfile ? inputClass : readOnlyInputClass}
-                />
-              </label>
-              <label className="flex flex-col space-y-1.5">
-                <span className="font-medium text-xs text-textBlack">Phone Number</span>
-                <input
-                  type="text"
-                  value={profile.phoneNumber}
-                  onChange={(e) => handleProfileChange("phoneNumber", e.target.value)}
-                  disabled={!isEditingProfile}
-                  className={isEditingProfile ? inputClass : readOnlyInputClass}
-                />
-              </label>
-              <label className="flex flex-col space-y-1.5">
-                <span className="font-medium text-xs text-textBlack">Company Address</span>
-                <input
-                  type="text"
-                  value={profile.address}
-                  onChange={(e) => handleProfileChange("address", e.target.value)}
-                  placeholder="e.g. Tanke Estates Ilorin"
-                  disabled={!isEditingProfile}
-                  className={isEditingProfile ? inputClass : readOnlyInputClass}
-                />
-              </label>
-              <label className="flex flex-col space-y-1.5">
-                <span className="font-medium text-xs text-textBlack">BVN</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={11}
-                  value={profile.bvn}
-                  onChange={(e) =>
-                    handleProfileChange("bvn", e.target.value.replace(/\D/g, ""))
-                  }
-                  placeholder="Enter your 11-digit BVN"
-                  disabled={!isEditingProfile}
-                  className={isEditingProfile ? inputClass : readOnlyInputClass}
-                />
-              </label>
-              <label className="flex flex-col space-y-1.5">
-                <span className="font-medium text-xs text-textBlack">NIN</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={11}
-                  value={profile.nin}
-                  onChange={(e) =>
-                    handleProfileChange("nin", e.target.value.replace(/\D/g, ""))
-                  }
-                  placeholder="Enter your 11-digit NIN"
-                  disabled={!isEditingProfile}
-                  className={isEditingProfile ? inputClass : readOnlyInputClass}
-                />
-              </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <DetailRow label="Company Name" value={profile.name} />
+              <DetailRow label="Company Email" value={profile.email} />
+              <DetailRow label="Phone Number" value={profile.phoneNumber} />
+              <DetailRow label="Company Address" value={profile.address} />
+              <DetailRow label="BVN" value={profile.bvn} />
+              <DetailRow label="NIN" value={profile.nin} />
+              <div className="sm:col-span-2">
+                <DetailRow label="About / Description" value={profile.about} />
+              </div>
             </div>
 
-            <label className="flex flex-col space-y-1.5">
-              <span className="font-medium text-xs text-textBlack">About / Description</span>
-              <textarea
-                value={profile.about}
-                onChange={(e) => handleProfileChange("about", e.target.value)}
-                placeholder="Tell us about your business"
-                disabled={!isEditingProfile}
-                className={`${
-                  isEditingProfile ? inputClass : readOnlyInputClass
-                } h-24 resize-none pt-3`}
-              />
-            </label>
-
             <div className="flex flex-wrap items-center gap-3">
-              {isEditingProfile ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleSaveProfile}
-                    disabled={savingProfile || !isProfileDirty}
-                    className={submitClass}
-                  >
-                    {savingProfile ? "Saving..." : "Save Changes"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={cancelEditingProfile}
-                    disabled={savingProfile}
-                    className={`${secondarySubmitClass} flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed`}
-                  >
-                    <LuX size={13} />
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  onClick={startEditingProfile}
-                  className={`${submitClass} flex items-center gap-1.5`}
-                >
-                  <LuPencil size={13} />
-                  Edit Profile
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => setIsEditProfileOpen(true)}
+                className={`${submitClass} flex items-center gap-1.5`}
+              >
+                <LuPencil size={13} />
+                Edit Profile
+              </button>
             </div>
           </div>
         );
@@ -457,7 +412,7 @@ const Settings: React.FC = () => {
               type="button"
               onClick={handleUpdatePin}
               disabled={savingPin}
-              className={`${submitClass} self-start disabled:opacity-60 disabled:cursor-not-allowed`}
+              className={`${submitClass} text-textBlack self-start disabled:opacity-60 disabled:cursor-not-allowed`}
             >
               {savingPin ? "Updating..." : "Update Transaction PIN"}
             </button>
@@ -476,6 +431,60 @@ const Settings: React.FC = () => {
             <TierSettings />
           </div>
         );
+
+      case "password":
+        return (
+          <div className="flex flex-col gap-6 max-w-xl">
+            <div className="flex flex-col">
+              <h3 className="font-semibold text-base text-textBlack">Change Password</h3>
+              <p className="text-xs text-textBlack/60">
+                Update your account password to keep your account secure. Make sure to choose a strong and unique password.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-y-4">
+              <PasswordField
+                label="Current Password"
+                value={passwordState.current_password}
+                onChange={(value) =>
+                  setPasswordState((prev) => ({ ...prev, current_password: value }))
+                }
+                visible={isFieldVisible("pwd_current")}
+                onToggle={() => toggleField("pwd_current")}
+                placeholder="Enter current password"
+              />
+              <PasswordField
+                label="New Password"
+                value={passwordState.new_password}
+                onChange={(value) =>
+                  setPasswordState((prev) => ({ ...prev, new_password: value }))
+                }
+                visible={isFieldVisible("pwd_new")}
+                onToggle={() => toggleField("pwd_new")}
+                placeholder="Enter new password"
+              />
+              <PasswordField
+                label="Confirm New Password"
+                value={passwordState.confirm_password}
+                onChange={(value) =>
+                  setPasswordState((prev) => ({ ...prev, confirm_password: value }))
+                }
+                visible={isFieldVisible("pwd_confirm")}
+                onToggle={() => toggleField("pwd_confirm")}
+                placeholder="Re-enter new password"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleUpdatePassword}
+              disabled={savingPassword}
+              className={`${submitClass} text-textBlack self-start disabled:opacity-60 disabled:cursor-not-allowed`}
+            >
+              {savingPassword ? "Updating..." : "Update Password"}
+            </button>
+          </div>
+        );
+
 
       default:
         return null;
@@ -500,8 +509,8 @@ const Settings: React.FC = () => {
               type="button"
               onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-2 px-4 h-9 rounded-lg text-xs font-medium transition cursor-pointer ${effectiveTab === tab.key
-                  ? "bg-primary text-white shadow-xs"
-                  : "border border-textBlack/10 text-textBlack/70 hover:bg-secondary hover:text-textBlack"
+                ? "bg-primary text-white shadow-xs"
+                : "border border-textBlack/10 text-textBlack/70 hover:bg-secondary hover:text-textBlack"
                 }`}
             >
               <TabIcon size={14} />
@@ -514,6 +523,17 @@ const Settings: React.FC = () => {
       <div className="bg-tertiary text-textBlack rounded-xl p-5 md:p-8 border border-primary/10">
         {renderTabContent()}
       </div>
+
+      {isEditProfileOpen && (
+        <EditProfileModal
+          values={profile}
+          onChange={handleProfileChange}
+          onSubmit={handleSaveProfile}
+          onClose={closeEditProfile}
+          saving={savingProfile}
+          isDirty={isProfileDirty}
+        />
+      )}
     </div>
   );
 };

@@ -27,7 +27,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const refreshUser = useCallback(async (token: string) => {
     if (!token) return;
     try {
-      const data = await getUserService();
+      const data = await getUserService(token);
       if (data) {
         setUser(data);
         if (data.role) {

@@ -19,7 +19,15 @@ export const navItems: NavItem[] = [
     name: "Employees",
     icon: LuUsersRound,
     role: ["company"],
-    path: "/dashboard/employees",
+    children: [
+      {
+        name: "All Employees",
+        path: "/dashboard/employees",
+      }, {
+        name: "Add Employee",
+        path: "/dashboard/employees/add"
+      }
+    ]
   },
   {
     name: "Deposits",

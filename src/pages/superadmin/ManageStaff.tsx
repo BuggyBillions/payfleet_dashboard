@@ -314,7 +314,7 @@ const ManageStaff: React.FC = () => {
                     : "text-textBlack/60 hover:text-textBlack hover:bg-primary/5"
                 }`}
               >
-                {r === "all" ? "All Roles" : `${r} Officers`}
+                {r === "all" ? "All" : `${r}`}
               </button>
             ))}
           </div>

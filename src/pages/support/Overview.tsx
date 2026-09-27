@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import OverviewCards from "../../components/cards/OverviewCards";
 import PageHeader from "../../components/navs/PageHeader";
@@ -9,15 +9,14 @@ import { useUser } from "../../hooks/useUser";
 import { formatShortDate } from "../../helpers/formatterUtility";
 import { useCompanies, useCompanyStats } from "../../hooks/useCompany";
 import { getTierConfig } from "../../services/tierService";
+import { CompanyLogoAvatar } from "../../helpers/logoHelper";
 import { useAdminSupportConversations } from "../../hooks/useSupportChat";
 import type { CompanyProps, TableColumnProps } from "../../lib/interfaces";
 import {
   LuShieldAlert,
   LuShieldCheck,
   LuClock,
-  LuHeadphones,
   LuArrowUpRight,
-  LuFileText,
 } from "react-icons/lu";
 import { HiOutlineBuildingOffice2 } from "react-icons/hi2";
 import { BsChatText } from "react-icons/bs";
@@ -29,7 +28,8 @@ const SupportOverview: React.FC = () => {
   const {
     data: companiesData,
     isLoading: isCompaniesLoading,
-    error,
+    isFetching,
+    error: tableError,
   } = useCompanies({
     page: 1,
     per_page: 5,
@@ -40,37 +40,101 @@ const SupportOverview: React.FC = () => {
 
   const companiesList = companiesData?.items || [];
 
-  // Metrics derived from live API stats
-  const pendingCount = statsData?.pendingCompanies ?? 0;
-  const verifiedCount = statsData?.verifiedCompanies ?? 0;
-  const activeCount = statsData?.activeCompanies ?? 0;
-  const totalCount = statsData?.totalCompanies ?? companiesData?.totalItems ?? 0;
+  // Helper function to check active status (aligned with ManageCompany.tsx)
+  const isCompanyActive = (company?: CompanyProps | null) => {
+    if (!company) return false;
+    if (typeof company.status === "boolean") return company.status;
+    if (company.user?.is_active !== undefined) {
+      return company.user.is_active === 1 || Boolean(company.user.is_active);
+    }
+    if (company.is_active !== undefined) {
+      return company.is_active === 1 || Boolean(company.is_active);
+    }
+    const s = String(company.status ?? "").toLowerCase();
+    return s === "active" || s === "1" || s === "true" || s === "successful" || s === "verified";
+  };
+
+  // Helper function to check verification status (aligned with ManageCompany.tsx)
+  const isCompanyVerified = (company?: CompanyProps | null) => {
+    if (!company) return false;
+    if (company.user?.is_verified !== undefined) {
+      return company.user.is_verified === 1 || Boolean(company.user.is_verified);
+    }
+    if (company.is_verified !== undefined) {
+      return company.is_verified === 1 || Boolean(company.is_verified);
+    }
+    const v = String(company.verificationStatus || company.status || "").toLowerCase();
+    return v === "verified" || v === "successful";
+  };
+
+  // Metrics derived from live API stats with fallback to companies list
+  const allCompanies = statsData?.items && statsData.items.length > 0 ? statsData.items : companiesList;
+  const totalCount = statsData?.totalCompanies || statsData?.totalItems || companiesData?.totalItems || companiesList.length;
+
+  const activeCount = useMemo(() => {
+    if (statsData?.activeCompanies !== undefined && statsData.activeCompanies > 0) {
+      return statsData.activeCompanies;
+    }
+    return allCompanies.filter((c) => isCompanyActive(c)).length;
+  }, [allCompanies, statsData?.activeCompanies]);
+
+  const verifiedCount = useMemo(() => {
+    if (statsData?.verifiedCompanies !== undefined && statsData.verifiedCompanies > 0) {
+      return statsData.verifiedCompanies;
+    }
+    return allCompanies.filter((c) => isCompanyVerified(c)).length;
+  }, [allCompanies, statsData?.verifiedCompanies]);
+
+  const pendingCount = useMemo(() => {
+    if (statsData?.pendingCompanies !== undefined && statsData.pendingCompanies > 0) {
+      return statsData.pendingCompanies;
+    }
+    return allCompanies.filter((c) => !isCompanyVerified(c)).length;
+  }, [allCompanies, statsData?.pendingCompanies]);
 
   const columns: TableColumnProps<CompanyProps>[] = [
     {
-      label: "Company Details",
-      render: (item) => (
-        <div className="flex flex-col">
-          <span className="font-semibold text-textBlack text-xs">
-            {item.name || item.companyName || "Company"}
-          </span>
-          <span className="text-[11px] text-textBlack/50 font-mono">
-            {item.rc_number || item.rcNumber || "N/A"}
+      label: "Company",
+      key: "name",
+      render: (item: CompanyProps) => (
+        <div className="flex items-center gap-2.5">
+          <CompanyLogoAvatar
+            name={item.name || item.companyName}
+            logo={item.logo}
+            className="w-8 h-8 rounded-lg"
+            textClassName="text-xs font-bold"
+          />
+          <div className="flex flex-col min-w-0">
+            <span className="font-semibold text-textBlack text-xs truncate">
+              {item.name || item.companyName || "N/A"}
+            </span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      label: "Contact Details",
+      key: "email",
+      render: (item: CompanyProps) => (
+        <div className="flex flex-col text-xs">
+          <span className="text-textBlack/80 lowercase truncate max-w-[150px]">{item.email}</span>
+          <span className="text-[10px] text-textBlack/50 font-mono">
+            {item.phone || item.phoneNumber || "N/A"}
           </span>
         </div>
       ),
     },
     {
-      label: "Tier & Industry",
-      render: (item) => {
+      label: "Tier & Staff",
+      key: "tier",
+      render: (item: CompanyProps) => {
         const tier = getTierConfig(item.tier);
+        const staffCount = item.no_of_employee ?? item.employees?.length ?? item.staff ?? item.staffCount ?? 0;
         return (
           <div className="flex flex-col">
-            <span className="text-xs text-textBlack/80 font-medium">
-              {tier.name}
-            </span>
-            <span className="text-[10px] text-textBlack/50 truncate max-w-[120px]">
-              {item.industry || "General Business"}
+            <span className="text-xs text-primary font-semibold">{tier.name}</span>
+            <span className="text-[10px] text-textBlack/50">
+              {staffCount} Staff
             </span>
           </div>
         );
@@ -78,19 +142,24 @@ const SupportOverview: React.FC = () => {
     },
     {
       label: "Status",
-      render: (item) => {
-        const status =
-          typeof item.status === "boolean"
-            ? item.status
-              ? "Active"
-              : "Inactive"
-            : String(item.status || (item.is_active ? "Active" : "Inactive"));
-        return <StatusBadge status={status} />;
+      key: "status",
+      render: (item: CompanyProps) => {
+        const active = isCompanyActive(item);
+        return <StatusBadge status={active ? "Active" : "Inactive"} />;
+      },
+    },
+    {
+      label: "Verification",
+      key: "verification",
+      render: (item: CompanyProps) => {
+        const verified = isCompanyVerified(item);
+        return <StatusBadge status={verified ? "Verified" : "Pending Verification"} />;
       },
     },
     {
       label: "Registered Date",
-      render: (item) => (
+      key: "created_at",
+      render: (item: CompanyProps) => (
         <span className="text-xs text-textBlack/60 whitespace-nowrap">
           {item.created_at ? formatShortDate(item.created_at) : "—"}
         </span>
@@ -98,6 +167,7 @@ const SupportOverview: React.FC = () => {
     },
     {
       label: "Action",
+      key: "action",
       render: () => (
         <button
           type="button"
@@ -166,7 +236,6 @@ const SupportOverview: React.FC = () => {
           <div className="flex items-center justify-between border-b border-primary/10 pb-3">
             <div>
               <h3 className="font-semibold text-base text-textBlack flex items-center gap-2">
-                <LuFileText className="text-primary" size={18} />
                 Recent Companies
               </h3>
               <p className="text-xs text-textBlack/60">
@@ -185,8 +254,8 @@ const SupportOverview: React.FC = () => {
           <ReusableTable
             columns={columns}
             data={companiesList}
-            isLoading={isCompaniesLoading}
-            error={error ? "Failed to load recent companies" : null}
+            isLoading={isCompaniesLoading || isFetching}
+            error={tableError ? "Failed to load recent companies" : null}
             currentPage={1}
             totalPages={1}
             totalItems={companiesList.length}
@@ -204,7 +273,6 @@ const SupportOverview: React.FC = () => {
             <div className="flex items-center justify-between border-b border-primary/10 pb-3">
               <div>
                 <h3 className="font-semibold text-sm text-textBlack flex items-center gap-2">
-                  <LuHeadphones className="text-primary" size={16} />
                   Live Inquiries
                 </h3>
                 <p className="text-[11px] text-textBlack/60">

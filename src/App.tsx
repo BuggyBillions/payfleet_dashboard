@@ -1,5 +1,5 @@
 import { Toaster } from "sonner";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import MainLayout from "./layout/MainLayout";
 
 // Auth
@@ -13,6 +13,7 @@ import NotFound from "./pages/view/NotFound";
 import Overview from "./pages/company/Overview";
 import Employees from "./pages/company/Employees";
 import AddEmployee from "./pages/company/AddEmployee";
+import EditEmployee from "./pages/company/EditEmployee";
 import ProcessPayments from "./pages/company/ProcessPayments";
 import PaymentHistory from "./pages/company/PaymentHistory";
 import ActivityLog from "./pages/company/ActivityLog";
@@ -33,12 +34,21 @@ import Communication from "./pages/chat/Communication";
 import Notifications from "./pages/company/Notifications";
 import ManageCompanyVerification from "./pages/superadmin/ManageCompanyVerification";
 import Deposits from "./pages/company/Deposits";
+import Deposit from "./components/modal/Deposit";
 
 function App() {
+  const navigate = useNavigate();
   return (
     <>
       <Toaster />
       <Routes>
+        <Route
+          index
+          path="/payment/:token"
+          element={
+            <Deposit onClose={() => navigate('/')}  />
+          }
+        />
         <Route index path="/" element={<Login />} />
         <Route path="/getstarted" element={<Register />} />
         <Route path="/forgotpassword" element={<Forgotpassword />} />
@@ -67,14 +77,22 @@ function App() {
         />
         <Route
           index
+          path="/dashboard/employees/edit/:id"
+          element={
+            <MainLayout pageName="Edit Employee" children={<EditEmployee />} />
+          }
+        />
+        <Route
+          index
           path="/dashboard/deposits"
           element={
             <MainLayout
               pageName="All Deposits"
-              children={<Deposits   />}
+              children={<Deposits />}
             />
           }
         />
+
         <Route
           index
           path="/dashboard/payments/process"

@@ -15,7 +15,6 @@ import {
   TbClockHour4,
   TbCash,
   TbArrowUpRight,
-  TbFileInvoice,
   TbBuildingBank,
 } from "react-icons/tb";
 import { FaMoneyBillWave } from "react-icons/fa6";
@@ -140,13 +139,14 @@ const FinancialOverview: React.FC = () => {
             <ActionButton
               text="Pending Deposits"
               onClick={() => navigate("/financial/dashboard/deposit/pending")}
-              icon={<LuArrowDownToLine size={16} />}
+              icon={<LuArrowDownToLine className="text-[10px] md:text-base" />}
+              buttonStyle="text-[10px] md:text-base"
             />
             <ActionButton
               onClick={() => navigate("/financial/dashboard/payments")}
               overideBg={true}
-              buttonStyle=" border border-primary/20 bg-secondary text-primary hover:bg-primary/10 transition-colors cursor-pointer"
-              icon={<FaMoneyBillWave size={14} />}
+              buttonStyle=" border border-primary/20 bg-secondary text-primary hover:bg-primary/10 transition-colors cursor-pointer text-[10px] md:text-base"
+              icon={<FaMoneyBillWave className="text-[10px] md:text-base" />}
               text="Manage Payouts"
             />
           </div>
@@ -196,7 +196,6 @@ const FinancialOverview: React.FC = () => {
         <div className="flex items-center flex-wrap lg:justify-between justify-end border-b border-primary/10 pb-3">
           <div>
             <h3 className="font-semibold text-base text-textBlack flex items-center gap-2">
-              <TbFileInvoice className="text-primary" size={18} />
               Pending Deposit Verification Queue
             </h3>
             <p className="text-xs text-textBlack/60">
@@ -232,7 +231,6 @@ const FinancialOverview: React.FC = () => {
           <div className="flex items-center flex-wrap lg:justify-between justify-end border-b border-primary/10 pb-3">
             <div>
               <h3 className="font-semibold text-base text-textBlack flex items-center gap-2">
-                <FaMoneyBillWave className="text-primary" size={16} />
                 Recent Payroll & Vendor Disbursements
               </h3>
               <p className="text-xs text-textBlack/60">

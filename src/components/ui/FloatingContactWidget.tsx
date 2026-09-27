@@ -9,11 +9,21 @@ import {
   LuMail,
   LuSparkles,
   LuHeadphones,
+  LuCheck,
+  LuCheckCheck,
 } from "react-icons/lu";
 import { BsChatDotsFill } from "react-icons/bs";
 import { RiCustomerService2Fill } from "react-icons/ri";
 
-import type { FloatingWidgetMessage as Message } from "../../lib/interfaces";
+export interface FloatingWidgetMessage {
+  id: number | string;
+  sender: "user" | "support";
+  text: string;
+  time: string;
+  status?: "sent" | "delivered" | "read";
+}
+
+type Message = FloatingWidgetMessage;
 import {
   useSupportMessages,
   useSendUserMessage,
@@ -116,6 +126,7 @@ const FloatingContactWidget: React.FC = () => {
       sender: m.isMe ? "user" : "support",
       text: m.text,
       time: m.timestamp || "Just now",
+      status: m.status || (m.isMe ? "read" : undefined),
     }));
   }, [serverMessages]);
 
@@ -167,6 +178,7 @@ const FloatingContactWidget: React.FC = () => {
       sender: "user",
       text: userText,
       time: timeString,
+      status: "sent",
     };
 
     setPendingUserMessages((prev) => [...prev, optimisticMsg]);
@@ -195,6 +207,7 @@ const FloatingContactWidget: React.FC = () => {
       sender: "user",
       text: preset.question,
       time: timeString,
+      status: "sent",
     };
 
     const botReply: Message = {
@@ -202,6 +215,7 @@ const FloatingContactWidget: React.FC = () => {
       sender: "support",
       text: preset.answer,
       time: timeString,
+      status: "read",
     };
 
     setPendingUserMessages((prev) => [...prev, userMsg, botReply]);
@@ -216,6 +230,17 @@ const FloatingContactWidget: React.FC = () => {
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 50);
+  };
+
+  const renderWidgetStatusTick = (status?: "sent" | "delivered" | "read") => {
+    const norm = (status || "sent").toLowerCase();
+    if (norm === "read" || norm === "seen") {
+      return <LuCheckCheck size={12} className="text-primary shrink-0" title="Read" />;
+    }
+    if (norm === "delivered" || norm === "received") {
+      return <LuCheckCheck size={12} className="text-textBlack/40 shrink-0" title="Delivered" />;
+    }
+    return <LuCheck size={11} className="text-textBlack/40 shrink-0" title="Sent" />;
   };
 
   if (isStaff) return null;
@@ -265,7 +290,7 @@ const FloatingContactWidget: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveTab("chat")}
-                className={`py-2.5 text-center transition border-b-2 cursor-pointer ${activeTab === "chat"
+                className={`py-2.5 text-center transition border-b cursor-pointer ${activeTab === "chat"
                   ? "border-primary text-primary bg-textWhite font-bold"
                   : "border-b border-textBlack bg-tertiary text-textBlack/50 hover:text-textBlack/80"
                   }`}
@@ -275,7 +300,7 @@ const FloatingContactWidget: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveTab("contact")}
-                className={`py-2.5 text-center transition border-b-2 cursor-pointer ${activeTab === "contact"
+                className={`py-2.5 text-center transition border-b cursor-pointer ${activeTab === "contact"
                   ? "border-primary text-primary bg-textWhite font-bold"
                   : "border-b border-textBlack bg-tertiary text-textBlack/50 hover:text-textBlack/80"
                   }`}
@@ -312,11 +337,14 @@ const FloatingContactWidget: React.FC = () => {
                           >
                             <p>{msg.text}</p>
                           </div>
-                          {msg.time && (
-                            <span className="text-[9px] text-textBlack mt-1 px-1">
-                              {msg.time}
-                            </span>
-                          )}
+                          <div className="flex items-center gap-1 mt-1 px-1 text-[9px] text-textBlack/60">
+                            {msg.time && <span>{msg.time}</span>}
+                            {msg.sender === "user" && (
+                              <span className="flex items-center">
+                                {renderWidgetStatusTick(msg.status)}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </>
@@ -467,23 +495,23 @@ const FloatingContactWidget: React.FC = () => {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen((prev) => !prev)}
-        className="relative group h-14 px-4 rounded-full bg-primary hover:bg-primary/95 text-white shadow-xl hover:shadow-2xl flex items-center gap-2.5 transition cursor-pointer border-2 border-textWhite/20"
+        className="relative group p-2 md:p-4 rounded-full bg-primary hover:bg-primary/95 text-white shadow-xl hover:shadow-2xl flex items-center gap-2.5 transition cursor-pointer border-2 border-textWhite/20 group outline-none"
       >
         {/* Pulsing online indicator */}
         <span className="relative flex h-3 w-3">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-green-400 border border-textWhite" />
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 " />
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-green-400 border border-none" />
         </span>
 
         {isOpen ? (
           <>
             <LuX size={20} className="text-white" />
-            <span className="text-xs font-bold pr-1">Close</span>
+            <span className="text-xs font-bold pr-1 hidden group-hover:flex">Close</span>
           </>
         ) : (
           <>
             <BsChatDotsFill size={18} className="text-white" />
-            <span className="text-xs font-bold pr-1">Support Chat</span>
+            <span className="text-xs font-bold pr-1 hidden group-hover:flex">Support Chat</span>
             {unreadCount > 0 && (
               <span className="px-1.5 py-0.5 text-[10px] font-bold bg-amber-400 text-white rounded-full animate-bounce">
                 {unreadCount}

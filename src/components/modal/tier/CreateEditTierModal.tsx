@@ -20,7 +20,7 @@ const CreateEditTierModal: React.FC<CreateEditTierModalProps> = ({ tier, onClose
     tier?.no_of_staff ? String(tier.no_of_staff) : "10"
   );
   const [requirements, setRequirements] = useState<string>(
-    tier?.requirements || "CAC,MERMAT,Address"
+    tier?.requirements || "" 
   );
 
   useEffect(() => {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { LuCrown, LuLoader, LuUsersRound } from "react-icons/lu";
+import { LuCrown, LuLayers, LuLoader, LuFileText, LuUsersRound } from "react-icons/lu";
 import Modal from "../../components/modal/Modal";
 import OverviewCards from "../../components/cards/OverviewCards";
 import ReusableTable from "../../utility/ReusableTable";
@@ -14,26 +14,12 @@ import {
   getEachTier,
   type Tier,
   getTierRequirements,
+  findCompanyTier,
+  getCompanyLevel,
+  sortTiersByLevel,
 } from "../../services/tierService";
-import type { CompanyTierProp } from "../../lib/interfaces";
 
 const getRequirements = getTierRequirements;
-
-const getTierInfo = (
-  value: unknown,
-): { id: number | null; label: string } => {
-  if (value && typeof value === "object") {
-    const obj = value as CompanyTierProp;
-    return {
-      id: Number(obj.id) || null,
-      label: String(obj.name ?? obj.level ?? obj.id ?? "—").trim() || "—",
-    };
-  }
-  return {
-    id: Number(value) || null,
-    label: String(value ?? "—"),
-  };
-};
 
 const getTierName = (t: Partial<Tier>): string => String(t.name ?? "");
 const getTierLevel = (t: Partial<Tier>): string => String(t.level ?? "—");
@@ -178,9 +164,6 @@ const TierDetailModal: React.FC<{
 
 const TierSettings: React.FC = () => {
   const { user } = useUser();
-  const rawCompanyTier = user?.company_details?.tier ?? user?.tier;
-  const { id: currentTierId, label: currentTierLabel } =
-    getTierInfo(rawCompanyTier);
 
   const [tiers, setTiers] = useState<Tier[]>([]);
   const [loading, setLoading] = useState(true);
@@ -193,7 +176,7 @@ const TierSettings: React.FC = () => {
     let mounted = true;
     getTiers()
       .then((data: Tier[]) => {
-        if (mounted) setTiers(data);
+        if (mounted) setTiers(sortTiersByLevel(data));
       })
       .catch(() => {
         if (mounted) toast.error("Failed to load tiers");
@@ -206,6 +189,15 @@ const TierSettings: React.FC = () => {
     };
   }, []);
 
+  const currentLevel = getCompanyLevel(user);
+  const currentTier = findCompanyTier(tiers, user);
+  const currentTierId = currentTier ? Number(currentTier.id) : null;
+  const currentTierName = currentTier
+    ? getTierName(currentTier)
+    : currentLevel !== null
+      ? `Level ${currentLevel}`
+      : "—";
+
   const handleView = (id: number | string) => {
     const found = tiers.find((t) => t.id === id) ?? null;
     setDetail({ id, fallback: found });
@@ -213,13 +205,21 @@ const TierSettings: React.FC = () => {
 
   const columns: TableColumnProps<Tier>[] = [
     {
-      label: "Tier",
-      render: (t) => (
-        <span className="flex items-center gap-2 font-semibold text-textBlack capitalize">
-          <LuCrown size={15} className="text-primary shrink-0" />
-          {getTierName(t) || "Tier"}
-        </span>
-      ),
+      label: "Plan",
+      render: (t) => {
+        const isCurrent = currentTierId !== null && Number(t.id) === currentTierId;
+        return (
+          <span className="flex items-center gap-2 font-semibold text-textBlack capitalize">
+            <LuCrown size={15} className="text-primary shrink-0" />
+            {getTierName(t) || "Tier"}
+            {isCurrent && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold normal-case">
+                Current
+              </span>
+            )}
+          </span>
+        );
+      },
     },
     {
       label: "Level",
@@ -248,22 +248,27 @@ const TierSettings: React.FC = () => {
     {
       label: "Action",
       render: (t) => {
+        const tierLevel = Number(t.level ?? 0);
         const isCurrent = currentTierId !== null && Number(t.id) === currentTierId;
+        const canUpgrade =
+          !isCurrent &&
+          (currentLevel === null || !Number.isFinite(tierLevel) || tierLevel > currentLevel);
+
         return (
           <ActionCell
             rowId={t.id ?? -1}
             canView
             onView={handleView}
             otherActions={
-              isCurrent
-                ? []
-                : [
+              canUpgrade
+                ? [
                     {
                       name: "Upgrade",
                       icon: <LuCrown size={13} />,
                       action: () => setUpgrading(t),
                     },
                   ]
+                : []
             }
           />
         );
@@ -273,11 +278,30 @@ const TierSettings: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-x-4 gap-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6">
         <OverviewCards
           icon={LuCrown}
-          title="Current Tier"
-          value={currentTierLabel}
+          title="Current Plan"
+          value={currentTierName}
+        />
+        <OverviewCards
+          icon={LuLayers}
+          title="Current Level"
+          value={currentLevel ?? "—"}
+        />
+        <OverviewCards
+          icon={LuUsersRound}
+          title="Staff Capacity"
+          value={currentTier ? getTierStaff(currentTier) : "—"}
+        />
+        <OverviewCards
+          icon={LuFileText}
+          title="Requirements"
+          value={
+            currentTier && getRequirements(currentTier).length > 0
+              ? getRequirements(currentTier).join(", ").toUpperCase()
+              : "None"
+          }
         />
       </div>
 

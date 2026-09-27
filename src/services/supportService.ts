@@ -43,22 +43,49 @@ export const mapRawMessageToChatMessage = (
   ).trim();
   if (!text) return null;
 
+  const senderObj =
+    m.sender_id && typeof m.sender_id === "object"
+      ? m.sender_id
+      : m.sender && typeof m.sender === "object"
+      ? m.sender
+      : m.user && typeof m.user === "object"
+      ? m.user
+      : null;
+
   const senderRole = String(
-    m.sender_type || m.role || m.sender_role || m.type || ""
+    senderObj?.role ||
+    m.sender_role ||
+    m.sender_type ||
+    m.role ||
+    m.type ||
+    m.user?.role ||
+    ""
   ).toLowerCase();
+
   const isSupportOrAdmin =
     senderRole.includes("admin") ||
     senderRole.includes("support") ||
     senderRole.includes("finance") ||
+    senderRole.includes("financial") ||
+    senderRole.includes("superadmin") ||
     Boolean(m.is_admin || m.is_support || m.from_support || m.from_admin);
+
+  const senderId =
+    senderObj?.id ||
+    (typeof m.sender_id === "number" || typeof m.sender_id === "string" ? m.sender_id : undefined) ||
+    (isSupportOrAdmin ? 101 : 999);
+
+  const senderName =
+    senderObj?.name ||
+    senderObj?.full_name ||
+    m.sender_name ||
+    (isSupportOrAdmin ? "Payfleet Support" : fallbackName);
 
   const isMe =
     m.is_sender !== undefined
       ? Boolean(m.is_sender)
       : m.is_me !== undefined
       ? Boolean(m.is_me)
-      : m.sender_type === "company" || m.sender_type === "user" || m.sender_type === "client"
-      ? true
       : isSupportOrAdmin;
 
   const timeStr = m.time
@@ -72,15 +99,23 @@ export const mapRawMessageToChatMessage = (
 
   return {
     id: m.id || idx + 1,
-    senderId: m.sender_id || (isMe ? 999 : 101),
-    senderName: m.sender_name || (isMe ? "Me" : fallbackName),
+    senderId,
+    senderName,
     text,
     timestamp: timeStr,
     isMe,
-    status: (m.read_at || m.is_read || m.read ? "read" : "delivered") as
+    role: senderRole || (isSupportOrAdmin ? "support" : "company"),
+    sender_type: senderRole || (isSupportOrAdmin ? "support" : "company"),
+    status: (m.read_at || m.is_read || m.read || m.status === "read"
+      ? "read"
+      : m.delivered_at || m.is_delivered || m.delivered || m.status === "delivered"
+      ? "delivered"
+      : (m.status as "sent" | "delivered" | "read") || "sent") as
       | "sent"
       | "delivered"
       | "read",
+    logo: senderObj?.logo || senderObj?.avatar || m.logo || m.avatar || null,
+    avatar: senderObj?.avatar || senderObj?.logo || m.avatar || m.logo || null,
   };
 };
 
@@ -324,11 +359,21 @@ export const getAdminSupportConversationsService = async (
         .map((m, mIdx) => mapRawMessageToChatMessage(m, name, mIdx))
         .filter((m): m is ChatMessage => m !== null);
 
+      const logo =
+        comp.logo ||
+        usr.logo ||
+        usr.avatar ||
+        item.logo ||
+        item.avatar ||
+        null;
+
       return {
         id: convId,
         name,
         type: "chat" as const,
         role: usr.role || item.role || comp.tier || "Company Client",
+        logo,
+        avatar: logo,
         email,
         phone,
         department: item.department || "Client Account",
@@ -377,6 +422,14 @@ export const getAdminSupportConversationByIdService = async (
   const phone =
     comp.phone || comp.phoneNumber || item.phone || usr.phone || resData?.phone || "";
   const unread = Number(item.unread_count ?? item.unread ?? resData?.unread_count ?? 0);
+  const logo =
+    comp.logo ||
+    usr.logo ||
+    usr.avatar ||
+    item.logo ||
+    item.avatar ||
+    resData?.logo ||
+    null;
 
   const messages: ChatMessage[] = rawMessagesList
     .map((m, mIdx) => mapRawMessageToChatMessage(m, name || "User", mIdx))
@@ -387,6 +440,8 @@ export const getAdminSupportConversationByIdService = async (
     name,
     type: "chat" as const,
     role: item.role || usr.role || comp.tier || "Company Client",
+    logo,
+    avatar: logo,
     email,
     phone,
     department: item.department || "Client Account",

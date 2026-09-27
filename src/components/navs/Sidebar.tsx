@@ -79,7 +79,7 @@ const Sidebar = ({
             onClick={() => toggleMenu(item.name)}
             className={`flex w-full items-center justify-between gap-2.5 transition-all duration-200 px-4 py-2.5 rounded-lg cursor-pointer text-xs font-medium ${parentActive
                 ? "bg-primary/10 text-primary font-semibold"
-                : "text-gray-700 hover:bg-primary/10 hover:text-primary"
+                : "text-textBlack/50 hover:bg-primary/10 hover:text-primary"
               }`}
           >
             <span className="flex items-center gap-2.5">
@@ -106,7 +106,7 @@ const Sidebar = ({
                     className={({ isActive }) =>
                       `flex items-center gap-2 transition-all duration-200 px-3 py-2 rounded-md cursor-pointer text-xs ${isActive
                         ? "bg-primary text-white font-semibold shadow-xs"
-                        : "text-gray-600 hover:bg-primary/10 hover:text-primary"
+                        : "text-textBlack/50 hover:bg-primary/10 hover:text-primary"
                       }`
                     }
                     onClick={() => setIsOpen(false)}
@@ -135,7 +135,7 @@ const Sidebar = ({
           className={({ isActive }) =>
             `flex items-center gap-2.5 transition-all duration-200 px-4 py-2.5 rounded-lg cursor-pointer text-xs font-medium ${isActive
               ? "bg-primary text-white font-semibold shadow-xs"
-              : "text-gray-700 hover:bg-primary/10 hover:text-primary"
+              : "text-textBlack/50 hover:bg-primary/10 hover:text-primary"
             }`
           }
           onClick={() => setIsOpen(false)}
@@ -164,9 +164,9 @@ const Sidebar = ({
           <NavLink
             to={settingsPath}
             className={({ isActive }) =>
-              `flex items-center gap-2.5 text-gray-700 transition-all duration-200 px-4 py-2.5 rounded-lg cursor-pointer text-xs font-medium hover:bg-primary/10 hover:text-primary ${isActive
+              `flex items-center gap-2.5  transition-all duration-200 px-4 py-2.5 rounded-lg cursor-pointer text-xs font-medium hover:bg-primary/10 hover:text-primary ${isActive
                 ? "bg-primary text-white font-semibold shadow-xs hover:bg-primary hover:text-white"
-                : ""
+                : "text-textBlack/50"
               }`
             }
             onClick={() => setIsOpen(false)}
@@ -180,7 +180,7 @@ const Sidebar = ({
           <button
             type="button"
             onClick={() => setShowLogOutModal(true)}
-            className="flex items-center gap-2.5 text-gray-700 transition-all duration-200 px-4 py-2.5 rounded-lg cursor-pointer text-xs font-medium hover:bg-red-50 hover:text-red-600 w-full text-left"
+            className="flex items-center gap-2.5 transition-all duration-200 px-4 py-2.5 rounded-lg cursor-pointer text-xs font-medium hover:bg-red-50 hover:text-red-600 w-full text-left text-textBlack/50"
           >
             <FiLogOut size={16} className="shrink-0" />
             <span>Logout</span>
