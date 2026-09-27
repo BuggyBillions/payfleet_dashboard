@@ -250,6 +250,7 @@ export interface CompanyDetailsProps {
   about?: string;
   address?: string;
   tier?: number | string | CompanyTierProp;
+  level?: number | string;
   bvn?: string;
   cac?: string | null;
   mermat?: string | null;
@@ -272,6 +273,7 @@ export interface UserProps {
   is_verified?: number | boolean;
   role?: string;
   tier?: string;
+  level?: number | string;
   company_name?: string;
   enabled?: number;
   avatar?: string;

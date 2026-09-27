@@ -115,8 +115,6 @@ const PaymentHistory: React.FC = () => {
   const [expandedMonths, setExpandedMonths] = useState<string[]>([]);
   const [retryTarget, setRetryTarget] = useState<DemoPayment | null>(null);
 
-  // The second tab lists only the transactions that failed, each one
-  // individually retryable from the action cell.
   const failedPayments = payments.filter((p) => p.status === "failed");
 
   const totalItems = failedPayments.length;
@@ -131,7 +129,6 @@ const PaymentHistory: React.FC = () => {
     .filter((p) => p.status === "successful")
     .reduce((sum, p) => sum + p.amount, 0);
 
-  // Group payments by month so the Payments tab can render an accordion.
   const byMonth = (() => {
     const groups = new Map<string, DemoPayment[]>();
     [...payments]

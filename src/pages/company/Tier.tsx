@@ -24,10 +24,8 @@ const Tier: React.FC = () => {
   const { user } = useUser();
   const companyId = user?.company_details?.id || user?.id;
 
-  // Fetch all tiers dynamically from GET /all-tiers
   const { data: allTiers = [], isLoading: loadingTiers } = useAllTiers();
 
-  // Determine current active tier
   const rawTier = user?.company_details?.tier ?? user?.tier;
   const currentTier: Partial<TierItem> | undefined = allTiers.find((t) => {
     if (typeof rawTier === "object" && rawTier !== null) {
@@ -46,7 +44,6 @@ const Tier: React.FC = () => {
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [selectedTargetTier, setSelectedTargetTier] = useState<number | undefined>(undefined);
 
-  // Fetch company employees to compute usage metrics
   const { data: employeesData } = useQuery({
     queryKey: ["employees", "tier_count", companyId],
     queryFn: () => getEmployees({ company_id: companyId, per_page: 100 }),
@@ -66,7 +63,6 @@ const Tier: React.FC = () => {
     ? Math.min(100, Math.round((staffCount / numericMaxStaff) * 100))
     : 10;
 
-  // Fetch upgrade requests for this company
   const { data: upgradeRequests = [] } = useCompanyTierRequests(companyId);
   const pendingRequest = upgradeRequests.find((r) => r.status === "pending");
 
@@ -75,20 +71,17 @@ const Tier: React.FC = () => {
     setUpgradeModalOpen(true);
   };
 
-  // Find next higher tier if available
   const nextTier = allTiers
     .filter((t) => Number(t.level ?? t.id) > currentLevel)
     .sort((a, b) => Number(a.level ?? a.id) - Number(b.level ?? b.id))[0];
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Page Header */}
       <PageHeader
         heading="Tier & Subscription Management"
         value="View your current account limits, tier benefits, and unlock higher capabilities"
       />
 
-      {/* Top Banner: Current Active Tier & Quick Limits */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/95 via-primary to-primary/85 text-white p-6 shadow-lg">
         <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -137,9 +130,7 @@ const Tier: React.FC = () => {
           </div>
         </div>
 
-        {/* Usage Progress Meters */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6 pt-6 border-t border-white/15">
-          {/* Staff usage */}
           <div className="bg-white/10 rounded-xl p-3.5 backdrop-blur-sm">
             <div className="flex items-center justify-between text-xs text-white/80">
               <span className="flex items-center gap-1.5">
@@ -162,7 +153,6 @@ const Tier: React.FC = () => {
             </span>
           </div>
 
-          {/* Current Level */}
           <div className="bg-white/10 rounded-xl p-3.5 backdrop-blur-sm">
             <div className="text-xs text-white/80 flex items-center gap-1.5">
               <LuLayers className="text-sm" /> Tier Level
@@ -173,7 +163,6 @@ const Tier: React.FC = () => {
             <span className="text-[10px] text-white/70">Assigned account hierarchy</span>
           </div>
 
-          {/* Active Status */}
           <div className="bg-white/10 rounded-xl p-3.5 backdrop-blur-sm">
             <div className="text-xs text-white/80 flex items-center gap-1.5">
               <LuShieldCheck className="text-sm" /> Verification Status
@@ -186,7 +175,6 @@ const Tier: React.FC = () => {
         </div>
       </div>
 
-      {/* Available Tier Plans Grid */}
       <div>
         <div className="mb-4">
           <h3 className="text-base font-semibold text-textBlack">
@@ -228,7 +216,6 @@ const Tier: React.FC = () => {
                       : "border-primary/10"
                   }`}
                 >
-                  {/* Current Active Pill */}
                   {isCurrent && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-[11px] font-bold px-3 py-0.5 rounded-full shadow-sm">
                       Current Active Plan
@@ -236,7 +223,6 @@ const Tier: React.FC = () => {
                   )}
 
                   <div>
-                    {/* Plan Name & Badge */}
                     <div className="flex items-center justify-between">
                       <div>
                         <span className="text-xs font-semibold text-primary font-mono">
@@ -248,7 +234,6 @@ const Tier: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Highlights */}
                     <div className="my-4 py-3 border-y border-primary/10 space-y-2 text-xs text-textBlack">
                       <div className="flex items-center justify-between">
                         <span className="text-textBlack/60">Staff Capacity:</span>
@@ -266,7 +251,6 @@ const Tier: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* KYC Requirements */}
                     <div className="space-y-1.5 p-3 rounded-xl bg-secondary border border-primary/10 text-[11px] mb-6">
                       <span className="font-semibold text-textBlack flex items-center gap-1">
                         <LuFileText className="text-primary text-xs" /> Compliance Requirements
@@ -290,7 +274,6 @@ const Tier: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Plan Action CTA */}
                   <div>
                     {isCurrent ? (
                       <button
@@ -330,7 +313,6 @@ const Tier: React.FC = () => {
         )}
       </div>
 
-      {/* Upgrade Applications History */}
       {upgradeRequests.length > 0 && (
         <div className="bg-tertiary rounded-2xl p-5 border border-primary/10 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
@@ -383,7 +365,6 @@ const Tier: React.FC = () => {
         </div>
       )}
 
-      {/* Frequently Asked Questions */}
       <div className="bg-tertiary rounded-2xl p-5 border border-primary/10 shadow-xs space-y-3">
         <div className="flex items-center gap-2 text-primary font-semibold text-xs">
           <FiHelpCircle className="text-base" />
@@ -409,7 +390,6 @@ const Tier: React.FC = () => {
         </div>
       </div>
 
-      {/* Upgrade Tier Modal */}
       {upgradeModalOpen && (
         <UpgradeTierModal
           defaultTier={selectedTargetTier}

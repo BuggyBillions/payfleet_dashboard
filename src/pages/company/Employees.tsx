@@ -96,13 +96,11 @@ const Employees: React.FC = () => {
     enabled: Boolean(companyId),
   });
 
-  // Feeds the Deduction column on the employees table (all rows, unpaginated)
   const { data: employeeDeductions } = useEmployeeDeductions(
     { company_id: companyId, per_page: 500 },
     Boolean(companyId) && activeTab === "employees",
   );
 
-  // Backs the Deductions tab (paginated + searchable)
   const {
     data: deductionsData,
     isLoading: isLoadingDeductions,
