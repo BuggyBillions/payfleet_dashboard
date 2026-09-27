@@ -8,7 +8,7 @@ import type {
   TierUpgradeRequest,
 } from "../../lib/interfaces";
 import { useCompanies, useCompanyStats } from "../../hooks/useCompany";
-import { useTierRequests, useAllTiers } from "../../hooks/useTier";
+import { useTierRequests } from "../../hooks/useTier";
 import { getTierConfig } from "../../services/tierService";
 import ChangeTierModal from "../../components/modal/tier/ChangeTierModal";
 import ReviewTierRequestModal from "../../components/modal/tier/ReviewTierRequestModal";
@@ -18,33 +18,18 @@ import {
   LuBuilding2,
   LuUsersRound,
   LuClock,
-  LuSlidersHorizontal,
-  LuListFilter,
-  LuEye,
 } from "react-icons/lu";
-import { FiSearch } from "react-icons/fi";
 
-const SupportManageCompanyVerification: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<"requests" | "companies">("requests");
-  const [companySearchTerm, setCompanySearchTerm] = useState("");
-  const [tierFilter, setTierFilter] = useState<string>("all");
-  const [companyPage, setCompanyPage] = useState(1);
-  const [companyItemsPerPage, setCompanyItemsPerPage] = useState(10);
-
+const ManageCompanyVerification: React.FC = () => {
   // Modals state
   const [selectedCompanyForTier, setSelectedCompanyForTier] = useState<CompanyProps | null>(null);
   const [selectedCompanyForView, setSelectedCompanyForView] = useState<CompanyProps | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<TierUpgradeRequest | null>(null);
 
   // Companies Queries
-  const { data: companiesData, isLoading: loadingCompanies, refetch: refetchCompanies } = useCompanies({
-    page: companyPage,
-    searchTerm: companySearchTerm,
-    per_page: companyItemsPerPage,
-  });
+  const { data: companiesData, refetch: refetchCompanies } = useCompanies();
 
   const { data: statsData } = useCompanyStats();
-  const { data: allTiersList = [] } = useAllTiers();
   const { data: rawTierRequests, isLoading: loadingRequests, refetch: refetchRequests } = useTierRequests();
   const tierRequests: TierUpgradeRequest[] = useMemo(() => {
     if (Array.isArray(rawTierRequests)) return rawTierRequests;
@@ -55,18 +40,6 @@ const SupportManageCompanyVerification: React.FC = () => {
   }, [rawTierRequests]);
 
   const allCompanies = statsData?.items ?? companiesData?.items ?? [];
-  const companiesList = companiesData?.items ?? [];
-
-  // Filtered companies based on search and tier filter
-  const filteredCompanies = useMemo(() => {
-    return companiesList.filter((comp) => {
-      const compTier = getTierConfig(comp.tier).id;
-      if (tierFilter !== "all" && String(compTier) !== String(tierFilter)) {
-        return false;
-      }
-      return true;
-    });
-  }, [companiesList, tierFilter]);
 
   // Dynamic statistics
   const totalCompaniesCount = statsData?.totalCompanies ?? statsData?.totalItems ?? allCompanies.length;
@@ -158,95 +131,6 @@ const SupportManageCompanyVerification: React.FC = () => {
     },
   ];
 
-  // Table Columns for Company Directory
-  const companyColumns: TableColumnProps<CompanyProps>[] = [
-    {
-      label: "Company",
-      key: "name",
-      render: (item: CompanyProps) => (
-        <div className="flex flex-col">
-          <span className="font-semibold text-textBlack text-xs">
-            {item.name || item.companyName || "N/A"}
-          </span>
-          <span className="text-[10px] text-textBlack/60 lowercase">
-            {item.email}
-          </span>
-        </div>
-      ),
-    },
-    {
-      label: "Staff Enrolled",
-      key: "staff",
-      render: (item: CompanyProps) => {
-        const count = item.no_of_employee ?? item.staff ?? item.staffCount ?? 0;
-        return (
-          <span className="text-xs text-textBlack font-medium">
-            {count} Staff
-          </span>
-        );
-      },
-    },
-    {
-      label: "Active Tier",
-      key: "tier",
-      render: (item: CompanyProps) => {
-        const t = getTierConfig(item.tier);
-        return (
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">
-            {t.badge} ({t.name})
-          </span>
-        );
-      },
-    },
-    {
-      label: "Staff Capacity",
-      key: "limit",
-      render: (item: CompanyProps) => {
-        const t = getTierConfig(item.tier);
-        return (
-          <span className="text-xs text-textBlack/80 font-medium">
-            {String(t.no_of_staff).toLowerCase() === "unlimited"
-              ? "Unlimited Staff"
-              : `${t.no_of_staff} Staff`}
-          </span>
-        );
-      },
-    },
-    {
-      label: "Account Status",
-      key: "status",
-      render: (item: CompanyProps) => {
-        const s =
-          typeof item.status === "boolean"
-            ? item.status ? "Active" : "Inactive"
-            : String(item.status || (item.is_active ? "Active" : "Inactive"));
-        return <StatusBadge status={s} />;
-      },
-    },
-    {
-      label: "Actions",
-      key: "actions",
-      render: (item: CompanyProps) => (
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setSelectedCompanyForView(item)}
-            title="View Profile, Staff, and Documents"
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-primary/20 text-textBlack/80 hover:bg-secondary transition cursor-pointer"
-          >
-            <LuEye className="text-xs text-primary" /> View Details
-          </button>
-          <button
-            onClick={() => setSelectedCompanyForTier(item)}
-            title="Change Company Tier"
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-primary/20 text-primary hover:bg-primary/10 transition cursor-pointer"
-          >
-            <LuSlidersHorizontal className="text-xs" /> Tier
-          </button>
-        </div>
-      ),
-    },
-  ];
-
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -284,7 +168,6 @@ const SupportManageCompanyVerification: React.FC = () => {
           value={statsData?.totalStaff ?? 0}
         />
       </div>
-
 
 
       <div className="bg-tertiary rounded-2xl p-5 border border-primary/10 shadow-xs space-y-4">
@@ -338,4 +221,4 @@ const SupportManageCompanyVerification: React.FC = () => {
   );
 };
 
-export default SupportManageCompanyVerification;
+export default ManageCompanyVerification;
