@@ -117,3 +117,20 @@ export const getCompanySalaryPayments = async (
     },
   };
 };
+
+/**
+ * POST /retry-payroll/{id}
+ * Retries a single failed salary payment, authorised by the company's
+ * 4-digit transaction PIN. The path id is the payment's own id.
+ */
+export const retryPayrollPayment = async (
+  id: number | string,
+  payload: { pin: string; company_id: number | string },
+): Promise<{ message?: string }> => {
+  const res = await api.post(`/retry-payroll/${id}`, {
+    pin: String(payload.pin),
+    company_id: payload.company_id,
+  });
+
+  return (res.data?.data ?? res.data) as { message?: string };
+};

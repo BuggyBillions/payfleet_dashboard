@@ -3,10 +3,15 @@ import ReusableTable from "../../utility/ReusableTable";
 import PaginationControls from "../../utility/PaginationControls";
 import OverviewCards from "../../components/cards/OverviewCards";
 import ActionCell from "../../components/ui/ActionCell";
-import ConfirmDialog from "../../components/modal/ConfirmDialog";
-import type { TableColumnProps, SalaryPayment } from "../../lib/interfaces";
-import { LuHistory, LuRefreshCw, LuCircleCheck, LuCircleSlash, LuX } from "react-icons/lu";
+import RetryPayrollModal from "../../components/modal/RetryPayrollModal";
+import type {
+  TableColumnProps,
+  SalaryPayment,
+  SalaryPaymentMonth,
+} from "../../lib/interfaces";
+import { LuHistory, LuRefreshCw, LuCircleCheck, LuX } from "react-icons/lu";
 import { FaMoneyBillWave } from "react-icons/fa6";
+import { LuTriangleAlert } from "react-icons/lu";
 import { IoSearchOutline } from "react-icons/io5";
 import {
   formatterUtility,
@@ -71,18 +76,21 @@ const buildColumns = (
   if (onRetry) {
     columns.push({
       label: "Action",
-      render: (item) => (
-        <ActionCell
-          rowId={item.id}
-          otherActions={[
-            {
-              name: "Retry",
-              icon: <LuRefreshCw size={12} />,
-              action: () => onRetry(item),
-            },
-          ]}
-        />
-      ),
+      render: (item) =>
+        item.status === "failed" ? (
+          <ActionCell
+            rowId={item.id}
+            otherActions={[
+              {
+                name: "Retry",
+                icon: <LuRefreshCw size={12} />,
+                action: () => onRetry(item),
+              },
+            ]}
+          />
+        ) : (
+          <span className="text-textBlack/40">—</span>
+        ),
     });
   }
 
@@ -96,7 +104,7 @@ const buildColumns = (
  */
 const MonthPaymentsTable: React.FC<{
   payments: SalaryPayment[];
-  onRetry: (payment: SalaryPayment) => void;
+  onRetry?: (payment: SalaryPayment) => void;
 }> = ({ payments, onRetry }) => (
   <ReusableTable
     columns={buildColumns(onRetry)}
@@ -110,6 +118,64 @@ const MonthPaymentsTable: React.FC<{
     setCurrentPage={() => {}}
     setItemsPerPage={() => {}}
   />
+);
+
+/**
+ * The month accordion shared by the Payments and Failed Transactions tabs.
+ * Both tabs read the same grouped shape, so both render it identically.
+ */
+const MonthGroups: React.FC<{
+  months: SalaryPaymentMonth[];
+  expandedMonths: string[];
+  onToggleMonth: (monthKey: string) => void;
+  onRetry?: (payment: SalaryPayment) => void;
+}> = ({ months, expandedMonths, onToggleMonth, onRetry }) => (
+  <div className="flex flex-col gap-3">
+    {months.map((group) => {
+      const isOpen = expandedMonths.includes(group.month_key);
+
+      return (
+        <div
+          key={group.month_key}
+          className="bg-tertiary rounded-xl border border-primary/10 overflow-hidden"
+        >
+          <button
+            type="button"
+            onClick={() => onToggleMonth(group.month_key)}
+            aria-expanded={isOpen}
+            className="w-full flex items-center justify-between gap-3 px-4 py-3.5 hover:bg-secondary transition cursor-pointer"
+          >
+            <div className="flex flex-col items-start">
+              <span className="text-sm font-semibold text-textBlack">
+                {group.month}
+              </span>
+              <span className="text-[11px] text-textBlack/60">
+                {group.count} payment{group.count === 1 ? "" : "s"}
+                {group.successful_amount > 0 &&
+                  ` • ${formatterUtility(group.successful_amount)} paid`}
+                {group.pending_amount > 0 &&
+                  ` • ${formatterUtility(group.pending_amount)} pending`}
+                {group.failed_amount > 0 &&
+                  ` • ${formatterUtility(group.failed_amount)} failed`}
+              </span>
+            </div>
+            <FiChevronDown
+              size={16}
+              className={`text-textBlack/50 shrink-0 transition-transform ${
+                isOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+
+          {isOpen && (
+            <div className="border-t border-primary/10 p-3">
+              <MonthPaymentsTable payments={group.payments} onRetry={onRetry} />
+            </div>
+          )}
+        </div>
+      );
+    })}
+  </div>
 );
 
 /**
@@ -174,11 +240,16 @@ const PaymentHistory: React.FC = () => {
 
   const totalPaid = months.reduce((sum, m) => sum + m.successful_amount, 0);
   const totalPayments = months.reduce((sum, m) => sum + m.count, 0);
-  const totalFailed = months.reduce((sum, m) => sum + m.failed_amount, 0);
+  const totalFailedAmount = months.reduce((sum, m) => sum + m.failed_amount, 0);
+  const totalAttempted = months.reduce((sum, m) => sum + m.total_amount, 0);
   const totalGroups = pagination?.total_groups ?? months.length;
   const lastPage = pagination?.last_page ?? 1;
 
-  const failedPayments = months.flatMap((m) => m.payments);
+  const failedPayments = months
+    .flatMap((m) => m.payments)
+    .filter((p) => p.status === "failed");
+  const failedPaymentCount = failedPayments.length;
+  const isFailedTab = tab === "failed";
 
   const resetPage = () => setCurrentPage(1);
 
@@ -327,21 +398,43 @@ const PaymentHistory: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-6">
-        <OverviewCards
-          title="Total Paid"
-          value={formatterUtility(totalPaid)}
-          icon={FaMoneyBillWave}
-        />
-        <OverviewCards
-          title="Payments"
-          value={totalPayments}
-          icon={LuHistory}
-        />
-        <OverviewCards
-          title="Failed Amount"
-          value={formatterUtility(totalFailed)}
-          icon={LuCircleSlash}
-        />
+        {isFailedTab ? (
+          <>
+            <OverviewCards
+              title="Failed Amount"
+              value={formatterUtility(totalFailedAmount)}
+              icon={LuTriangleAlert}
+            />
+            <OverviewCards
+              title="Failed Payments"
+              value={failedPaymentCount}
+              icon={LuHistory}
+            />
+            <OverviewCards
+              title="Total Attempted"
+              value={formatterUtility(totalAttempted)}
+              icon={FaMoneyBillWave}
+            />
+          </>
+        ) : (
+          <>
+            <OverviewCards
+              title="Total Paid"
+              value={formatterUtility(totalPaid)}
+              icon={FaMoneyBillWave}
+            />
+            <OverviewCards
+              title="Payments"
+              value={totalPayments}
+              icon={LuHistory}
+            />
+            <OverviewCards
+              title="Failed Amount"
+              value={formatterUtility(totalFailedAmount)}
+              icon={LuTriangleAlert}
+            />
+          </>
+        )}
       </div>
 
       <div className="flex items-center gap-1 border-b border-black/10">
@@ -366,126 +459,58 @@ const PaymentHistory: React.FC = () => {
         ))}
       </div>
 
-      {tab === "payments" ? (
-        <div className="flex flex-col gap-3">
-          {isLoading ? (
-            <div className="bg-tertiary rounded-xl p-8 text-center text-xs text-textBlack/50">
-              Loading payments…
-            </div>
-          ) : isError ? (
-            <div className="bg-tertiary rounded-xl p-8 text-center text-xs text-red-600">
-              {getErrorMessage(error, "Failed to load payment history")}
-            </div>
-          ) : months.length === 0 ? (
-            <div className="bg-tertiary rounded-xl p-8 text-center text-xs text-textBlack/50">
-              {debouncedSearch
-                ? `No payments matching "${debouncedSearch}".`
+      <div className="flex flex-col gap-3">
+        {isLoading ? (
+          <div className="bg-tertiary rounded-xl p-8 text-center text-xs text-textBlack/50">
+            Loading payments…
+          </div>
+        ) : isError ? (
+          <div className="bg-tertiary rounded-xl p-8 text-center text-xs text-red-600">
+            {getErrorMessage(error, "Failed to load payment history")}
+          </div>
+        ) : isFailedTab && failedPayments.length === 0 ? (
+          <div className="bg-tertiary rounded-xl p-10 text-center">
+            <LuCircleCheck className="mx-auto text-emerald-500 mb-2" size={22} />
+            <p className="text-xs font-medium text-textBlack">
+              No failed transactions
+            </p>
+            <p className="text-[11px] text-textBlack/50 mt-1">
+              Every payment in this period went through successfully.
+            </p>
+          </div>
+        ) : months.length === 0 ? (
+          <div className="bg-tertiary rounded-xl p-8 text-center text-xs text-textBlack/50">
+            {debouncedSearch
+              ? `No payments matching "${debouncedSearch}".`
+              : isFailedTab
+                ? "No failed transactions in this period."
                 : "No payments recorded yet."}
-            </div>
-          ) : (
-            months.map((group) => {
-              const isOpen = expandedMonths.includes(group.month_key);
-
-              return (
-                <div
-                  key={group.month_key}
-                  className="bg-tertiary rounded-xl border border-primary/10 overflow-hidden"
-                >
-                  <button
-                    type="button"
-                    onClick={() => toggleMonth(group.month_key)}
-                    aria-expanded={isOpen}
-                    className="w-full flex items-center justify-between gap-3 px-4 py-3.5 hover:bg-secondary transition cursor-pointer"
-                  >
-                    <div className="flex flex-col items-start">
-                      <span className="text-sm font-semibold text-textBlack">
-                        {group.month}
-                      </span>
-                      <span className="text-[11px] text-textBlack/60">
-                        {group.count} payment{group.count === 1 ? "" : "s"}
-                        {group.successful_amount > 0 &&
-                          ` • ${formatterUtility(group.successful_amount)} paid`}
-                        {group.failed_amount > 0 &&
-                          ` • ${formatterUtility(group.failed_amount)} failed`}
-                      </span>
-                    </div>
-                    <FiChevronDown
-                      size={16}
-                      className={`text-textBlack/50 shrink-0 transition-transform ${
-                        isOpen ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-
-                  {isOpen && (
-                    <div className="border-t border-primary/10 p-3">
-                      <MonthPaymentsTable
-                        payments={group.payments}
-                        onRetry={setRetryTarget}
-                      />
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          )}
-
-          <PaginationControls
-            currentPage={currentPage}
-            totalPages={lastPage}
-            totalItems={totalGroups}
-            itemsPerPage={perPage}
-            setCurrentPage={setCurrentPage}
-            setItemsPerPage={setPerPage}
+          </div>
+        ) : (
+          <MonthGroups
+            months={months}
+            expandedMonths={expandedMonths}
+            onToggleMonth={toggleMonth}
+            onRetry={isFailedTab ? setRetryTarget : undefined}
           />
-        </div>
-      ) : failedPayments.length === 0 ? (
-        <div className="bg-tertiary rounded-xl p-10 text-center">
-          <LuCircleCheck className="mx-auto text-emerald-500 mb-2" size={22} />
-          <p className="text-xs font-medium text-textBlack">
-            No failed transactions
-          </p>
-          <p className="text-[11px] text-textBlack/50 mt-1">
-            Every payment in this period went through successfully.
-          </p>
-        </div>
-      ) : (
-        <div className="bg-tertiary p-2">
-          <ReusableTable
-            columns={buildColumns(setRetryTarget)}
-            data={failedPayments}
-            isLoading={isLoading}
-            error={isError ? error : null}
-            currentPage={1}
-            totalPages={1}
-            totalItems={failedPayments.length}
-            itemsPerPage={failedPayments.length || 1}
-            setCurrentPage={() => {}}
-            setItemsPerPage={() => {}}
-          />
+        )}
 
-          <PaginationControls
-            currentPage={currentPage}
-            totalPages={lastPage}
-            totalItems={totalGroups}
-            itemsPerPage={perPage}
-            setCurrentPage={setCurrentPage}
-            setItemsPerPage={setPerPage}
-          />
-        </div>
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={lastPage}
+          totalItems={totalGroups}
+          itemsPerPage={perPage}
+          setCurrentPage={setCurrentPage}
+          setItemsPerPage={setPerPage}
+        />
+      </div>
+
+      {retryTarget && (
+        <RetryPayrollModal
+          payment={retryTarget}
+          onClose={() => setRetryTarget(null)}
+        />
       )}
-
-      <ConfirmDialog
-        isOpen={!!retryTarget}
-        title="Retry transaction?"
-        message={`Would you like to retry the payment to ${
-          retryTarget?.employee?.full_name ?? retryTarget?.employee_name ?? ""
-        } for ${formatterUtility(retryTarget?.amount ?? 0)}?`}
-        confirmText="Yes, Retry"
-        onCancel={() => setRetryTarget(null)}
-        onConfirm={() => setRetryTarget(null)}
-        isLoading={false}
-      />
     </div>
   );
 };
