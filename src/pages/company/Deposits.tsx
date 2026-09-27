@@ -24,8 +24,6 @@ import {
   type CompanyDeposit,
 } from "../../services/depositService";
 import { FiSearch } from "react-icons/fi";
-import { useNavigate } from "react-router-dom";
-import { encryptToken } from "../../helpers/tokenHelper";
 
 interface DepositRow extends Omit<DemoDeposit, "id"> {
   id: number | string;
@@ -70,8 +68,7 @@ const normalizeStatus = (
 };
 
 const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
-  const navigate = useNavigate();
-  const { user, token } = useUser();
+  const { user } = useUser();
   const companyId = user?.company_details?.id;
   const [deposits, setDeposits] = useState<DepositRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,11 +78,9 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
     null,
   );
   const [copiedRef, setCopiedRef] = useState<string | null>(null);
+  const [showDepositModal, setShowDepositModal] = useState(false);
 
-  const handleNavigate = async () => {
-    const encryptedToken = await encryptToken(token!);
-    navigate(`/payment/${encryptedToken}`);
-  };
+  const openDepositModal = () => setShowDepositModal(true);
 
   const handleCopyRef = async (ref: string) => {
     const success = await copyToClipboard(ref, "Reference");
