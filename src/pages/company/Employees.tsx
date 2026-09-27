@@ -12,7 +12,7 @@ import ReduceSalaryModal from "../../components/modal/ReduceSalaryModal";
 import ConfirmDialog from "../../components/modal/ConfirmDialog";
 import ActionCell from "../../components/ui/ActionCell";
 import type { TableColumnProps, Employee, EmployeeDeduction, EmployeeListResponse } from "../../lib/interfaces";
-import { formatterUtility } from "../../helpers/formatterUtility";
+import { formatShortDate, formatterUtility } from "../../helpers/formatterUtility";
 import { getErrorMessage } from "../../helpers/api";
 import { useUser } from "../../hooks/useUser";
 import { useEmployeeDeductions } from "../../hooks/useEmployeeDeduction";
@@ -20,16 +20,6 @@ import { getEmployees, deleteEmployee, EMPLOYMENT_TYPES } from "../../services/e
 
 type EmployeeTab = "employees" | "deductions";
 
-const formatDeductionDate = (value?: string): string => {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-};
 
 const Employees: React.FC = () => {
   const navigate = useNavigate();
@@ -279,7 +269,7 @@ const Employees: React.FC = () => {
     },
     {
       label: "Date",
-      render: (item) => <span>{formatDeductionDate(item.created_at)}</span>,
+      render: (item) => <span>{formatShortDate(String(item.created_at))}</span>,
     },
   ];
 
@@ -317,19 +307,16 @@ const Employees: React.FC = () => {
             key={tab.key}
             type="button"
             onClick={() => handleTabChange(tab.key)}
-            className={`px-4 pb-2.5 pt-1 text-xs font-medium border-b-2 -mb-px transition-colors cursor-pointer ${
-              activeTab === tab.key
+            className={`px-4 pb-2.5 pt-1 text-xs font-medium border-b-2 -mb-px transition-colors cursor-pointer ${activeTab === tab.key
                 ? "border-primary text-primary"
                 : "border-transparent text-textBlack/50 hover:text-textBlack"
-            }`}
+              }`}
           >
             {tab.label}
           </button>
         ))}
       </div>
 
-      {activeTab === "employees" ? (
-        <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-6">
         <OverviewCards
           icon={LuUsersRound}
@@ -353,56 +340,56 @@ const Employees: React.FC = () => {
         />
       </div>
 
-      <div className="bg-white rounded-xl p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2 border border-black/10 rounded-md px-3 h-10 w-full sm:w-64 bg-secondary">
-            <IoSearchOutline className="text-gray-400 shrink-0" />
-            <input
-              type="text"
-              placeholder="Search by name, email, title..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full outline-0 text-sm placeholder:text-gray-400 bg-transparent"
-            />
+      {activeTab === "employees" ? (
+        <div className="bg-tertiary rounded-xl p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2 border border-black/10 rounded-md px-3 h-10 w-full sm:w-64 bg-secondary">
+              <IoSearchOutline className="text-gray-400 shrink-0" />
+              <input
+                type="text"
+                placeholder="Search by name, email, title..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full outline-0 text-sm placeholder:text-gray-400 bg-transparent"
+              />
+            </div>
+            <div className="w-full sm:w-56">
+              <select
+                value={employmentFilter}
+                onChange={(e) => {
+                  setEmploymentFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full border border-black/10 text-textBlack bg-secondary rounded-md px-3 h-10 text-sm outline-0"
+              >
+                <option value="all">All Employment Types</option>
+                {EMPLOYMENT_TYPES.map((type) => (
+                  <option key={type} value={type} className="capitalize">
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-          <div className="w-full sm:w-56">
-            <select
-              value={employmentFilter}
-              onChange={(e) => {
-                setEmploymentFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full border border-black/10 bg-secondary rounded-md px-3 h-10 text-sm outline-0"
-            >
-              <option value="all">All Employment Types</option>
-              {EMPLOYMENT_TYPES.map((type) => (
-                <option key={type} value={type} className="capitalize">
-                  {type}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
 
-        <ReusableTable
-          columns={columns}
-          data={employees}
-          isLoading={isLoading}
-          error={isError ? error : null}
-          currentPage={currentPage}
-          totalPages={data?.totalPages ?? 1}
-          totalItems={totalItems}
-          itemsPerPage={itemsPerPage}
-          setCurrentPage={setCurrentPage}
-          setItemsPerPage={setItemsPerPage}
-        />
-      </div>
-        </>
+          <ReusableTable
+            columns={columns}
+            data={employees}
+            isLoading={isLoading}
+            error={isError ? error : null}
+            currentPage={currentPage}
+            totalPages={data?.totalPages ?? 1}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            setCurrentPage={setCurrentPage}
+            setItemsPerPage={setItemsPerPage}
+          />
+        </div>
       ) : (
-        <div className="bg-white rounded-xl p-4">
+        <div className="bg-tertiary rounded-xl p-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2 border border-black/10 rounded-md px-3 h-10 w-full sm:w-64 bg-secondary">
               <IoSearchOutline className="text-gray-400 shrink-0" />
@@ -445,9 +432,8 @@ const Employees: React.FC = () => {
       <ConfirmDialog
         isOpen={!!deleteTarget}
         title="Delete employee?"
-        message={`Are you sure you want to delete ${
-          deleteTarget ? `${deleteTarget.first_name} ${deleteTarget.last_name}` : ""
-        }? This action cannot be undone.`}
+        message={`Are you sure you want to delete ${deleteTarget ? `${deleteTarget.first_name} ${deleteTarget.last_name}` : ""
+          }? This action cannot be undone.`}
         confirmText="Yes, Delete"
         onCancel={() => setDeleteTarget(null)}
         onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}

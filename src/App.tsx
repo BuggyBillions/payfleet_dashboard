@@ -1,5 +1,5 @@
 import { Toaster } from "sonner";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import MainLayout from "./layout/MainLayout";
 
 // Auth
@@ -34,12 +34,21 @@ import Communication from "./pages/chat/Communication";
 import Notifications from "./pages/company/Notifications";
 import ManageCompanyVerification from "./pages/superadmin/ManageCompanyVerification";
 import Deposits from "./pages/company/Deposits";
+import Deposit from "./components/modal/Deposit";
 
 function App() {
+  const navigate = useNavigate();
   return (
     <>
       <Toaster />
       <Routes>
+        <Route
+          index
+          path="/payment"
+          element={
+            <Deposit onClose={() => navigate('/dashboard/deposits')} />
+          }
+        />
         <Route index path="/" element={<Login />} />
         <Route path="/getstarted" element={<Register />} />
         <Route path="/forgotpassword" element={<Forgotpassword />} />
@@ -79,10 +88,11 @@ function App() {
           element={
             <MainLayout
               pageName="All Deposits"
-              children={<Deposits   />}
+              children={<Deposits />}
             />
           }
         />
+
         <Route
           index
           path="/dashboard/payments/process"

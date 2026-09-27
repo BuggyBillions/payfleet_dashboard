@@ -13,12 +13,12 @@ import {
 const inputClass = (error?: string) =>
   `w-full text-textBlack border ${
     error ? "border-red-500" : "border-textBlack/10"
-  } bg-backgroundBlack rounded-md px-4 h-[45px] text-sm outline-0 placeholder-black`;
+  } bg-backgroundBlack rounded-md px-4 h-[45px] text-sm outline-0 placeholder-textBlack/50`;
 
 const textareaClass = (error?: string) =>
   `w-full text-textBlack border ${
     error ? "border-red-500" : "border-textBlack/10"
-  } bg-backgroundBlack rounded-md px-4 py-3 text-sm outline-0 placeholder-black resize-none`;
+  } bg-backgroundBlack rounded-md px-4 py-3 text-sm outline-0 placeholder-textBlack/50 resize-none`;
 
 const fieldError = (
   formik: FormikProps<EmployeeFormValues>,
@@ -173,7 +173,7 @@ const EmployeeFormFields: React.FC<{
 
   return (
     <>
-      <section className="flex flex-col space-y-4">
+      <section className="flex flex-col space-y-4 ">
         {sectionTitle("Personal Information", "Basic details about the employee")}
         <div className={grid}>
           {formField(

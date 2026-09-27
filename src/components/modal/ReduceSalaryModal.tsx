@@ -9,9 +9,9 @@ import { useDeductSalary } from "../../hooks/useEmployeeDeduction";
 import type { ReduceSalaryModalProps, ReductionValues } from "../../lib/interfaces";
 
 const inputClass = (error?: string) =>
-  `w-full text-black border ${
+  `w-full text-textBlack border ${
     error ? "border-red-500" : "border-black/10"
-  } bg-backgroundBlack rounded-md px-4 h-[45px] text-sm outline-0 placeholder-black`;
+  } bg-backgroundBlack rounded-md px-4 h-[45px] text-sm outline-0 placeholder-tetxtBlack/60`;
 
 const ReduceSalaryModal: React.FC<ReduceSalaryModalProps> = ({
   employee,
@@ -66,8 +66,8 @@ const ReduceSalaryModal: React.FC<ReduceSalaryModalProps> = ({
   const isSubmitting = formik.isSubmitting || deductMutation.isPending;
 
   return (
-    <Modal onClose={onClose}>
-      <div className="flex flex-col space-y-6">
+    <Modal onClose={onClose} customMode>
+      <div className="flex flex-col space-y-6 bg-tertiary text-textBlack p-4 rounded-xl w-full sm:w-125">
         <div className="flex flex-col">
           <h2 className="text-lg font-semibold">Deduct Salary</h2>
           <p className="text-sm text-gray-500">
@@ -122,9 +122,9 @@ const ReduceSalaryModal: React.FC<ReduceSalaryModalProps> = ({
                 value={formik.values.reason}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
-                className={`w-full text-black border ${
+                className={`w-full text-textBlack border ${
                   errorFor("reason") ? "border-red-500" : "border-black/10"
-                } bg-backgroundBlack rounded-md px-4 py-3 text-sm outline-0 placeholder-black resize-none`}
+                } bg-backgroundBlack rounded-md px-4 py-3 text-sm outline-0 placeholder-textBlack/50 resize-none`}
               />
               {errorFor("reason") && (
                 <span className="text-red-500 pl-3 text-sm">

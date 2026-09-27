@@ -77,6 +77,7 @@ const ActivityLog: React.FC = () => {
           setCurrentPage={setCurrentPage}
           setItemsPerPage={setItemsPerPage}
           tableType="Activity Log"
+          hasSerialNo={false}
         />
       </div>
     </div>

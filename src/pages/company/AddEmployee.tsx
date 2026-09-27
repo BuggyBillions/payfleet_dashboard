@@ -50,6 +50,7 @@ const AddEmployee: React.FC = () => {
           job_title: values.job_title.trim(),
           employment_type: values.employment_type,
           bank_name: values.bank_name.trim(),
+          bank_code: values.bank_code.trim(),
           account_name: values.account_name.trim(),
           account_number: values.account_number.trim(),
           estimate_pay: Number(values.estimate_pay) || 0,
@@ -68,6 +69,14 @@ const AddEmployee: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="flex justify-between items-center gap-4">
+
+      <div className="flex flex-col">
+        <h2 className="text-lg font-semibold text-textBlack">Add Employee</h2>
+        <p className="text-sm text-textBlack/50">
+          Fill in the details to add a new employee
+        </p>
+      </div>
       <button
         type="button"
         onClick={() => navigate("/dashboard/employees")}
@@ -76,22 +85,17 @@ const AddEmployee: React.FC = () => {
         <FiArrowLeft size={14} />
         Back to Employees
       </button>
-
-      <div className="flex flex-col">
-        <h2 className="text-lg font-semibold">Add Employee</h2>
-        <p className="text-sm text-gray-500">
-          Fill in the details to add a new employee
-        </p>
       </div>
 
-      <form onSubmit={formik.handleSubmit} noValidate className="w-full bg-tertiary rounded-xl p-5 md:p-8 flex flex-col space-y-6">
+
+      <form onSubmit={formik.handleSubmit} noValidate className="w-full bg-tertiary rounded-xl p-5  flex flex-col space-y-6">
         <EmployeeFormFields formik={formik} />
 
         <div className="flex flex-col sm:flex-row gap-4 border-t border-black/5 pt-6">
           <button
             type="button"
             onClick={() => navigate("/dashboard/employees")}
-            className="bg-textBlack/20 text-xs rounded-md font-medium  w-full sm:w-48 h-10 cursor-pointer"
+            className="bg-textBlack/20 text-xs text-textBlack/60 rounded-md font-medium  w-full sm:w-48 h-10 cursor-pointer"
           >
             Cancel
           </button>

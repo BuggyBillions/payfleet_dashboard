@@ -101,6 +101,7 @@ export interface CreateEmployeePayload {
   account_name: string;
   account_number: string;
   estimate_pay: number;
+  bank_code: string;
 }
 
 export const createEmployee = async (

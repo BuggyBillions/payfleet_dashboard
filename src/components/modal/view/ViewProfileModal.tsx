@@ -1,7 +1,6 @@
 import React from "react";
 import Modal from "../Modal";
 import type { ViewProfileModalProps } from "../../../lib/interfaces";
-import StatusBadge from "../../ui/StatusBadge";
 import { FiMail, FiPhone, FiCalendar, FiShield, FiMessageSquare, FiCopy } from "react-icons/fi";
 import { formatShortDate } from "../../../helpers/formatterUtility";
 import { toast } from "sonner";

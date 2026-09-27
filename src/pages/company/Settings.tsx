@@ -13,6 +13,7 @@ import { getErrorMessage } from "../../helpers/api";
 import { formatterUtility } from "../../helpers/formatterUtility";
 import TierSettings from "./TierSettings";
 import type { SettingsTab, PasswordFieldProps } from "../../lib/interfaces";
+import { TbLockPassword } from "react-icons/tb";
 
 type DocumentField = "logo" | "cac" | "mermat" | "status_report";
 
@@ -44,6 +45,12 @@ const TABS: TabConfig[] = [
     label: "Transaction PIN",
     icon: LuShieldCheck,
     roles: ["company"],
+  },
+  {
+    key: "password",
+    label: "Password",
+    icon: TbLockPassword,
+    roles: ["company", "finance", "support", "admin"],
   },
   {
     key: "tier",
@@ -367,9 +374,8 @@ const Settings: React.FC = () => {
                 onChange={(e) => handleProfileChange("about", e.target.value)}
                 placeholder="Tell us about your business"
                 disabled={!isEditingProfile}
-                className={`${
-                  isEditingProfile ? inputClass : readOnlyInputClass
-                } h-24 resize-none pt-3`}
+                className={`${isEditingProfile ? inputClass : readOnlyInputClass
+                  } h-24 resize-none pt-3`}
               />
             </label>
 
@@ -477,6 +483,63 @@ const Settings: React.FC = () => {
           </div>
         );
 
+      case "password":
+        return (
+          <div className="flex flex-col gap-6 max-w-xl">
+            <div className="flex flex-col">
+              <h3 className="font-semibold text-base text-textBlack">Transaction PIN</h3>
+              <p className="text-xs text-textBlack/60">
+                Update your 4-digit numerical PIN used to authorize employee payouts and wallet debits
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-y-4">
+              <PasswordField
+                label="Current 4-Digit PIN"
+                value={pin.current_pin}
+                onChange={(value) =>
+                  setPin((prev) => ({ ...prev, current_pin: value }))
+                }
+                visible={isFieldVisible("pin_current")}
+                onToggle={() => toggleField("pin_current")}
+                maxLength={4}
+                placeholder="Enter current PIN"
+              />
+              <PasswordField
+                label="New 4-Digit PIN"
+                value={pin.new_pin}
+                onChange={(value) =>
+                  setPin((prev) => ({ ...prev, new_pin: value }))
+                }
+                visible={isFieldVisible("pin_new")}
+                onToggle={() => toggleField("pin_new")}
+                maxLength={4}
+                placeholder="Enter new 4-digit PIN"
+              />
+              <PasswordField
+                label="Confirm New PIN"
+                value={pin.confirm_pin}
+                onChange={(value) =>
+                  setPin((prev) => ({ ...prev, confirm_pin: value }))
+                }
+                visible={isFieldVisible("pin_confirm")}
+                onToggle={() => toggleField("pin_confirm")}
+                maxLength={4}
+                placeholder="Re-enter new PIN"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleUpdatePin}
+              disabled={savingPin}
+              className={`${submitClass} self-start disabled:opacity-60 disabled:cursor-not-allowed`}
+            >
+              {savingPin ? "Updating..." : "Update Transaction PIN"}
+            </button>
+          </div>
+        );
+
+
       default:
         return null;
     }
@@ -500,8 +563,8 @@ const Settings: React.FC = () => {
               type="button"
               onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-2 px-4 h-9 rounded-lg text-xs font-medium transition cursor-pointer ${effectiveTab === tab.key
-                  ? "bg-primary text-white shadow-xs"
-                  : "border border-textBlack/10 text-textBlack/70 hover:bg-secondary hover:text-textBlack"
+                ? "bg-primary text-white shadow-xs"
+                : "border border-textBlack/10 text-textBlack/70 hover:bg-secondary hover:text-textBlack"
                 }`}
             >
               <TabIcon size={14} />

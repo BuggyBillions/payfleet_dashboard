@@ -36,8 +36,8 @@ const APPROVAL_WAIT_SECONDS = 300;
 
 const Deposit: React.FC<DepositModalProps> = ({
   onClose,
-  onDepositSuccess,
   defaultAmount,
+  onDepositSuccess,
   companyId,
 }) => {
   // 5-second initial loading state before modal content reveals
@@ -46,7 +46,8 @@ const Deposit: React.FC<DepositModalProps> = ({
   const { user } = useUser();
   const effectiveCompanyId =
     companyId ||
-    (user as unknown as { company_id?: string | number; company?: { id?: string | number } })?.company_id ||
+    (user as unknown as { company_details?: { id?: string | number } })?.company_details?.id ||
+    (user as unknown as { company_id?: string | number })?.company_id ||
     (user as unknown as { company?: { id?: string | number } })?.company?.id ||
     user?.id;
 
@@ -97,6 +98,37 @@ const Deposit: React.FC<DepositModalProps> = ({
     setReference(randomRef);
   }, []);
 
+  // If defaultAmount is provided on mount, trigger company funding registration
+  useEffect(() => {
+    if (defaultAmount && defaultAmount > 0 && effectiveCompanyId && !checkoutAmount) {
+      companyFunding({
+        company_id: effectiveCompanyId,
+        amount: defaultAmount,
+      })
+        .then((res) => {
+          const dataObj = res?.data || (typeof res === "object" ? res : {});
+          const ref =
+            dataObj?.reference ||
+            res?.reference ||
+            res?.reference_no ||
+            res?.transaction_reference ||
+            res?.ref;
+          const depId = dataObj?.id || res?.id;
+          const chkAmt =
+            res?.checkout_amount ??
+            dataObj?.checkout_amount ??
+            res?.amount ??
+            dataObj?.amount ??
+            defaultAmount;
+
+          if (ref) setReference(String(ref));
+          if (depId) setDepositId(depId);
+          if (chkAmt) setCheckoutAmount(Number(chkAmt));
+        })
+        .catch(() => undefined);
+    }
+  }, [defaultAmount, effectiveCompanyId, checkoutAmount]);
+
   // Expiry timer for transfer details
   useEffect(() => {
     if (view !== "transfer_details") return;
@@ -118,10 +150,13 @@ const Deposit: React.FC<DepositModalProps> = ({
       if (depositId) {
         try {
           const eachRes = await getEachCompanyDeposit(depositId);
+          const itemData = (eachRes as Record<string, any>)?.data || eachRes;
           const rawStatus = String(
+            itemData?.status ||
+            itemData?.transaction?.status ||
+            itemData?.payment_status ||
             eachRes?.status ||
             eachRes?.transaction?.status ||
-            (eachRes as Record<string, any>)?.data?.status ||
             ""
           ).toLowerCase();
 
@@ -130,6 +165,8 @@ const Deposit: React.FC<DepositModalProps> = ({
             rawStatus === "approved" ||
             rawStatus === "completed" ||
             rawStatus === "success" ||
+            rawStatus === "credited" ||
+            rawStatus === "paid" ||
             rawStatus === "1"
           ) {
             isApproved = true;
@@ -149,13 +186,17 @@ const Deposit: React.FC<DepositModalProps> = ({
                 (d.reference === reference ||
                   d.reference_no === reference ||
                   d.transaction_reference === reference ||
-                  d.ref === reference)) ||
-              (depositId && String(d.id) === String(depositId))
+                  d.ref === reference ||
+                  (d.transaction && d.transaction.reference === reference))) ||
+              (depositId && (String(d.id) === String(depositId) || (d.transaction && String(d.transaction.id) === String(depositId))))
           );
 
           if (matching) {
             const rawStatus = String(
-              matching.status || matching.transaction?.status || ""
+              matching.status ||
+              matching.transaction?.status ||
+              (matching as Record<string, any>)?.payment_status ||
+              ""
             ).toLowerCase();
 
             if (
@@ -163,6 +204,8 @@ const Deposit: React.FC<DepositModalProps> = ({
               rawStatus === "approved" ||
               rawStatus === "completed" ||
               rawStatus === "success" ||
+              rawStatus === "credited" ||
+              rawStatus === "paid" ||
               rawStatus === "1"
             ) {
               isApproved = true;

@@ -13,7 +13,6 @@ import ReusableTable from "../../utility/ReusableTable";
 import { FaPlus } from "react-icons/fa6";
 import { LuWallet, LuClock, LuCheck, LuCopy } from "react-icons/lu";
 import { copyToClipboard } from "../../helpers/clipboardHelper";
-import Deposit from "../../components/modal/Deposit";
 import EachCompanyDepositModal from "../../components/modal/EachCompanyDepositModal";
 import { useUser } from "../../hooks/useUser";
 import {
@@ -21,6 +20,7 @@ import {
   type CompanyDeposit,
 } from "../../services/depositService";
 import { FiSearch } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 
 interface DepositRow extends Omit<DemoDeposit, "id"> {
   id: number | string;
@@ -44,13 +44,14 @@ const normalizeStatus = (status: CompanyDeposit["status"]): DemoDeposit["status"
 };
 
 const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
+
+  const navigate = useNavigate();
   const { user } = useUser();
   const companyId = user?.company_details?.id;
   const [deposits, setDeposits] = useState<DepositRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [initiate, setInitiate] = useState(false);
   const [viewDepositId, setViewDepositId] = useState<number | string | null>(null);
   const [copiedRef, setCopiedRef] = useState<string | null>(null);
 
@@ -224,9 +225,6 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
     }
   }, [currentPage, totalPages]);
 
-  const handleDepositSuccess = (newDeposit: DemoDeposit) => {
-    setDeposits((prev) => [newDeposit, ...prev]);
-  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -245,7 +243,7 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
           <ActionButton
             text="Deposit Funds"
             icon={<FaPlus />}
-            onClick={() => setInitiate(true)}
+            onClick={() => navigate("/payment")}
           />
         </div>
       </div>
@@ -263,7 +261,7 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
         />
       </div>
 
-      <div className="bg-tertiary p-4 dark:bg-[#131217] rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden space-y-4">
+      <div className="bg-tertiary p-4 dark:bg-[#131217] rounded-2xl dark:border-white/10 overflow-hidden space-y-4">
         <div className="flex items-center gap-2">
           <div className="relative">
             <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-textBlack/40 text-sm" />
@@ -291,13 +289,7 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
         />
       </div>
 
-      {initiate && (
-        <Deposit
-          onClose={() => setInitiate(false)}
-          onDepositSuccess={handleDepositSuccess}
-          companyId={companyId}
-        />
-      )}
+     
 
       {viewDepositId && (
         <EachCompanyDepositModal
