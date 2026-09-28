@@ -39,6 +39,8 @@ export const setupInterceptors = (logout: () => void) => {
         url.includes("/unread-count") ||
         url.includes("/search");
 
+      console.log(error);
+
       if (error.code === "ERR_NETWORK") {
         toast.error("No internet or server down");
       } else if (
@@ -46,6 +48,9 @@ export const setupInterceptors = (logout: () => void) => {
         !isAuthEndpoint &&
         !isNonCriticalEndpoint
       ) {
+        // console.log("e reach here");
+        //   logout();
+
         // Only log out if token is actually rejected on core requests
         const token = localStorage.getItem("token");
         if (!token) {

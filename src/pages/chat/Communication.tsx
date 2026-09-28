@@ -80,6 +80,8 @@ const INITIAL_SUPPORT_MESSAGE: ChatMessage = {
   text: "Hello! Welcome to Payfleet Support. How can we assist you with your payroll or deposit today?",
   timestamp: "Just now",
   isMe: false,
+  role: "support",
+  sender_type: "support",
   status: "read",
 };
 
@@ -96,14 +98,37 @@ const getFormattedChatTime = (): string => {
   });
 };
 
+const formatMessageTime = (rawTime?: string | number | null): string => {
+  if (!rawTime) return "Just now";
+  const str = String(rawTime).trim();
+  if (!str) return "Just now";
+  if (
+    str.toLowerCase().includes("now") ||
+    str.toLowerCase().includes("am") ||
+    str.toLowerCase().includes("pm") ||
+    /^\d{1,2}:\d{2}\s*(?:am|pm)?$/i.test(str)
+  ) {
+    return str;
+  }
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) {
+    return d.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+  return str;
+};
+
 interface RawMessageProperties {
-  sender_id?: { role?: string; name?: string } | string | number;
-  sender?: { role?: string; name?: string };
+  sender_id?: { role?: string; name?: string; full_name?: string } | string | number;
+  sender?: { role?: string; name?: string; full_name?: string };
   sender_type?: string;
   senderType?: string;
   role?: string;
   senderRole?: string;
   sender_role?: string;
+  type?: string;
 }
 
 const Communication: React.FC = () => {
@@ -365,6 +390,7 @@ const Communication: React.FC = () => {
 
   // Active Conversation Object
   const activeConversation = useMemo(() => {
+    
     return (
       conversations.find((c) => String(c.id) === String(effectiveActiveChatId)) ||
       conversations[0] ||
@@ -571,7 +597,9 @@ const Communication: React.FC = () => {
   };
 
   const isMessageOnRight = (msg: ChatMessage): boolean => {
-    // 1. Check sender_type / role / senderRole on the message object (including sender_id object)
+    // If msg.isMe is explicitly true (local optimistic message composed/sent by current user), always on the right
+    if (msg.isMe === true) return true;
+
     const raw = msg as unknown as RawMessageProperties;
     const senderObj =
       typeof raw.sender_id === "object" && raw.sender_id !== null
@@ -582,65 +610,49 @@ const Communication: React.FC = () => {
 
     const roleOrType = String(
       senderObj?.role ||
+      raw.sender_role ||
       raw.sender_type ||
       raw.senderType ||
       raw.role ||
-      raw.senderRole ||
-      raw.sender_role ||
+      raw.type ||
+      msg.role ||
+      msg.sender_type ||
       ""
     ).toLowerCase();
 
-    if (
+    const senderName = String(
+      senderObj?.name ||
+      senderObj?.full_name ||
+      msg.senderName ||
+      ""
+    ).toLowerCase();
+
+    const isStaffSender =
       roleOrType.includes("admin") ||
       roleOrType.includes("support") ||
       roleOrType.includes("finance") ||
       roleOrType.includes("financial") ||
       roleOrType.includes("staff") ||
-      roleOrType.includes("superadmin")
-    ) {
-      return true; // Admin, Support, Finance -> ALWAYS ON THE RIGHT
-    }
+      roleOrType.includes("superadmin") ||
+      senderName.includes("support") ||
+      senderName.includes("admin") ||
+      senderName.includes("payfleet") ||
+      senderName.includes("helpdesk") ||
+      msg.senderId === 101 ||
+      msg.senderId === 1 ||
+      msg.senderId === 13;
 
-    if (
-      roleOrType.includes("company") ||
-      roleOrType.includes("client")
-    ) {
-      return false; // Company -> ALWAYS ON THE LEFT
-    }
-
-    // 2. Check senderName
-    const name = String(
-      senderObj?.name ||
-      msg.senderName ||
-      ""
-    ).toLowerCase();
-
-    if (
-      name.includes("support") ||
-      name.includes("admin") ||
-      name.includes("finance") ||
-      name.includes("payfleet") ||
-      name.includes("helpdesk") ||
-      name.includes("blanchard")
-    ) {
-      return true;
-    }
-
-    // 3. Known support/admin IDs
-    if (msg.senderId === 101 || msg.senderId === 1 || msg.senderId === 13) return true;
-
-    // 4. Fallback based on viewer context and isMe
-    // When staff is viewing: isMe messages are staff (RIGHT), !isMe messages are company (LEFT)
     if (isStaffUser) {
+      // Staff viewing: Staff/Admin messages are outgoing (RIGHT), Company messages are incoming (LEFT)
+      if (isStaffSender) return true;
+      if (roleOrType.includes("company") || roleOrType.includes("client")) return false;
       return Boolean(msg.isMe);
+    } else {
+      // Company viewing: Company messages are outgoing (RIGHT), Support/Staff messages are incoming (LEFT)
+      if (isStaffSender) return false;
+      if (roleOrType.includes("company") || roleOrType.includes("client")) return true;
+      return msg.isMe !== false;
     }
-
-    // When company is viewing: isMe messages are company (LEFT), !isMe messages are support/admin (RIGHT)
-    if (!isStaffUser) {
-      return !msg.isMe;
-    }
-
-    return false;
   };
 
   const renderStatusTick = (status?: "sent" | "delivered" | "read" | string) => {
@@ -896,21 +908,27 @@ const Communication: React.FC = () => {
                           isRight ? "items-end" : "items-start"
                         }`}
                       >
-                        <div className="flex items-end gap-1.5 sm:gap-2 max-w-[90%] sm:max-w-[80%] md:max-w-[75%]">
+                        {!isRight && msg.senderName && msg.senderName !== "User" && (
+                          <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 mb-1 ml-9">
+                            {msg.senderName}
+                          </span>
+                        )}
+
+                        <div className="flex items-end gap-2 max-w-[90%] sm:max-w-[80%] md:max-w-[75%]">
                           {!isRight && (
                             <AvatarDisplay
                               name={msg.senderName || activeConversation.name}
                               logo={msg.logo || msg.avatar || getConversationLogo(activeConversation)}
-                              className="w-6 h-6 rounded-lg mb-1 shrink-0"
+                              className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl mb-0.5 shrink-0"
                               textClassName="text-[10px] font-bold"
                             />
                           )}
 
                           <div
-                            className={`p-2.5 sm:p-3 rounded-2xl text-xs leading-relaxed break-words [overflow-wrap:anywhere] ${
+                            className={`p-3 rounded-2xl text-xs leading-relaxed break-words whitespace-pre-wrap [overflow-wrap:anywhere] ${
                               isRight
                                 ? "bg-primary text-white rounded-br-xs shadow-xs"
-                                : "bg-white dark:bg-[#1A1921] text-gray-800 dark:text-gray-100 border border-gray-200/80 dark:border-white/10 rounded-bl-xs shadow-xs"
+                                : "bg-white dark:bg-[#1A1921] text-gray-800 dark:text-gray-100 border border-gray-200/80 dark:border-white/10 rounded-bl-xs shadow-2xs"
                             }`}
                           >
                             <p>{msg.text}</p>
@@ -918,9 +936,13 @@ const Communication: React.FC = () => {
                         </div>
 
                         {/* Timestamp & delivery status */}
-                        <div className="flex items-center gap-1 mt-1 px-1 text-[10px] text-gray-400 dark:text-gray-500">
-                          <span>{msg.timestamp}</span>
-                          {(isRight || msg.isMe) && (
+                        <div
+                          className={`flex items-center gap-1 mt-1 px-1 text-[10px] text-gray-400 dark:text-gray-500 ${
+                            isRight ? "mr-1" : "ml-9 sm:ml-10"
+                          }`}
+                        >
+                          <span>{formatMessageTime(msg.timestamp)}</span>
+                          {isRight && (
                             <span className="flex items-center inline-flex">
                               {renderStatusTick(msg.status)}
                             </span>

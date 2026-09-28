@@ -46,7 +46,7 @@ export const forgotPasswordService = async (values: { email: string }) => {
 
 export const verifyOtpService = async (values: {
   token?: string;
-  reset_otp?: string;
+  reset_otp?: string | number;
   otp?: string | number;
 }) => {
   const response = await api.post(`/verify-forgot-otp`, values);

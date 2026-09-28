@@ -3,14 +3,12 @@ import OverviewCards from "../../components/cards/OverviewCards";
 import ReusableTable from "../../utility/ReusableTable";
 import ConfirmDialog from "../../components/modal/ConfirmDialog";
 import type {
-  CompanyProps,
   TableColumnProps,
   TierUpgradeRequest,
   TierItem,
 } from "../../lib/interfaces";
 import { useCompanyStats } from "../../hooks/useCompany";
 import { useTierRequests, useAllTiers, useDeleteTier } from "../../hooks/useTier";
-import ChangeTierModal from "../../components/modal/tier/ChangeTierModal";
 import ReviewTierRequestModal from "../../components/modal/tier/ReviewTierRequestModal";
 import CreateEditTierModal from "../../components/modal/tier/CreateEditTierModal";
 import ViewTierDetailsModal from "../../components/modal/tier/ViewTierDetailsModal";
@@ -34,7 +32,6 @@ const ManageTier: React.FC = () => {
   const [tierToEdit, setTierToEdit] = useState<TierItem | null>(null);
   const [tierToDelete, setTierToDelete] = useState<TierItem | null>(null);
   const [viewTierId, setViewTierId] = useState<number | string | null>(null);
-  const [selectedCompanyForTier, setSelectedCompanyForTier] = useState<CompanyProps | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<TierUpgradeRequest | null>(null);
 
   // Dynamic Tiers query from GET /all-tiers?search=...
@@ -275,13 +272,6 @@ const ManageTier: React.FC = () => {
         onConfirm={handleDeleteTier}
       />
 
-      {/* Admin Change Tier Modal */}
-      {selectedCompanyForTier && (
-        <ChangeTierModal
-          company={selectedCompanyForTier}
-          onClose={() => setSelectedCompanyForTier(null)}
-        />
-      )}
 
       {/* Admin Review Upgrade Request Modal */}
       {selectedRequest && (

@@ -98,12 +98,6 @@ const SupportOverview: React.FC = () => {
       key: "name",
       render: (item: CompanyProps) => (
         <div className="flex items-center gap-2.5">
-          <CompanyLogoAvatar
-            name={item.name || item.companyName}
-            logo={item.logo}
-            className="w-8 h-8 rounded-lg"
-            textClassName="text-xs font-bold"
-          />
           <div className="flex flex-col min-w-0">
             <span className="font-semibold text-textBlack text-xs truncate">
               {item.name || item.companyName || "N/A"}

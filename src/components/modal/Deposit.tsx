@@ -62,7 +62,7 @@ const Deposit: React.FC<DepositModalProps> = ({
       if (!token) return;
       const deToken = await decryptToken(String(token));
       if (deToken) {
-        localStorage.setItem("token", deToken as string)
+        localStorage.setItem("token", String(deToken));
         refreshUser(String(deToken));
       } else {
         console.error("Failed to decrypt token")

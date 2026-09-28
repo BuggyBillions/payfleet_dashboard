@@ -11,10 +11,9 @@ import { useCompanies, useCompanyStats, useDeleteCompany } from "../../hooks/use
 import { getTierConfig } from "../../services/tierService";
 import { formatterUtility } from "../../helpers/formatterUtility";
 import { CompanyLogoAvatar } from "../../components/ui/CompanyLogoAvatar";
-import ChangeTierModal from "../../components/modal/tier/ChangeTierModal";
 import { FiSearch } from "react-icons/fi";
 import { HiOutlineBuildingOffice2 } from "react-icons/hi2";
-import { LuShieldCheck, LuBuilding, LuSlidersHorizontal, LuWallet } from "react-icons/lu";
+import { LuShieldCheck, LuBuilding, LuWallet } from "react-icons/lu";
 import { FaUserCheck, FaUserSlash } from "react-icons/fa6";
 import { useActivateUser, useDeactivateUser } from "../../hooks/useStaff";
 
@@ -28,7 +27,6 @@ const ManageCompany: React.FC = () => {
   const [deleteModal, setDeleteModal] = useState(false);
   const [statusModal, setStatusModal] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<CompanyProps | null>(null);
-  const [companyForTierChange, setCompanyForTierChange] = useState<CompanyProps | null>(null);
 
   // Debounce search input
   useEffect(() => {
@@ -175,12 +173,6 @@ const ManageCompany: React.FC = () => {
       key: "name",
       render: (item: CompanyProps) => (
         <div className="flex items-center gap-2.5">
-          <CompanyLogoAvatar
-            name={item.name || item.companyName}
-            logo={item.logo}
-            className="w-8 h-8 rounded-lg"
-            textClassName="text-xs font-bold"
-          />
           <div className="flex flex-col min-w-0">
             <span className="font-semibold text-textBlack text-xs truncate">
               {item.name || item.companyName || "N/A"}
@@ -259,11 +251,6 @@ const ManageCompany: React.FC = () => {
         const currentlyActive = isCompanyActive(item);
 
         const otherActions: OtherActionProps[] = [
-          {
-            name: "Modify Tier",
-            icon: <LuSlidersHorizontal className="text-primary" />,
-            action: () => setCompanyForTierChange(item),
-          },
           {
             name: currentlyActive ? "Deactivate Account" : "Activate Account",
             icon: currentlyActive ? (
@@ -432,23 +419,14 @@ const ManageCompany: React.FC = () => {
       />
 
       {/* View Details Modal */}
-      {selectedCompany && !deleteModal && !statusModal && !companyForTierChange && (
+      {selectedCompany && !deleteModal && !statusModal && (
         <ViewCompanyModal
           selectedCompany={selectedCompany}
           onClose={() => setSelectedCompany(null)}
         />
       )}
 
-      {/* Change Tier Modal */}
-      {companyForTierChange && (
-        <ChangeTierModal
-          company={companyForTierChange}
-          onClose={() => {
-            setCompanyForTierChange(null);
-            refetch();
-          }}
-        />
-      )}
+      
     </div>
   );
 };

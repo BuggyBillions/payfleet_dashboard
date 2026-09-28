@@ -11,7 +11,6 @@ import { useCompanies, useCompanyStats } from "../../hooks/useCompany";
 import { useTierRequests } from "../../hooks/useTier";
 import { getTierConfig } from "../../services/tierService";
 import { CompanyLogoAvatar } from "../../components/ui/CompanyLogoAvatar";
-import ChangeTierModal from "../../components/modal/tier/ChangeTierModal";
 import ReviewTierRequestModal from "../../components/modal/tier/ReviewTierRequestModal";
 import ViewCompanyModal from "../../components/modal/view/ViewCompanyModal";
 import { formatPrettyDate } from "../../helpers/formatterUtility";
@@ -30,7 +29,6 @@ const ManageCompanyVerification: React.FC = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Modals state
-  const [selectedCompanyForTier, setSelectedCompanyForTier] = useState<CompanyProps | null>(null);
   const [selectedCompanyForView, setSelectedCompanyForView] = useState<CompanyProps | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<TierUpgradeRequest | null>(null);
 
@@ -134,18 +132,12 @@ const ManageCompanyVerification: React.FC = () => {
       key: "companyName",
       render: (item: TierUpgradeRequest) => (
         <div className="flex items-center gap-2.5">
-          <CompanyLogoAvatar
-            name={item.companyName || item.company?.name}
-            logo={item.companyLogo || item.company?.logo}
-            className="w-8 h-8 rounded-lg"
-            textClassName="text-xs font-bold"
-          />
           <div className="flex flex-col min-w-0">
             <span className="font-semibold text-textBlack text-xs truncate">
               {item.companyName || item.company?.name || "N/A"}
             </span>
             <span className="text-[10px] text-textBlack/60 lowercase truncate max-w-40">
-              {item.companyEmail || item.company?.email || "—"}
+              {item.company?.email || "—"}
             </span>
           </div>
         </div>
@@ -312,17 +304,6 @@ const ManageCompanyVerification: React.FC = () => {
         <ViewCompanyModal
           selectedCompany={selectedCompanyForView}
           onClose={() => setSelectedCompanyForView(null)}
-        />
-      )}
-
-      {/* Admin Change Tier Modal */}
-      {selectedCompanyForTier && (
-        <ChangeTierModal
-          company={selectedCompanyForTier}
-          onClose={() => {
-            setSelectedCompanyForTier(null);
-            refetchCompanies();
-          }}
         />
       )}
 
