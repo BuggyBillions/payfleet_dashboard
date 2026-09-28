@@ -9,7 +9,7 @@ export interface StatusBadgeProps {
   withDot?: boolean;
 }
 
-export const getStatusConfig = (statusStr: string) => {
+const getStatusConfig = (statusStr: string) => {
   const s = statusStr.toLowerCase().replace(/\s+/g, "_");
 
   // Green / Successful / Approved / Active / Verified

@@ -22,13 +22,6 @@ const AddBankModal: React.FC<AddBankModalProps> = ({
   const [accountNumber, setAccountNumber] = useState("");
   const [accountName, setAccountName] = useState("");
 
-  useEffect(() => {
-    if (defaultBank) {
-      setBankName(defaultBank.name);
-      setBankCode(defaultBank.code || "");
-    }
-  }, [defaultBank]);
-
   // Auto-resolve account name using /resolve-account when 10 digits and bank_code are present
   useEffect(() => {
     if (accountNumber.trim().length === 10 && bankCode) {
@@ -57,7 +50,7 @@ const AddBankModal: React.FC<AddBankModalProps> = ({
         }
       );
     }
-  }, [accountNumber, bankCode]);
+  }, [accountNumber, bankCode, resolveAccountMutation]);
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   LuBell,
   LuBellRing,
@@ -36,17 +36,12 @@ const Notifications: React.FC = () => {
 
   const totalItems = notifications.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
-
-  useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
 
   const paginatedNotifications = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
+    const startIndex = (safeCurrentPage - 1) * itemsPerPage;
     return notifications.slice(startIndex, startIndex + itemsPerPage);
-  }, [notifications, currentPage, itemsPerPage]);
+  }, [notifications, safeCurrentPage, itemsPerPage]);
 
   const unreadCount = useMemo(() => {
     return notifications.filter((n) => !isNotificationRead(n)).length;
@@ -187,7 +182,7 @@ const Notifications: React.FC = () => {
           data={paginatedNotifications}
           isLoading={loading}
           error={null}
-          currentPage={currentPage}
+          currentPage={safeCurrentPage}
           totalPages={totalPages}
           totalItems={totalItems}
           itemsPerPage={itemsPerPage}

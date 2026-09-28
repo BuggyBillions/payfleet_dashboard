@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useId } from "react";
+import React, { useState, useEffect, useId, useCallback } from "react";
 import { toast } from "sonner";
 import { assets } from "../../assets/assets";
 import type { DemoDeposit } from "../../lib/interfaces";
@@ -21,7 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { DepositModalProps, PaymentMethod, ModalView } from "../../lib/interfaces";
 import { useAccount } from "../../hooks/useBank";
 import { companyFunding, getEachCompanyDeposit, getCompanyDeposits } from "../../services/depositService";
-import api, { getErrorMessage } from "../../helpers/api";
+import { getErrorMessage } from "../../helpers/api";
 import Modal from "../../components/modal/Modal";
 import FormattedInput from "../../components/ui/FormattedInput";
 import { HiHashtag } from "react-icons/hi2";
@@ -35,6 +35,12 @@ const opayLogoBase64 =
 // Total countdown is 10 minutes (600s); approval takes about 5 minutes (300s)
 const TOTAL_WAITING_SECONDS = 600;
 const APPROVAL_WAIT_SECONDS = 300;
+
+const formatTime = (totalSeconds: number) => {
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+};
 
 const Deposit: React.FC<DepositModalProps> = ({
   onClose,
@@ -65,7 +71,7 @@ const Deposit: React.FC<DepositModalProps> = ({
     }
 
     verifyToken();
-  }, [token])
+  }, [token, navigate, refreshUser]);
 
 
 
@@ -105,7 +111,7 @@ const Deposit: React.FC<DepositModalProps> = ({
 
   // Simulation verification state in waiting screen
   const [isReceived, setIsReceived] = useState(false);
-  const [reference, setReference] = useState("");
+  const [reference, setReference] = useState(() => `PF-DEP-${Math.floor(100000 + Math.random() * 900000)}`);
   const [depositId, setDepositId] = useState<number | string | null>(null);
   const [checkoutAmount, setCheckoutAmount] = useState<number | null>(null);
 
@@ -122,11 +128,6 @@ const Deposit: React.FC<DepositModalProps> = ({
       setIsInitialLoading(false);
     }, 5000);
     return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    const randomRef = `PF-DEP-${Math.floor(100000 + Math.random() * 900000)}`;
-    setReference(randomRef);
   }, []);
 
   // If defaultAmount is provided on mount, trigger company funding registration
@@ -170,7 +171,7 @@ const Deposit: React.FC<DepositModalProps> = ({
   }, [view]);
 
   // Function to check payment status from backend
-  const checkPaymentStatus = async (isManual = false) => {
+  const checkPaymentStatus = useCallback(async (isManual = false) => {
     if (isCheckingStatus || isReceived) return;
     setIsCheckingStatus(true);
 
@@ -181,13 +182,13 @@ const Deposit: React.FC<DepositModalProps> = ({
       if (depositId) {
         try {
           const eachRes = await getEachCompanyDeposit(depositId);
-          const itemData = (eachRes as Record<string, any>)?.data || eachRes;
+          const itemData = (eachRes as Record<string, unknown>)?.data as Record<string, unknown> || eachRes;
           const rawStatus = String(
             itemData?.status ||
-            itemData?.transaction?.status ||
+            (itemData?.transaction as Record<string, unknown>)?.status ||
             itemData?.payment_status ||
-            eachRes?.status ||
-            eachRes?.transaction?.status ||
+            (eachRes as Record<string, unknown>)?.status ||
+            ((eachRes as Record<string, unknown>)?.transaction as Record<string, unknown>)?.status ||
             ""
           ).toLowerCase();
 
@@ -226,7 +227,7 @@ const Deposit: React.FC<DepositModalProps> = ({
             const rawStatus = String(
               matching.status ||
               matching.transaction?.status ||
-              (matching as Record<string, any>)?.payment_status ||
+              (matching as Record<string, unknown>)?.payment_status ||
               ""
             ).toLowerCase();
 
@@ -281,7 +282,18 @@ const Deposit: React.FC<DepositModalProps> = ({
     } finally {
       setIsCheckingStatus(false);
     }
-  };
+  }, [
+    isCheckingStatus,
+    isReceived,
+    depositId,
+    effectiveCompanyId,
+    reference,
+    checkoutAmount,
+    amount,
+    activeAccount?.bank_name,
+    onDepositSuccess,
+    waitingSeconds,
+  ]);
 
   // Waiting screen countdown and automated status polling
   useEffect(() => {
@@ -307,13 +319,7 @@ const Deposit: React.FC<DepositModalProps> = ({
       clearInterval(interval);
       clearInterval(statusPollInterval);
     };
-  }, [view, isReceived, depositId, reference, effectiveCompanyId]);
-
-  const formatTime = (totalSeconds: number) => {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
+  }, [view, isReceived, checkPaymentStatus]);
 
   const handleCopy = async (text: string, fieldName: string) => {
     try {

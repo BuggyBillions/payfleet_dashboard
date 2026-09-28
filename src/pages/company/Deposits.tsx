@@ -1,10 +1,13 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   DepositsProps,
   DemoDeposit,
   TableColumnProps,
 } from "../../lib/interfaces";
-import { formatterUtility, formatDateTime } from "../../helpers/formatterUtility";
+import {
+  formatterUtility,
+  formatDateTime,
+} from "../../helpers/formatterUtility";
 import ActionButton from "../../components/ui/ActionButton";
 import OverviewCards from "../../components/cards/OverviewCards";
 import StatusBadge from "../../components/ui/StatusBadge";
@@ -14,20 +17,19 @@ import { FaPlus } from "react-icons/fa6";
 import { LuWallet, LuClock, LuCheck, LuCopy } from "react-icons/lu";
 import { copyToClipboard } from "../../helpers/clipboardHelper";
 import EachCompanyDepositModal from "../../components/modal/EachCompanyDepositModal";
+import Deposit from "../../components/modal/Deposit";
 import { useUser } from "../../hooks/useUser";
-import {
-  getCompanyDeposits,
-  type CompanyDeposit,
-} from "../../services/depositService";
+import { useCompanyDeposits } from "../../hooks/useDeposit";
+import type { CompanyDeposit } from "../../services/depositService";
 import { FiSearch } from "react-icons/fi";
-import { useNavigate } from "react-router-dom";
-import { decryptToken, encryptToken } from "../../helpers/tokenHelper";
 
 interface DepositRow extends Omit<DemoDeposit, "id"> {
   id: number | string;
 }
 
-const normalizeStatus = (status: CompanyDeposit["status"]): DemoDeposit["status"] => {
+const normalizeStatus = (
+  status: CompanyDeposit["status"],
+): DemoDeposit["status"] => {
   if (typeof status === "number") {
     return status === 1 ? "successful" : status === 0 ? "pending" : "failed";
   }
@@ -35,32 +37,47 @@ const normalizeStatus = (status: CompanyDeposit["status"]): DemoDeposit["status"
     return status ? "successful" : "pending";
   }
   const s = String(status ?? "").toLowerCase();
-  if (["successful", "success", "completed", "succeeded", "approved", "paid", "credited"].includes(s)) {
+  if (
+    [
+      "successful",
+      "success",
+      "completed",
+      "succeeded",
+      "approved",
+      "paid",
+      "credited",
+    ].includes(s)
+  ) {
     return "successful";
   }
-  if (["pending", "processing", "initiated", "in_progress", "awaiting", "unsettled"].includes(s)) {
+  if (
+    [
+      "pending",
+      "processing",
+      "initiated",
+      "in_progress",
+      "awaiting",
+      "unsettled",
+    ].includes(s)
+  ) {
     return "pending";
   }
   return "failed";
 };
 
 const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
-
-  const navigate = useNavigate();
-  const { user, token } = useUser();
+  const { user } = useUser();
   const companyId = user?.company_details?.id;
-  const [deposits, setDeposits] = useState<DepositRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: rawDeposits = [], isLoading: loading, refetch: reloadDeposits } = useCompanyDeposits(companyId);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [viewDepositId, setViewDepositId] = useState<number | string | null>(null);
+  const [viewDepositId, setViewDepositId] = useState<number | string | null>(
+    null,
+  );
   const [copiedRef, setCopiedRef] = useState<string | null>(null);
+  const [showDepositModal, setShowDepositModal] = useState(false);
 
-  const handleNavigate = async ()=> {
-    const encryptedToken = await encryptToken(token!);
-    navigate(`/payment/${encryptedToken}`)
-  
-  }
+  const openDepositModal = () => setShowDepositModal(true);
 
   const handleCopyRef = async (ref: string) => {
     const success = await copyToClipboard(ref, "Reference");
@@ -88,7 +105,9 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
       label: "Reference",
       render: (d) => (
         <div className="flex items-center gap-1.5 mt-0.5">
-          <span className="text-[10px] text-textBlack/50 font-mono">{d.reference}</span>
+          <span className="text-[10px] text-textBlack/50 font-mono">
+            {d.reference}
+          </span>
           {d.reference && d.reference !== "—" && (
             <button
               type="button"
@@ -130,61 +149,45 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
     },
     {
       label: "Action",
-      render: (d) => (
-        <ActionCell rowId={d.id} canView onView={openView} />
-      ),
+      render: (d) => <ActionCell rowId={d.id} canView onView={openView} />,
     },
   ];
-
-  useEffect(() => {
-    let mounted = true;
-    getCompanyDeposits(companyId)
-      .then((items) => {
-        if (!mounted) return;
-        const mapped: DepositRow[] = items.map((t) => {
-          const transaction = t.transaction ?? ({} as Record<string, unknown>);
-          const reference = String(
-            transaction.reference ??
-            t.reference ??
-            t.reference_no ??
-            t.transaction_reference ??
-            t.ref ??
-            "",
-          );
-          const amount = Number(transaction.amount ?? t.amount) || 0;
-          const status = normalizeStatus(
-            (transaction.status as CompanyDeposit["status"]) ?? t.status,
-          );
-          const createdAt = String(
-            t.created_at ??
-            t.date ??
-            transaction.created_at ??
-            new Date().toISOString(),
-          );
-          return {
-            id: t.id ?? Date.now(),
-            reference:
-              reference ||
-              `PF-DEP-${Math.floor(100000 + Math.random() * 900000)}`,
-            amount,
-            method: t.method ?? "Bank Transfer",
-            status,
-            date: createdAt,
-          };
-        });
-        mapped.sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-        );
-        setDeposits(mapped);
-      })
-      .catch(() => undefined)
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [companyId]);
+  
+  const deposits = useMemo<DepositRow[]>(() => {
+    const mapped: DepositRow[] = rawDeposits.map((t) => {
+      const transaction = t.transaction ?? ({} as Record<string, unknown>);
+      const reference = String(
+        transaction.reference ??
+        t.reference ??
+        t.reference_no ??
+        t.transaction_reference ??
+        t.ref ??
+        "",
+      );
+      const amount = Number(transaction.amount ?? t.amount) || 0;
+      const status = normalizeStatus(
+        (transaction.status as CompanyDeposit["status"]) ?? t.status,
+      );
+      const createdAt = String(
+        t.created_at ??
+        t.date ??
+        transaction.created_at ??
+        "",
+      );
+      return {
+        id: t.id ?? reference,
+        reference:
+          reference || `PF-DEP-${t.id || "0"}`,
+        amount,
+        method: t.method ?? "Bank Transfer",
+        status,
+        date: createdAt,
+      };
+    });
+    return mapped.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
+  }, [rawDeposits]);
 
   const totalBalance = useMemo(() => {
     return deposits
@@ -220,8 +223,12 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
     return Math.ceil(filteredDeposits.length / itemsPerPage) || 1;
   }, [filteredDeposits.length, itemsPerPage]);
 
+  // Clamp during render instead of syncing it back in an effect, so a search
+  // or filter that shrinks the result set cannot leave an empty page.
+  const safePage = Math.min(currentPage, totalPages);
+
   const paginatedDeposits = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
+    const start = (safePage - 1) * itemsPerPage;
     return filteredDeposits.slice(start, start + itemsPerPage);
   }, [filteredDeposits, currentPage, itemsPerPage]);
 
@@ -230,7 +237,6 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
       setCurrentPage(1);
     }
   }, [currentPage, totalPages]);
-
 
   return (
     <div className="flex flex-col gap-6">
@@ -249,7 +255,7 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
           <ActionButton
             text="Deposit Funds"
             icon={<FaPlus />}
-            onClick={handleNavigate}
+            onClick={openDepositModal}
           />
         </div>
       </div>
@@ -286,7 +292,7 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
           data={paginatedDeposits}
           isLoading={loading}
           error={null}
-          currentPage={currentPage}
+          currentPage={safePage}
           totalPages={totalPages}
           totalItems={filteredDeposits.length}
           itemsPerPage={itemsPerPage}
@@ -295,12 +301,20 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
         />
       </div>
 
-     
-
       {viewDepositId && (
         <EachCompanyDepositModal
           depositId={viewDepositId}
           onClose={() => setViewDepositId(null)}
+        />
+      )}
+
+      {showDepositModal && (
+        <Deposit
+          companyId={companyId}
+          onClose={() => setShowDepositModal(false)}
+          onDepositSuccess={() => {
+            void reloadDeposits();
+          }}
         />
       )}
     </div>

@@ -22,7 +22,6 @@ import {
 } from "../../hooks/useDeposit";
 
 export type { DepositItemProps, ManageDepositProps };
-export const INITIAL_DEPOSIT_DATA: DepositItemProps[] = [];
 
 const REJECTION_PRESETS = [
   "Payment not reflected in clearing bank account",
@@ -36,11 +35,18 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
   defaultFilter = "all",
   role = "admin",
 }) => {
+  const [prevDefaultFilter, setPrevDefaultFilter] = useState(defaultFilter);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(defaultFilter);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  if (defaultFilter !== prevDefaultFilter) {
+    setPrevDefaultFilter(defaultFilter);
+    setStatusFilter(defaultFilter);
+    setCurrentPage(1);
+  }
 
   // Modal States
   const [selectedDeposit, setSelectedDeposit] = useState<DepositItemProps | null>(null);
@@ -58,11 +64,6 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
     }, 400);
     return () => clearTimeout(handler);
   }, [searchTerm]);
-
-  useEffect(() => {
-    setStatusFilter(defaultFilter);
-    setCurrentPage(1);
-  }, [defaultFilter]);
 
   // Main paginated query using GET /all-deposit?search=...
   const {
@@ -95,7 +96,7 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
     return allDeposits
       .filter((d) => d.status === "successful")
       .reduce((sum, d) => sum + d.amount, 0);
-  }, [allDeposits, statsData?.totalVolume]);
+  }, [allDeposits, statsData]);
 
   const pendingVolume = useMemo(() => {
     if (statsData?.pendingVolume !== undefined && statsData.pendingVolume > 0) {
@@ -104,28 +105,28 @@ const ManageDeposit: React.FC<ManageDepositProps> = ({
     return allDeposits
       .filter((d) => d.status === "pending")
       .reduce((sum, d) => sum + d.amount, 0);
-  }, [allDeposits, statsData?.pendingVolume]);
+  }, [allDeposits, statsData]);
 
   const successfulCount = useMemo(() => {
     if (statsData?.successfulCount !== undefined && statsData.successfulCount > 0) {
       return statsData.successfulCount;
     }
     return allDeposits.filter((d) => d.status === "successful").length;
-  }, [allDeposits, statsData?.successfulCount]);
+  }, [allDeposits, statsData]);
 
   const pendingCount = useMemo(() => {
     if (statsData?.pendingCount !== undefined && statsData.pendingCount > 0) {
       return statsData.pendingCount;
     }
     return allDeposits.filter((d) => d.status === "pending").length;
-  }, [allDeposits, statsData?.pendingCount]);
+  }, [allDeposits, statsData]);
 
   const failedCount = useMemo(() => {
     if (statsData?.failedCount !== undefined && statsData.failedCount > 0) {
       return statsData.failedCount;
     }
     return allDeposits.filter((d) => d.status === "failed").length;
-  }, [allDeposits, statsData?.failedCount]);
+  }, [allDeposits, statsData]);
 
   const totalDepositsCount = statsData?.totalDeposits || statsData?.totalItems || totalItems;
 

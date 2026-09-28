@@ -33,7 +33,7 @@ export const decryptToken = async (jwtToken: string) => {
       console.warn("Token expired");
       toast.error("expired")
     } else {
-      console.error("Decryption error details:", err);
+      console.error("Token is invalid or tampered", errorObj?.code);
     }
     return null;
   }

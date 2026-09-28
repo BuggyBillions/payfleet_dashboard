@@ -13,31 +13,68 @@ export interface UnreadCountResponse {
   count: number;
 }
 
-export const extractMessagesList = (raw: any): Record<string, any>[] => {
+export const extractMessagesList = (raw: unknown): Record<string, unknown>[] => {
   if (!raw) return [];
   if (Array.isArray(raw)) {
     // Check if it's grouped by day: [{ day: "Yesterday", messages: [...] }, { day: "Today", messages: [...] }]
-    const hasGroups = raw.some((g) => g && Array.isArray(g.messages));
+    const hasGroups = raw.some((g) => g && Array.isArray((g as { messages?: unknown[] }).messages));
     if (hasGroups) {
-      return raw.flatMap((g) => (Array.isArray(g.messages) ? g.messages : []));
+      return raw.flatMap((g) => (Array.isArray((g as { messages?: unknown[] }).messages) ? (g as { messages: Record<string, unknown>[] }).messages : []));
     }
-    return raw;
+    return raw as Record<string, unknown>[];
   }
-  if (raw.messages && Array.isArray(raw.messages)) {
-    return extractMessagesList(raw.messages);
+  const rawObj = raw as { messages?: unknown; data?: unknown };
+  if (rawObj.messages && Array.isArray(rawObj.messages)) {
+    return extractMessagesList(rawObj.messages);
   }
-  if (raw.data) {
-    return extractMessagesList(raw.data);
+  if (rawObj.data) {
+    return extractMessagesList(rawObj.data);
   }
   return [];
 };
 
+interface RawSupportMessage {
+  id?: string | number;
+  message?: string;
+  content?: string;
+  text?: string;
+  body?: string;
+  msg?: string;
+  sender_id?: { id?: number | string; name?: string; full_name?: string; role?: string; logo?: string | null; avatar?: string | null } | number | string;
+  sender?: { id?: number | string; name?: string; full_name?: string; role?: string; logo?: string | null; avatar?: string | null };
+  user?: { id?: number | string; name?: string; full_name?: string; role?: string; logo?: string | null; avatar?: string | null };
+  sender_role?: string;
+  sender_type?: string;
+  role?: string;
+  type?: string;
+  is_admin?: boolean;
+  is_support?: boolean;
+  from_support?: boolean;
+  from_admin?: boolean;
+  sender_name?: string;
+  is_sender?: boolean;
+  is_me?: boolean;
+  time?: string;
+  created_at?: string;
+  timestamp?: string;
+  read_at?: string;
+  is_read?: boolean;
+  read?: boolean;
+  delivered_at?: string;
+  is_delivered?: boolean;
+  delivered?: boolean;
+  status?: string;
+  logo?: string | null;
+  avatar?: string | null;
+}
+
 export const mapRawMessageToChatMessage = (
-  m: Record<string, any>,
+  raw: unknown,
   fallbackName = "User",
   idx = 0
 ): ChatMessage | null => {
-  if (!m) return null;
+  if (!raw || typeof raw !== "object") return null;
+  const m = raw as RawSupportMessage;
   const text = String(
     m.message || m.content || m.text || m.body || m.msg || ""
   ).trim();
@@ -71,15 +108,18 @@ export const mapRawMessageToChatMessage = (
     Boolean(m.is_admin || m.is_support || m.from_support || m.from_admin);
 
   const senderId =
-    senderObj?.id ||
-    (typeof m.sender_id === "number" || typeof m.sender_id === "string" ? m.sender_id : undefined) ||
-    (isSupportOrAdmin ? 101 : 999);
+    Number(
+      senderObj?.id ||
+      (typeof m.sender_id === "number" || typeof m.sender_id === "string" ? m.sender_id : undefined) ||
+      (isSupportOrAdmin ? 101 : 999)
+    ) || (isSupportOrAdmin ? 101 : 999);
 
-  const senderName =
+  const senderName = String(
     senderObj?.name ||
     senderObj?.full_name ||
     m.sender_name ||
-    (isSupportOrAdmin ? "Payfleet Support" : fallbackName);
+    (isSupportOrAdmin ? "Payfleet Support" : fallbackName)
+  );
 
   const isMe =
     m.is_sender !== undefined
@@ -91,11 +131,14 @@ export const mapRawMessageToChatMessage = (
   const timeStr = m.time
     ? String(m.time)
     : m.created_at
-    ? new Date(m.created_at).toLocaleTimeString([], {
+    ? new Date(String(m.created_at)).toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
       })
-    : m.timestamp || "";
+    : String(m.timestamp || "");
+
+  const logo = (senderObj?.logo || senderObj?.avatar || m.logo || m.avatar || null) as string | null;
+  const avatar = (senderObj?.avatar || senderObj?.logo || m.avatar || m.logo || null) as string | null;
 
   return {
     id: m.id || idx + 1,
@@ -114,8 +157,8 @@ export const mapRawMessageToChatMessage = (
       | "sent"
       | "delivered"
       | "read",
-    logo: senderObj?.logo || senderObj?.avatar || m.logo || m.avatar || null,
-    avatar: senderObj?.avatar || senderObj?.logo || m.avatar || m.logo || null,
+    logo,
+    avatar,
   };
 };
 
@@ -144,7 +187,7 @@ export const getSupportMessagesService = async (): Promise<ChatMessage[]> => {
     const rawList = extractMessagesList(rawData);
 
     return rawList
-      .map((item: Record<string, any>, idx: number) =>
+      .map((item: Record<string, unknown>, idx: number) =>
         mapRawMessageToChatMessage(item, "Payfleet Support", idx)
       )
       .filter((msg): msg is ChatMessage => msg !== null);
@@ -247,35 +290,36 @@ export const getUnreadCountService = async (): Promise<number> => {
   }
 };
 
-export const resolveConversationName = (item: Record<string, any>): string => {
+export const resolveConversationName = (item: Record<string, unknown>): string => {
   if (!item) return "User";
-  const comp = item.company || item.user?.company || item.client?.company || {};
-  const usr = item.user || item.sender || item.client || {};
+  const itemObj = item as Record<string, unknown> & { user?: Record<string, unknown>; client?: Record<string, unknown>; company?: Record<string, unknown> };
+  const comp = (itemObj.company || itemObj.user?.company || itemObj.client?.company || {}) as Record<string, unknown>;
+  const usr = (itemObj.user || itemObj.sender || itemObj.client || {}) as Record<string, unknown>;
 
   const userName =
-    usr.name ||
-    usr.full_name ||
+    (usr.name as string) ||
+    (usr.full_name as string) ||
     (usr.first_name || usr.last_name
-      ? `${usr.first_name || ""} ${usr.last_name || ""}`.trim()
+      ? `${(usr.first_name as string) || ""} ${(usr.last_name as string) || ""}`.trim()
       : "");
 
   const itemName =
-    item.name ||
-    item.full_name ||
+    (item.name as string) ||
+    (item.full_name as string) ||
     (item.first_name || item.last_name
-      ? `${item.first_name || ""} ${item.last_name || ""}`.trim()
+      ? `${(item.first_name as string) || ""} ${(item.last_name as string) || ""}`.trim()
       : "");
 
   const companyName =
-    comp.name ||
-    comp.company_name ||
-    comp.companyName ||
-    item.company_name ||
-    item.companyName;
+    (comp.name as string) ||
+    (comp.company_name as string) ||
+    (comp.companyName as string) ||
+    (item.company_name as string) ||
+    (item.companyName as string);
 
-  const senderName = item.sender_name || item.client_name;
+  const senderName = (item.sender_name as string) || (item.client_name as string);
 
-  const email = comp.email || usr.email || item.email || "";
+  const email = (comp.email as string) || (usr.email as string) || (item.email as string) || "";
   const emailName = email ? email.split("@")[0] : "";
 
   return userName || companyName || itemName || senderName || emailName || "User";
@@ -309,36 +353,39 @@ export const getAdminSupportConversationsService = async (
 
     if (!Array.isArray(rawList)) return [];
 
-    return rawList.map((item: Record<string, any>, idx: number) => {
-      const usr = item.user || item.sender || item.client || {};
-      const comp = item.company || usr.company || {};
+    return rawList.map((item: Record<string, unknown>, idx: number): Conversation => {
+      const itemObj = item as Record<string, unknown> & { user?: Record<string, unknown>; client?: Record<string, unknown>; company?: Record<string, unknown> };
+      const usr = (itemObj.user || itemObj.sender || itemObj.client || {}) as Record<string, unknown>;
+      const comp = (itemObj.company || usr.company || {}) as Record<string, unknown>;
       const name = resolveConversationName(item);
-      const email = usr.email || comp.email || item.email || "";
-      const phone =
+      const email = String(usr.email || comp.email || item.email || "");
+      const phone = String(
         usr.phone ||
         usr.phoneNumber ||
         comp.phone ||
         comp.phoneNumber ||
         item.phone ||
-        "";
+        ""
+      );
       const unread = Number(
         item.unread_count ?? item.unread ?? item.unreadMessages ?? 0
       );
       const lastMsg = item.last_message || item.latest_message;
+      const lastMsgObj = typeof lastMsg === "object" && lastMsg !== null ? (lastMsg as Record<string, unknown>) : null;
       const lastMsgText =
         typeof lastMsg === "string"
           ? lastMsg
-          : lastMsg?.message || lastMsg?.content || lastMsg?.text || "";
+          : String(lastMsgObj?.message || lastMsgObj?.content || lastMsgObj?.text || "");
 
       const rawTime =
-        lastMsg?.created_at ||
+        lastMsgObj?.created_at ||
         item.last_activity ||
         item.last_message_time ||
         item.updated_at ||
         item.created_at;
 
       const lastTime = rawTime
-        ? new Date(rawTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        ? new Date(String(rawTime)).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         : "";
 
       const convId = String(
@@ -359,29 +406,23 @@ export const getAdminSupportConversationsService = async (
         .map((m, mIdx) => mapRawMessageToChatMessage(m, name, mIdx))
         .filter((m): m is ChatMessage => m !== null);
 
-      const logo =
-        comp.logo ||
-        usr.logo ||
-        usr.avatar ||
-        item.logo ||
-        item.avatar ||
-        null;
+      const logo = (comp.logo || usr.logo || usr.avatar || item.logo || item.avatar || null) as string | null;
 
       return {
         id: convId,
         name,
         type: "chat" as const,
-        role: usr.role || item.role || comp.tier || "Company Client",
+        role: String(usr.role || item.role || comp.tier || "Company Client"),
         logo,
         avatar: logo,
         email,
         phone,
-        department: item.department || "Client Account",
+        department: String(item.department || "Client Account"),
         online: Boolean(item.online ?? comp.online ?? true),
         unread,
         lastMessage: lastMsgText || (messages.length > 0 ? messages[messages.length - 1].text : "No messages yet"),
         lastMessageTime: lastTime || (messages.length > 0 ? messages[messages.length - 1].timestamp : "Just now"),
-        created_at: item.created_at || item.last_activity,
+        created_at: String(item.created_at || item.last_activity || ""),
         messages,
       };
     });
@@ -410,26 +451,33 @@ export const getAdminSupportConversationByIdService = async (
   const rawData = resData?.data || resData?.conversation || resData;
 
   const rawMessagesList = extractMessagesList(rawData);
-  const item = Array.isArray(rawData) ? (resData?.user || resData?.company || resData || {}) : rawData;
+  const item = (Array.isArray(rawData) ? (resData?.user || resData?.company || resData || {}) : rawData) as Record<string, unknown>;
 
-  const comp = item.company || item.user?.company || resData?.company || resData?.user?.company || {};
-  const usr = item.user || resData?.user || resData?.client || {};
+  const itemUser = typeof item.user === "object" && item.user !== null ? (item.user as Record<string, unknown>) : {};
+  const resDataUser = typeof resData?.user === "object" && resData?.user !== null ? (resData.user as Record<string, unknown>) : {};
+  const resDataComp = typeof resData?.company === "object" && resData?.company !== null ? (resData.company as Record<string, unknown>) : {};
+  const itemComp = typeof item.company === "object" && item.company !== null ? (item.company as Record<string, unknown>) : {};
+
+  const comp = itemComp.name ? itemComp : itemUser.company ? (itemUser.company as Record<string, unknown>) : resDataComp.name ? resDataComp : {};
+  const usr = itemUser.name || itemUser.email ? itemUser : resDataUser;
   const resolvedName = resolveConversationName(item) !== "User" 
     ? resolveConversationName(item) 
     : resolveConversationName(resData);
   const name = resolvedName !== "User" ? resolvedName : "";
-  const email = comp.email || item.email || usr.email || resData?.email || "";
-  const phone =
-    comp.phone || comp.phoneNumber || item.phone || usr.phone || resData?.phone || "";
+  const email = String(comp.email || item.email || usr.email || resData?.email || "");
+  const phone = String(
+    comp.phone || comp.phoneNumber || item.phone || usr.phone || resData?.phone || ""
+  );
   const unread = Number(item.unread_count ?? item.unread ?? resData?.unread_count ?? 0);
-  const logo =
+  const logo = (
     comp.logo ||
     usr.logo ||
     usr.avatar ||
     item.logo ||
     item.avatar ||
     resData?.logo ||
-    null;
+    null
+  ) as string | null;
 
   const messages: ChatMessage[] = rawMessagesList
     .map((m, mIdx) => mapRawMessageToChatMessage(m, name || "User", mIdx))
@@ -439,12 +487,12 @@ export const getAdminSupportConversationByIdService = async (
     id: String(item.id || id),
     name,
     type: "chat" as const,
-    role: item.role || usr.role || comp.tier || "Company Client",
+    role: String(item.role || usr.role || comp.tier || "Company Client"),
     logo,
     avatar: logo,
     email,
     phone,
-    department: item.department || "Client Account",
+    department: String(item.department || "Client Account"),
     online: Boolean(item.online ?? comp.online ?? true),
     unread,
     lastMessage:
@@ -455,7 +503,7 @@ export const getAdminSupportConversationByIdService = async (
       messages.length > 0
         ? messages[messages.length - 1].timestamp
         : "Just now",
-    created_at: item.created_at || resData?.created_at,
+    created_at: String(item.created_at || resData?.created_at || ""),
     messages,
   };
 };

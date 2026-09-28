@@ -10,7 +10,7 @@ import { getTierConfig } from "../../../services/tierService";
 import { getEmployees } from "../../../services/employeeService";
 import { useQuery } from "@tanstack/react-query";
 import { formatterUtility } from "../../../helpers/formatterUtility";
-import { CompanyLogoAvatar } from "../../../helpers/logoHelper";
+import { CompanyLogoAvatar } from "../../ui/CompanyLogoAvatar";
 import ReusableTable from "../../../utility/ReusableTable";
 import {
   LuPhone,
@@ -45,8 +45,6 @@ const ViewCompanyModal: React.FC<ViewCompanyModalProps> = ({
   const compAddress = selectedCompany?.address || selectedCompany?.registeredAddress || "N/A";
   const compAbout = selectedCompany?.about || "";
   const compBalance = Number(selectedCompany?.balance) || 0;
-  const compRC = selectedCompany?.rcNumber || selectedCompany?.rc_number || "N/A";
-  const compTIN = selectedCompany?.tinNumber || selectedCompany?.tin_number || "N/A";
   const compBVN = selectedCompany?.bvn || "N/A";
   const compNIN = selectedCompany?.nin || "N/A";
   const compDirector = selectedCompany?.directorName || "N/A";
@@ -280,18 +278,6 @@ const ViewCompanyModal: React.FC<ViewCompanyModalProps> = ({
               <p className="text-xs font-mono font-bold text-primary">
                 {formatterUtility(compBalance)}
               </p>
-            </div>
-            <div className="p-3.5 rounded-xl bg-secondary border border-primary/10 space-y-1">
-              <span className="text-[10px] text-textBlack/50 uppercase font-semibold">
-                CAC Registration (RC)
-              </span>
-              <p className="text-xs font-mono font-bold text-textBlack">{compRC}</p>
-            </div>
-            <div className="p-3.5 rounded-xl bg-secondary border border-primary/10 space-y-1">
-              <span className="text-[10px] text-textBlack/50 uppercase font-semibold">
-                Tax Identification (TIN)
-              </span>
-              <p className="text-xs font-mono font-bold text-textBlack">{compTIN}</p>
             </div>
             <div className="p-3.5 rounded-xl bg-secondary border border-primary/10 space-y-1">
               <span className="text-[10px] text-textBlack/50 uppercase font-semibold">

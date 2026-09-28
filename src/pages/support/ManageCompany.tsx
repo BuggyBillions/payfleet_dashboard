@@ -10,7 +10,7 @@ import type { CompanyProps, TableColumnProps } from "../../lib/interfaces";
 import { useCompanies, useCompanyStats, useDeleteCompany } from "../../hooks/useCompany";
 import { getTierConfig } from "../../services/tierService";
 import { formatterUtility } from "../../helpers/formatterUtility";
-import { CompanyLogoAvatar } from "../../helpers/logoHelper";
+import { CompanyLogoAvatar } from "../../components/ui/CompanyLogoAvatar";
 import ChangeTierModal from "../../components/modal/tier/ChangeTierModal";
 import { FiSearch } from "react-icons/fi";
 import { HiOutlineBuildingOffice2 } from "react-icons/hi2";
@@ -96,7 +96,7 @@ const SupportManageCompany: React.FC = () => {
       return statsData.activeCompanies;
     }
     return allCompanies.filter((c) => isCompanyActive(c)).length;
-  }, [allCompanies, statsData?.activeCompanies]);
+  }, [allCompanies, statsData]);
 
   const totalStaffCount = useMemo(() => {
     if (statsData?.totalStaff !== undefined && statsData.totalStaff > 0) {
@@ -106,14 +106,14 @@ const SupportManageCompany: React.FC = () => {
       (sum, c) => sum + Number(c.no_of_employee ?? c.employees?.length ?? c.staff ?? c.staffCount ?? 0),
       0
     );
-  }, [allCompanies, statsData?.totalStaff]);
+  }, [allCompanies, statsData]);
 
   const verifiedCount = useMemo(() => {
     if (statsData?.verifiedCompanies !== undefined && statsData.verifiedCompanies > 0) {
       return statsData.verifiedCompanies;
     }
     return allCompanies.filter((c) => isCompanyVerified(c)).length;
-  }, [allCompanies, statsData?.verifiedCompanies]);
+  }, [allCompanies, statsData]);
 
   // Total Platform Balance across companies
   const totalPlatformBalance = useMemo(() => {
@@ -185,9 +185,6 @@ const SupportManageCompany: React.FC = () => {
             <span className="font-semibold text-textBlack text-xs truncate">
               {item.name || item.companyName || "N/A"}
             </span>
-            <span className="text-[10px] text-textBlack/50 font-mono">
-              RC: {item.rcNumber || item.rc_number || `ID-${item.id}`}
-            </span>
           </div>
         </div>
       ),
@@ -197,7 +194,7 @@ const SupportManageCompany: React.FC = () => {
       key: "email",
       render: (item: CompanyProps) => (
         <div className="flex flex-col text-xs">
-          <span className="text-textBlack/80 lowercase truncate max-w-[170px]">{item.email}</span>
+          <span className="text-textBlack/80 lowercase truncate max-w-42.5">{item.email}</span>
           <span className="text-[10px] text-textBlack/50 font-mono">
             {item.phone || item.phoneNumber || "N/A"}
           </span>

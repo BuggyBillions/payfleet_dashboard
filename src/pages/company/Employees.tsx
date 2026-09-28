@@ -6,6 +6,7 @@ import { LuUsersRound } from "react-icons/lu";
 import { TbReceiptDollar } from "react-icons/tb";
 import { IoSearchOutline } from "react-icons/io5";
 import { FiMinusCircle } from "react-icons/fi";
+import { LuCircleCheck, LuCircleSlash } from "react-icons/lu";
 import ReusableTable from "../../utility/ReusableTable";
 import OverviewCards from "../../components/cards/OverviewCards";
 import ReduceSalaryModal from "../../components/modal/ReduceSalaryModal";
@@ -16,9 +17,21 @@ import { formatShortDate, formatterUtility } from "../../helpers/formatterUtilit
 import { getErrorMessage } from "../../helpers/api";
 import { useUser } from "../../hooks/useUser";
 import { useEmployeeDeductions } from "../../hooks/useEmployeeDeduction";
+import {
+  useMarkMultiplePaying,
+  usePaySingleEmployee,
+} from "../../hooks/useEmployeePayment";
 import { getEmployees, deleteEmployee, EMPLOYMENT_TYPES } from "../../services/employeeService";
 
 type EmployeeTab = "employees" | "deductions";
+
+/** `paying: 0` takes an employee off payroll, so PAY skips them. */
+const isOnPayroll = (employee: Employee): boolean => {
+  const raw = employee.paying;
+  if (raw === undefined || raw === null || raw === "") return true;
+  if (typeof raw === "number") return raw !== 0;
+  return !["0", "false", "no", "excluded"].includes(String(raw).toLowerCase());
+};
 
 
 const Employees: React.FC = () => {
@@ -39,6 +52,10 @@ const Employees: React.FC = () => {
   const [deductionItemsPerPage, setDeductionItemsPerPage] = useState(5);
   const [deductTarget, setDeductTarget] = useState<Employee | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
+  const [selectedRowIds, setSelectedRowIds] = useState<Array<number | string>>([]);
+
+  const paySingleMutation = usePaySingleEmployee();
+  const multiplePayingMutation = useMarkMultiplePaying();
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedDeductionSearch(deductionSearch), 500);
@@ -130,14 +147,13 @@ const Employees: React.FC = () => {
   const totalItems = data?.totalItems ?? employees.length;
 
   const statsEmployees = statsData?.items ?? [];
-  const onPayrollCount = statsEmployees.filter(
-    (emp) => String(emp.paying) === "1",
-  ).length;
-  const totalPayroll = statsEmployees.reduce(
+  const payrollEmployees = statsEmployees.filter(isOnPayroll);
+  const onPayrollCount = payrollEmployees.length;
+  const totalPayroll = payrollEmployees.reduce(
     (sum, emp) => sum + (Number(emp.estimate_pay) || 0),
     0,
   );
-  const averagePay = totalItems ? totalPayroll / totalItems : 0;
+  const averagePay = onPayrollCount ? totalPayroll / onPayrollCount : 0;
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ["employees"] });
@@ -156,6 +172,33 @@ const Employees: React.FC = () => {
 
   const handleDeductSaved = () => {
     setDeductTarget(null);
+  };
+
+  const handleToggleRow = (id: number | string) => {
+    setSelectedRowIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
+
+  const handleToggleAll = (checked: boolean) => {
+    setSelectedRowIds(checked ? employees.map((emp) => emp.id) : []);
+  };
+
+  const selectedEmployees = employees.filter((emp) =>
+    selectedRowIds.includes(emp.id),
+  );
+  const selectedOffPayroll = selectedEmployees.filter(
+    (emp) => !isOnPayroll(emp),
+  );
+  const selectedOnPayroll = selectedEmployees.filter(isOnPayroll);
+  const isPayingMutation = paySingleMutation.isPending || multiplePayingMutation.isPending;
+
+  const handleMarkSelected = (paying: 0 | 1) => {
+    if (selectedRowIds.length === 0) return;
+    multiplePayingMutation.mutate(
+      { ids: selectedRowIds, paying },
+      { onSuccess: () => setSelectedRowIds([]) },
+    );
   };
 
   const columns: TableColumnProps<Employee>[] = [
@@ -202,21 +245,54 @@ const Employees: React.FC = () => {
       },
     },
     {
+      label: "Payroll",
+      render: (item) => {
+        const onPayroll = isOnPayroll(item);
+        return (
+          <span
+            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium ${
+              onPayroll
+                ? "bg-[#2A5D56]/10 text-[#2A5D56]"
+                : "bg-gray-200 text-gray-500"
+            }`}
+          >
+            {onPayroll ? <LuCircleCheck size={11} /> : <LuCircleSlash size={11} />}
+            {onPayroll ? "On payroll" : "Off payroll"}
+          </span>
+        );
+      },
+    },
+    {
       label: "Action",
-      render: (item) => (
-        <ActionCell
-          rowId={item.id}
-          onEdit={(rowId) => navigate(`/dashboard/employees/edit/${rowId}`)}
-          onDelete={() => setDeleteTarget(item)}
-          otherActions={[
-            {
-              name: "Deduct Salary",
-              icon: <FiMinusCircle size={12} />,
-              action: () => setDeductTarget(item),
-            },
-          ]}
-        />
-      ),
+      render: (item) => {
+        const onPayroll = isOnPayroll(item);
+        return (
+          <ActionCell
+            rowId={item.id}
+            onEdit={(rowId) => navigate(`/dashboard/employees/edit/${rowId}`)}
+            onDelete={() => setDeleteTarget(item)}
+            otherActions={[
+              {
+                name: "Add to payroll",
+                icon: <LuCircleCheck size={12} />,
+                disabled: onPayroll || paySingleMutation.isPending,
+                action: () => paySingleMutation.mutate(item.id),
+              },
+              {
+                name: "Remove from payroll",
+                icon: <LuCircleSlash size={12} />,
+                disabled: !onPayroll || paySingleMutation.isPending,
+                action: () => paySingleMutation.mutate(item.id),
+              },
+              {
+                name: "Deduct Salary",
+                icon: <FiMinusCircle size={12} />,
+                action: () => setDeductTarget(item),
+              },
+            ]}
+          />
+        );
+      },
     },
   ];
 
@@ -373,6 +449,42 @@ const Employees: React.FC = () => {
             </div>
           </div>
 
+          {selectedRowIds.length > 0 && (
+            <div className="flex items-center justify-end gap-2 mb-4">
+              <span className="text-xs text-textBlack/60 mr-auto">
+                {selectedRowIds.length} selected
+              </span>
+              <button
+                type="button"
+                onClick={() => handleMarkSelected(0)}
+                disabled={isPayingMutation || selectedOnPayroll.length === 0}
+                title={
+                  selectedOnPayroll.length === 0
+                    ? "Selected employees are already off payroll"
+                    : undefined
+                }
+                className="flex items-center gap-1.5 px-3 h-9 rounded-md text-xs font-medium border border-black/10 bg-secondary text-textBlack/70 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <LuCircleSlash size={12} />
+                Remove from payroll
+              </button>
+              <button
+                type="button"
+                onClick={() => handleMarkSelected(1)}
+                disabled={isPayingMutation || selectedOffPayroll.length === 0}
+                title={
+                  selectedOffPayroll.length === 0
+                    ? "Selected employees are already on payroll"
+                    : undefined
+                }
+                className="flex items-center gap-1.5 px-3 h-9 rounded-md text-xs font-medium border border-black/10 bg-secondary text-textBlack/70 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <LuCircleCheck size={12} />
+                Add to payroll
+              </button>
+            </div>
+          )}
+
           <ReusableTable
             columns={columns}
             data={employees}
@@ -384,6 +496,10 @@ const Employees: React.FC = () => {
             itemsPerPage={itemsPerPage}
             setCurrentPage={setCurrentPage}
             setItemsPerPage={setItemsPerPage}
+            selectable
+            selectedRowIds={selectedRowIds}
+            onToggleRowSelection={handleToggleRow}
+            onToggleAllRows={handleToggleAll}
           />
         </div>
       ) : (

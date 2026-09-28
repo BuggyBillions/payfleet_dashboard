@@ -5,6 +5,7 @@ import {
   approveDepositService,
   declineDepositService,
   deleteDepositService,
+  getCompanyDeposits,
   type DepositStatsResponse,
 } from "../services/depositService";
 import type { GetDepositsParams, DepositListResponse } from "../lib/interfaces";
@@ -106,5 +107,17 @@ export const useDeleteDeposit = () => {
     onError: (error: unknown) => {
       toast.error(getErrorMessage(error, "Failed to delete deposit"));
     },
+  });
+};
+
+/**
+ * Company-specific deposits hook
+ */
+export const useCompanyDeposits = (companyId: number | string | undefined) => {
+  return useQuery({
+    queryKey: ["company-deposits", companyId],
+    queryFn: () => getCompanyDeposits(companyId),
+    enabled: Boolean(companyId),
+    placeholderData: (prev) => prev,
   });
 };

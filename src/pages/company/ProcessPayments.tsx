@@ -1,25 +1,36 @@
 import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import ReusableTable from "../../utility/ReusableTable";
+import Modal from "../../components/modal/Modal";
 import type { TableColumnProps, Employee, EmployeeListResponse } from "../../lib/interfaces";
 import { formatterUtility } from "../../helpers/formatterUtility";
 import { toast } from "sonner";
 import { IoSearchOutline } from "react-icons/io5";
 import { FaMoneyBillWave } from "react-icons/fa6";
-import ActionCell from "../../components/ui/ActionCell";
+import { LuLoader, LuCircleCheck, LuCircleSlash } from "react-icons/lu";
 import { useUser } from "../../hooks/useUser";
+import { usePayEmployees } from "../../hooks/useEmployeePayment";
 import { getEmployees } from "../../services/employeeService";
+
+/** `paying: 0` excludes an employee from the next payout run. */
+const isIncludedForPayout = (employee: Employee): boolean => {
+  const raw = employee.paying;
+  if (raw === undefined || raw === null || raw === "") return true;
+  if (typeof raw === "number") return raw !== 0;
+  return !["0", "false", "no", "excluded"].includes(String(raw).toLowerCase());
+};
 
 const ProcessPayments: React.FC = () => {
   const { user } = useUser();
   const companyId = user?.company_details?.id;
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedRowIds, setSelectedRowIds] = useState<
-    Array<number | string>
-  >([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [pin, setPin] = useState("");
+
+  const payAllMutation = usePayEmployees();
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 500);
@@ -49,25 +60,31 @@ const ProcessPayments: React.FC = () => {
   const employees = data?.items ?? [];
   const totalItems = data?.totalItems ?? employees.length;
 
-  const handleToggleRow = (id: number | string) => {
-    setSelectedRowIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+  const openPinModal = () => {
+    setPin("");
+    setIsPinModalOpen(true);
+  };
+
+  const closePinModal = () => {
+    if (payAllMutation.isPending) return;
+    setIsPinModalOpen(false);
+    setPin("");
+  };
+
+  const handlePayAll = () => {
+    if (!/^\d{4}$/.test(pin)) {
+      toast.error("Enter your 4-digit transaction PIN");
+      return;
+    }
+    if (!companyId) {
+      toast.error("Could not resolve your company");
+      return;
+    }
+
+    payAllMutation.mutate(
+      { pin, company_id: companyId },
+      { onSuccess: () => setIsPinModalOpen(false) },
     );
-  };
-
-  const handleToggleAll = (checked: boolean) => {
-    setSelectedRowIds(checked ? employees.map((emp) => emp.id) : []);
-  };
-
-  const handlePay = (emp: Employee) => {
-    toast.success(
-      `Payment of ${formatterUtility(Number(emp.estimate_pay))} for ${emp.first_name} ${emp.last_name} initiated `,
-    );
-  };
-
-  const handlePaySelected = () => {
-    toast.success(`Payment processed for ${selectedRowIds.length} staff `);
-    setSelectedRowIds([]);
   };
 
   const columns: TableColumnProps<Employee>[] = [    {
@@ -100,19 +117,26 @@ const ProcessPayments: React.FC = () => {
       ),
     },
     {
-      label: "Action",
-      render: (item) => (
-        <ActionCell
-          rowId={item.id}
-          otherActions={[
-            {
-              name: "Pay",
-              icon: <FaMoneyBillWave size={12} />,
-              action: () => handlePay(item),
-            },
-          ]}
-        />
-      ),
+      label: "Payout",
+      render: (item) => {
+        const included = isIncludedForPayout(item);
+        return (
+          <span
+            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium ${
+              included
+                ? "bg-[#2A5D56]/10 text-[#2A5D56]"
+                : "bg-gray-200 text-gray-500"
+            }`}
+          >
+            {included ? (
+              <LuCircleCheck size={11} />
+            ) : (
+              <LuCircleSlash size={11} />
+            )}
+            {included ? "Included" : "Excluded"}
+          </span>
+        );
+      },
     },
   ];
 
@@ -143,16 +167,17 @@ const ProcessPayments: React.FC = () => {
             />
           </div>
 
-          {selectedRowIds.length > 0 && (
+          <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={handlePaySelected}
-              className="flex items-center gap-1.5 px-3 h-9 rounded-md text-xs font-medium bg-primary text-white cursor-pointer"
+              onClick={openPinModal}
+              disabled={payAllMutation.isPending}
+              className="flex items-center gap-1.5 px-4 h-9 rounded-md text-xs font-medium bg-primary text-white cursor-pointer disabled:opacity-60"
             >
               <FaMoneyBillWave size={12} />
-              Pay Selected
+              Pay
             </button>
-          )}
+          </div>
         </div>
 
         <ReusableTable
@@ -166,12 +191,62 @@ const ProcessPayments: React.FC = () => {
           itemsPerPage={itemsPerPage}
           setCurrentPage={setCurrentPage}
           setItemsPerPage={setItemsPerPage}
-          selectable
-          selectedRowIds={selectedRowIds}
-          onToggleRowSelection={handleToggleRow}
-          onToggleAllRows={handleToggleAll}
         />
       </div>
+
+      {isPinModalOpen && (
+        <Modal onClose={closePinModal}>
+          <div className="flex flex-col gap-5 max-w-sm">
+            <div className="flex flex-col">
+              <h3 className="font-semibold text-base text-textBlack">
+                Confirm Payment
+              </h3>
+              <p className="text-xs text-textBlack/60">
+                This pays every employee currently included in the payout. Enter
+                your 4-digit transaction PIN to authorise it.
+              </p>
+            </div>
+
+            <label className="flex flex-col space-y-1.5">
+              <span className="font-medium text-xs text-textBlack">
+                Transaction PIN
+              </span>
+              <input
+                type="password"
+                inputMode="numeric"
+                autoFocus
+                maxLength={4}
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+                placeholder="Enter 4-digit PIN"
+                className="w-full text-textBlack border border-primary/10 bg-secondary rounded-lg px-4 h-11 text-xs outline-0 placeholder:text-textBlack/40 focus:border-primary/40 transition"
+              />
+            </label>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={closePinModal}
+                disabled={payAllMutation.isPending}
+                className="px-4 h-10 text-xs font-medium text-textBlack/70 hover:text-textBlack bg-secondary rounded-lg border border-primary/10 transition cursor-pointer disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handlePayAll}
+                disabled={payAllMutation.isPending}
+                className="px-6 h-10 text-xs font-medium bg-primary hover:bg-primary/90 text-textBlack rounded-lg transition cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
+              >
+                {payAllMutation.isPending && (
+                  <LuLoader size={13} className="animate-spin" />
+                )}
+                {payAllMutation.isPending ? "Processing..." : "Pay Now"}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

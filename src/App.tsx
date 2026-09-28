@@ -46,7 +46,7 @@ function App() {
           index
           path="/payment/:token"
           element={
-            <Deposit onClose={() => navigate('/')}  />
+            <Deposit onClose={() => navigate('/dashboard/overview')}  />
           }
         />
         <Route index path="/" element={<Login />} />
@@ -206,7 +206,7 @@ function App() {
           element={
             <MainLayout
               pageName="Manage Payments"
-              children={<SuperAdminManagePayments />}
+              children={<SuperAdminManagePayments defaultFilter="all"  role="admin" />}
             />
           }
         />
@@ -255,7 +255,7 @@ function App() {
           element={
             <MainLayout
               pageName="Manage Payments"
-              children={<SuperAdminManagePayments />}
+              children={<SuperAdminManagePayments defaultFilter="pending" role="finance" />}
             />
           }
         />

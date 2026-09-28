@@ -84,7 +84,7 @@ const ManageStaff: React.FC = () => {
     return allStaff.filter((s) =>
       String(s.role || "").toLowerCase().includes("finance")
     ).length;
-  }, [allStaff, statsData?.financeStaff]);
+  }, [allStaff, statsData]);
 
   const supportCount = useMemo(() => {
     if (statsData?.supportStaff !== undefined && statsData.supportStaff > 0) {
@@ -93,14 +93,14 @@ const ManageStaff: React.FC = () => {
     return allStaff.filter((s) =>
       String(s.role || "").toLowerCase().includes("support")
     ).length;
-  }, [allStaff, statsData?.supportStaff]);
+  }, [allStaff, statsData]);
 
   const activeCount = useMemo(() => {
     if (statsData?.activeStaff !== undefined && statsData.activeStaff > 0) {
       return statsData.activeStaff;
     }
     return allStaff.filter((s) => isStaffActive(s)).length;
-  }, [allStaff, statsData?.activeStaff]);
+  }, [allStaff, statsData]);
 
   // Mutations
   const activateMutation = useActivateUser();

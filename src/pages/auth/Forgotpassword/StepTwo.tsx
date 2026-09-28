@@ -1,8 +1,7 @@
 import React, { useRef } from "react";
 import { useFormik } from "formik";
 import { useAuth } from "../../../hooks/useAuth";
-import { useUser } from "../../../hooks/useUser";
-
+import { useUser } from "../../../hooks/useUser"; 
 const StepTwo: React.FC<{
   currentPage: number;
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
@@ -11,8 +10,7 @@ const StepTwo: React.FC<{
   const otpInputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const { getVerificationToken } = useUser();
 
-  const V_TOKEN = getVerificationToken();
-
+  const V_TOKEN = getVerificationToken();  
   const formik = useFormik({
     initialValues: {
       token: V_TOKEN ?? "",

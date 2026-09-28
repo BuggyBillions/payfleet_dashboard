@@ -126,11 +126,17 @@ const ActionCell: React.FC<ActionCellProps> = ({
             {otherActions.map((action, index) => (
               <button
                 key={index}
+                disabled={action.disabled}
                 onClick={() => {
+                  if (action.disabled) return;
                   action.action();
                   setOpen(false);
                 }}
-                className="flex items-center gap-2 px-3 py-2 hover:bg-secondary cursor-pointer border-b border-primary/10 last:border-b-0 text-xs"
+                className={`flex items-center gap-2 px-3 py-2 border-b border-primary/10 last:border-b-0 text-xs ${
+                  action.disabled
+                    ? "text-textBlack/30 cursor-not-allowed"
+                    : "hover:bg-secondary cursor-pointer"
+                }`}
               >
                 {action.icon && (
                   <span className="text-inherit">{action.icon}</span>

@@ -9,7 +9,7 @@ import { useUser } from "../../hooks/useUser";
 import { formatShortDate } from "../../helpers/formatterUtility";
 import { useCompanies, useCompanyStats } from "../../hooks/useCompany";
 import { getTierConfig } from "../../services/tierService";
-import { CompanyLogoAvatar } from "../../helpers/logoHelper";
+import { CompanyLogoAvatar } from "../../components/ui/CompanyLogoAvatar";
 import { useAdminSupportConversations } from "../../hooks/useSupportChat";
 import type { CompanyProps, TableColumnProps } from "../../lib/interfaces";
 import {

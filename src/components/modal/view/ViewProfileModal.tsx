@@ -6,7 +6,7 @@ import { formatShortDate } from "../../../helpers/formatterUtility";
 import { toast } from "sonner";
 import { copyToClipboard } from "../../../helpers/clipboardHelper";
 
-import { CompanyLogoAvatar } from "../../../helpers/logoHelper";
+import { CompanyLogoAvatar } from "../../ui/CompanyLogoAvatar";
 
 const ViewProfileModal: React.FC<ViewProfileModalProps> = ({
   conversation,

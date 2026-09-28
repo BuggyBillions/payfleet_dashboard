@@ -45,10 +45,12 @@ const ManageTier: React.FC = () => {
 
   const { data: statsData } = useCompanyStats();
   const { data: rawTierRequests } = useTierRequests();
+
   const tierRequests: TierUpgradeRequest[] = useMemo(() => {
     if (Array.isArray(rawTierRequests)) return rawTierRequests;
-    if (rawTierRequests && typeof rawTierRequests === "object" && Array.isArray((rawTierRequests as any).data)) {
-      return (rawTierRequests as any).data;
+    const resObj = rawTierRequests as { data?: TierUpgradeRequest[] } | null | undefined;
+    if (resObj && typeof resObj === "object" && Array.isArray(resObj.data)) {
+      return resObj.data;
     }
     return [];
   }, [rawTierRequests]);
@@ -157,9 +159,7 @@ const ManageTier: React.FC = () => {
     },
   ];
 
-  // Table Columns for Tier Upgrade Requests
 
-  // Table Columns for Company Directory
 
   return (
     <div className="space-y-6">
@@ -209,9 +209,9 @@ const ManageTier: React.FC = () => {
       </div>
 
 
-
       <div className="bg-tertiary rounded-2xl p-5 border border-primary/10 shadow-xs space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          
 
           {/* Search Tiers: /all-tiers?search=... */}
           <div className="relative">

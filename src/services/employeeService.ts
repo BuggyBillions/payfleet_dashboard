@@ -232,3 +232,45 @@ export const resolveAccount = async (
   });
   return (res.data?.data ?? res.data) as ResolvedAccount;
 };
+/**
+ * Pay every included employee of a company in one run, authorised by the
+ * company's 4-digit transaction PIN.
+ * POST /pay-employee { pin, company_id }
+ */
+export const payEmployees = async (payload: {
+  pin: string;
+  company_id: number | string;
+}): Promise<unknown> => {
+  const res = await api.post("/pay-employee", {
+    pin: String(payload.pin),
+    company_id: payload.company_id,
+  });
+  return res.data?.data ?? res.data;
+};
+
+/**
+ * Mark a single employee's payout inclusion.
+ * PUT /single-paying/{id}
+ */
+export const paySingleEmployee = async (
+  id: number | string,
+): Promise<unknown> => {
+  const res = await api.put(`/single-paying/${id}`);
+  return res.data?.data ?? res.data;
+};
+
+/**
+ * Mark a batch of employees as included in or excluded from the next payout.
+ * PUT /multiple-paying { ids, paying }
+ */
+export const markMultiplePaying = async (payload: {
+  ids: Array<number | string>;
+  paying: number;
+}): Promise<unknown> => {
+  const res = await api.put("/multiple-paying", {
+
+    ids: payload.ids,
+    paying: payload.paying,
+  });
+  return res.data?.data ?? res.data;
+};
