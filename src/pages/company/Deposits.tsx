@@ -21,7 +21,7 @@ import {
 } from "../../services/depositService";
 import { FiSearch } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
-import { decryptToken, encryptToken } from "../../helpers/tokenHelper";
+import { encryptToken } from "../../helpers/tokenHelper";
 
 interface DepositRow extends Omit<DemoDeposit, "id"> {
   id: number | string;
