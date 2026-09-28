@@ -48,9 +48,6 @@ export const setupInterceptors = (logout: () => void) => {
         !isAuthEndpoint &&
         !isNonCriticalEndpoint
       ) {
-        // console.log("e reach here");
-        //   logout();
-
         // Only log out if token is actually rejected on core requests
         const token = localStorage.getItem("token");
         if (!token) {
