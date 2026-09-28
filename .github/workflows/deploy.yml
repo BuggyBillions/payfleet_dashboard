@@ -1,4 +1,4 @@
-name: Deploy Pineleaf Land BuyBack Admin Console via FTP
+name: Deploy Payfleet Dashboard via FTP
 
 on:
   workflow_run:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   deploy:
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'master' }}
 
     runs-on: ubuntu-latest
 
@@ -27,19 +27,7 @@ jobs:
       - name: Build Project
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-          VITE_COUNTRY_BASE_URL: ${{ secrets.VITE_COUNTRY_BASE_URL }}
-          VITE_PAYSTACK_SECRET_KEY: ${{ secrets.VITE_PAYSTACK_SECRET_KEY }}
-          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
-          
-          VITE_ECHO_WS_HOST: ${{ secrets.VITE_ECHO_WS_HOST }}
-          VITE_ECHO_WS_PORT: ${{ secrets.VITE_ECHO_WS_PORT }}
-          VITE_ECHO_WSS_PORT: ${{ secrets.VITE_ECHO_WSS_PORT }}
-
-          VITE_ECHO_FORCE_TLS: ${{ secrets.VITE_ECHO_FORCE_TLS }}
-          VITE_ECHO_KEY: ${{ secrets.VITE_ECHO_KEY }}
-          VITE_ECHO_CLUSTER: ${{ secrets.VITE_ECHO_CLUSTER }}
-
-          VITE_ECHO_AUTH_ENDPOINT: ${{ secrets.VITE_ECHO_AUTH_ENDPOINT }}
+          VITE_ENCRYPT_HELPER_SECRET_KEY: ${{ secrets.VITE_ENCRYPT_HELPER_SECRET_KEY }}
 
         run: npm run build
       - name: Deploy to Hostinger FTP
