@@ -9,7 +9,6 @@ import { useUser } from "../../hooks/useUser";
 import { formatShortDate } from "../../helpers/formatterUtility";
 import { useCompanies, useCompanyStats } from "../../hooks/useCompany";
 import { getTierConfig } from "../../services/tierService";
-import { CompanyLogoAvatar } from "../../components/ui/CompanyLogoAvatar";
 import { useAdminSupportConversations } from "../../hooks/useSupportChat";
 import type { CompanyProps, TableColumnProps } from "../../lib/interfaces";
 import {
@@ -111,7 +110,7 @@ const SupportOverview: React.FC = () => {
       key: "email",
       render: (item: CompanyProps) => (
         <div className="flex flex-col text-xs">
-          <span className="text-textBlack/80 lowercase truncate max-w-[150px]">{item.email}</span>
+          <span className="text-textBlack/80 lowercase truncate max-w-37.5">{item.email}</span>
           <span className="text-[10px] text-textBlack/50 font-mono">
             {item.phone || item.phoneNumber || "N/A"}
           </span>

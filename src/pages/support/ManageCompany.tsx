@@ -10,7 +10,6 @@ import type { CompanyProps, TableColumnProps } from "../../lib/interfaces";
 import { useCompanies, useCompanyStats, useDeleteCompany } from "../../hooks/useCompany";
 import { getTierConfig } from "../../services/tierService";
 import { formatterUtility } from "../../helpers/formatterUtility";
-import { CompanyLogoAvatar } from "../../components/ui/CompanyLogoAvatar";
 import { FiSearch } from "react-icons/fi";
 import { HiOutlineBuildingOffice2 } from "react-icons/hi2";
 import { LuShieldCheck, LuBuilding, LuSlidersHorizontal, LuWallet } from "react-icons/lu";

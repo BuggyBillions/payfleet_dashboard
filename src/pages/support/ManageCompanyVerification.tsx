@@ -10,7 +10,6 @@ import type {
 import { useCompanies, useCompanyStats } from "../../hooks/useCompany";
 import { useTierRequests } from "../../hooks/useTier";
 import { getTierConfig } from "../../services/tierService";
-import { CompanyLogoAvatar } from "../../components/ui/CompanyLogoAvatar";
 import ReviewTierRequestModal from "../../components/modal/tier/ReviewTierRequestModal";
 import ViewCompanyModal from "../../components/modal/view/ViewCompanyModal";
 import { formatPrettyDate } from "../../helpers/formatterUtility";
