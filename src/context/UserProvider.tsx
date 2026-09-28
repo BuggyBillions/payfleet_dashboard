@@ -13,15 +13,15 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   const logout = useCallback(() => {
-    // localStorage.removeItem("token");
-    // localStorage.removeItem("user");
-    // localStorage.removeItem("role");
-    // setToken(null);
-    // setUser(null);
-    // setRole(null);
-    // setIsAuthenticated(false);
-    // toast.success("Logged out successfully");
-    // window.location.href = "/";
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("role");
+    setToken(null);
+    setUser(null);
+    setRole(null);
+    setIsAuthenticated(false);
+    toast.success("Logged out successfully");
+    window.location.href = "/";
   }, []);
 
   const refreshUser = useCallback(async (token: string) => {
