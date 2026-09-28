@@ -206,7 +206,7 @@ function App() {
           element={
             <MainLayout
               pageName="Manage Payments"
-              children={<SuperAdminManagePayments />}
+              children={<SuperAdminManagePayments defaultFilter="all"  role="admin" />}
             />
           }
         />
@@ -255,7 +255,7 @@ function App() {
           element={
             <MainLayout
               pageName="Manage Payments"
-              children={<SuperAdminManagePayments />}
+              children={<SuperAdminManagePayments defaultFilter="pending" role="finance" />}
             />
           }
         />

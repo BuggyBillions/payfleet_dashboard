@@ -10,7 +10,7 @@ import { getTierConfig } from "../../../services/tierService";
 import { getEmployees } from "../../../services/employeeService";
 import { useQuery } from "@tanstack/react-query";
 import { formatterUtility } from "../../../helpers/formatterUtility";
-import { CompanyLogoAvatar } from "../../../helpers/logoHelper";
+import { CompanyLogoAvatar } from "../../ui/CompanyLogoAvatar";
 import ReusableTable from "../../../utility/ReusableTable";
 import {
   LuPhone,

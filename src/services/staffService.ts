@@ -229,7 +229,9 @@ export const getStaffStatsService = async (): Promise<StaffStatsResponse> => {
     const resData = response.data;
     const data = resData?.data ?? resData ?? {};
 
+    const sysStaff = data.system_staff ?? data.systemStaff ?? {};
     const totalStaff = Number(
+      (typeof sysStaff === "object" && sysStaff !== null ? sysStaff.total : undefined) ??
       data.total_staff ??
       data.totalStaff ??
       data.total_users ??
@@ -240,8 +242,11 @@ export const getStaffStatsService = async (): Promise<StaffStatsResponse> => {
     );
 
     const activeStaff = Number(
-      data.active_staff ??
+      (typeof sysStaff === "object" && sysStaff !== null ? sysStaff.active_officers : undefined) ??
+      data.active_accounts ??
       data.activeStaff ??
+      data.active_officers ??
+      data.active_accounts ??
       data.active_users ??
       data.activeUsers ??
       data.active ??
@@ -251,6 +256,8 @@ export const getStaffStatsService = async (): Promise<StaffStatsResponse> => {
     const inactiveStaff = Number(
       data.inactive_staff ??
       data.inactiveStaff ??
+      data.inactive_officers ??
+      data.inactiveOfficers ??
       data.inactive_users ??
       data.inactiveUsers ??
       data.inactive ??
@@ -258,8 +265,11 @@ export const getStaffStatsService = async (): Promise<StaffStatsResponse> => {
     );
 
     const financeStaff = Number(
+      (typeof sysStaff === "object" && sysStaff !== null ? sysStaff.finance_officers : undefined) ??
       data.finance_staff ??
       data.financeStaff ??
+      data.finance_officers ??
+      data.financeOfficers ??
       data.financial_officers ??
       data.financialOfficers ??
       data.finance ??
@@ -268,6 +278,7 @@ export const getStaffStatsService = async (): Promise<StaffStatsResponse> => {
     );
 
     const supportStaff = Number(
+      (typeof sysStaff === "object" && sysStaff !== null ? sysStaff.support_officers : undefined) ??
       data.support_staff ??
       data.supportStaff ??
       data.support_officers ??

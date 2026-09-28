@@ -5,17 +5,13 @@ import { getTierConfig } from "../../../services/tierService";
 import { useReviewTierRequest } from "../../../hooks/useTier";
 import type { CompanyDetailsProps, TierUpgradeRequest } from "../../../lib/interfaces";
 import { formatPrettyDate } from "../../../helpers/formatterUtility";
-import { CompanyLogoAvatar, getCompanyLogoUrl } from "../../../helpers/logoHelper";
+import { CompanyLogoAvatar } from "../../ui/CompanyLogoAvatar";
+import { getCompanyLogoUrl } from "../../../helpers/logoHelper";
 import {
   LuFileText,
   LuCheck,
   LuX,
-  LuBuilding2,
-  LuPhone,
-  LuMail,
   LuExternalLink,
-  LuMapPin,
-  LuShieldCheck,
 } from "react-icons/lu";
 
 interface ReviewTierRequestModalProps {
@@ -74,7 +70,8 @@ const ReviewTierRequestModal: React.FC<ReviewTierRequestModalProps> = ({ request
   const cacUrl = getCompanyLogoUrl(company.cac || request.cac);
   const mermatUrl = getCompanyLogoUrl(company.mermat || request.mermat);
   const statusReportUrl = getCompanyLogoUrl(company.status_report || request.status_report);
-  const directDocUrl = getCompanyLogoUrl(String(request.documentUrl) || String(request.document_url));
+  const rawDirectDoc = request.documentUrl || (typeof request.document_url === "string" ? request.document_url : undefined);
+  const directDocUrl = getCompanyLogoUrl(rawDirectDoc);
 
   const documentsList = [
     { name: "CAC Certificate / Document", url: cacUrl, key: "cac" },

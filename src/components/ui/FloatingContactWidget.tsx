@@ -40,7 +40,7 @@ export interface PresetOption {
   action?: "live_agent";
 }
 
-export const PRESET_OPTIONS: PresetOption[] = [
+const PRESET_OPTIONS: PresetOption[] = [
   {
     id: "deposit-guide",
     label: "How to make a deposit",
@@ -77,6 +77,19 @@ const INITIAL_SUPPORT_MESSAGE: Message = {
   sender: "support",
   text: "Hello! Welcome to Payfleet Support. How can we assist you with your payroll or deposit today?",
   time: "Just now",
+};
+
+let presetCounter = 0;
+const generatePresetMsgId = (prefix: string): string => {
+  presetCounter += 1;
+  return `${prefix}-${presetCounter}-${Date.now().toString(36)}`;
+};
+
+const getCurrentFormattedTime = (): string => {
+  return new Date().toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 };
 
 const FloatingContactWidget: React.FC = () => {
@@ -153,7 +166,7 @@ const FloatingContactWidget: React.FC = () => {
     if (isOpen && unreadCount > 0) {
       markAsReadMutation.mutate();
     }
-  }, [isOpen, unreadCount]);
+  }, [isOpen, unreadCount, markAsReadMutation]);
 
   // Auto-scroll to latest message
   useEffect(() => {
@@ -174,7 +187,7 @@ const FloatingContactWidget: React.FC = () => {
 
     // Optimistically create local message so it shows immediately
     const optimisticMsg: Message = {
-      id: `pending-${Date.now()}`,
+      id: `pending-${Math.random().toString(36).slice(2, 9)}`,
       sender: "user",
       text: userText,
       time: timeString,
@@ -197,13 +210,10 @@ const FloatingContactWidget: React.FC = () => {
   };
 
   const handleSelectPreset = (preset: PresetOption) => {
-    const timeString = new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const timeString = getCurrentFormattedTime();
 
     const userMsg: Message = {
-      id: `preset-q-${Date.now()}`,
+      id: generatePresetMsgId("preset-q"),
       sender: "user",
       text: preset.question,
       time: timeString,
@@ -211,7 +221,7 @@ const FloatingContactWidget: React.FC = () => {
     };
 
     const botReply: Message = {
-      id: `preset-a-${Date.now() + 1}`,
+      id: generatePresetMsgId("preset-a"),
       sender: "support",
       text: preset.answer,
       time: timeString,

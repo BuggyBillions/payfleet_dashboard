@@ -9,7 +9,7 @@ import { getUserDisplayName } from "../../helpers/formatterUtility";
 import type { UserProps } from "../../lib/interfaces";
 import { useUnreadNotificationsCount } from "../../hooks/useNotifications";
 
-import { CompanyLogoAvatar } from "../../helpers/logoHelper";
+import { CompanyLogoAvatar } from "../ui/CompanyLogoAvatar";
 
 const TopNav: React.FC = () => {
   const { user, role, token, loading } = useUser();

@@ -10,7 +10,7 @@ import type {
 import { useCompanies, useCompanyStats } from "../../hooks/useCompany";
 import { useTierRequests } from "../../hooks/useTier";
 import { getTierConfig } from "../../services/tierService";
-import { CompanyLogoAvatar } from "../../helpers/logoHelper";
+import { CompanyLogoAvatar } from "../../components/ui/CompanyLogoAvatar";
 import ChangeTierModal from "../../components/modal/tier/ChangeTierModal";
 import ReviewTierRequestModal from "../../components/modal/tier/ReviewTierRequestModal";
 import ViewCompanyModal from "../../components/modal/view/ViewCompanyModal";
@@ -60,8 +60,13 @@ const ManageCompanyVerification: React.FC = () => {
 
   const tierRequests: TierUpgradeRequest[] = useMemo(() => {
     if (Array.isArray(rawTierRequests)) return rawTierRequests;
-    if (rawTierRequests && typeof rawTierRequests === "object" && Array.isArray((rawTierRequests as any).data)) {
-      return (rawTierRequests as any).data;
+    if (
+      rawTierRequests &&
+      typeof rawTierRequests === "object" &&
+      "data" in rawTierRequests &&
+      Array.isArray((rawTierRequests as { data: unknown }).data)
+    ) {
+      return (rawTierRequests as { data: TierUpgradeRequest[] }).data;
     }
     return [];
   }, [rawTierRequests]);
@@ -81,13 +86,11 @@ const ManageCompanyVerification: React.FC = () => {
       result = result.filter((req) => {
         const cName = (req.companyName || req.company?.name || "").toLowerCase();
         const cEmail = (req.companyEmail || req.company?.email || "").toLowerCase();
-        const rc = (req.rcNumber || req.company?.rc_number || "").toLowerCase();
         const curTier = (getTierConfig(req.current_tier || req.currentTier).name).toLowerCase();
         const reqTier = (getTierConfig(req.requested_tier || req.requestedTier).name).toLowerCase();
         return (
           cName.includes(q) ||
           cEmail.includes(q) ||
-          rc.includes(q) ||
           curTier.includes(q) ||
           reqTier.includes(q)
         );
@@ -141,26 +144,10 @@ const ManageCompanyVerification: React.FC = () => {
             <span className="font-semibold text-textBlack text-xs truncate">
               {item.companyName || item.company?.name || "N/A"}
             </span>
-            <span className="text-[10px] text-textBlack/60 lowercase truncate max-w-[160px]">
+            <span className="text-[10px] text-textBlack/60 lowercase truncate max-w-40">
               {item.companyEmail || item.company?.email || "—"}
             </span>
           </div>
-        </div>
-      ),
-    },
-    {
-      label: "CAC RC / TIN",
-      key: "rcNumber",
-      render: (item: TierUpgradeRequest) => (
-        <div className="flex flex-col text-xs">
-          <span className="font-mono text-textBlack font-medium">
-            {item.rcNumber || item.company?.rc_number || "N/A"}
-          </span>
-          {(item.tinNumber || item.company?.tin_number) && (
-            <span className="text-[10px] text-textBlack/50 font-mono">
-              TIN: {item.tinNumber || item.company?.tin_number}
-            </span>
-          )}
         </div>
       ),
     },
@@ -193,7 +180,7 @@ const ManageCompanyVerification: React.FC = () => {
       key: "createdAt",
       render: (item: TierUpgradeRequest) => (
         <span className="text-xs text-textBlack/70 whitespace-nowrap">
-          {formatPrettyDate(item.createdAt || item.created_at)}
+          {formatPrettyDate(String(item.createdAt) || String(item.created_at))}
         </span>
       ),
     },
@@ -281,22 +268,20 @@ const ManageCompanyVerification: React.FC = () => {
                     setStatusFilter(tab.value);
                     setCurrentPage(1);
                   }}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
-                    isActive
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${isActive
                       ? "bg-primary text-white shadow-xs font-semibold"
                       : "text-textBlack/60 hover:text-textBlack hover:bg-primary/5"
-                  }`}
+                    }`}
                 >
                   <span>{tab.label}</span>
                   {tab.count !== undefined && (
                     <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold ${
-                        isActive
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold ${isActive
                           ? "bg-white/20 text-white"
                           : tab.value === "pending" && tab.count > 0
-                          ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                          : "bg-primary/10 text-textBlack/60"
-                      }`}
+                            ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                            : "bg-primary/10 text-textBlack/60"
+                        }`}
                     >
                       {tab.count}
                     </span>

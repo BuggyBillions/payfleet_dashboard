@@ -23,11 +23,11 @@ export const loginService = async (values: LoginValues) => {
   return response.data;
 };
 
-export const getUserService = async (token: string) => {
+export const getUserService = async (token?: string) => {
     const response = await api.get(`/me`, {
-        headers: {
+        headers: token ? {
             Authorization: `Bearer ${token}`,
-        },
+        } : undefined,
     });
     return response.data?.data ?? response.data;
 };

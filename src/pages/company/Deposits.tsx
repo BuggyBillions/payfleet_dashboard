@@ -19,10 +19,8 @@ import { copyToClipboard } from "../../helpers/clipboardHelper";
 import EachCompanyDepositModal from "../../components/modal/EachCompanyDepositModal";
 import Deposit from "../../components/modal/Deposit";
 import { useUser } from "../../hooks/useUser";
-import {
-  getCompanyDeposits,
-  type CompanyDeposit,
-} from "../../services/depositService";
+import { useCompanyDeposits } from "../../hooks/useDeposit";
+import type { CompanyDeposit } from "../../services/depositService";
 import { FiSearch } from "react-icons/fi";
 
 interface DepositRow extends Omit<DemoDeposit, "id"> {
@@ -70,8 +68,7 @@ const normalizeStatus = (
 const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
   const { user } = useUser();
   const companyId = user?.company_details?.id;
-  const [deposits, setDeposits] = useState<DepositRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: rawDeposits = [], isLoading: loading, refetch: reloadDeposits } = useCompanyDeposits(companyId);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [viewDepositId, setViewDepositId] = useState<number | string | null>(
@@ -155,56 +152,42 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
       render: (d) => <ActionCell rowId={d.id} canView onView={openView} />,
     },
   ];
-
-  const loadDeposits = useCallback(() => {
-    setLoading(true);
-    return getCompanyDeposits(companyId)
-      .then((items) => {
-        const mapped: DepositRow[] = items.map((t) => {
-          const transaction = t.transaction ?? ({} as Record<string, unknown>);
-          const reference = String(
-            transaction.reference ??
-              t.reference ??
-              t.reference_no ??
-              t.transaction_reference ??
-              t.ref ??
-              "",
-          );
-          const amount = Number(transaction.amount ?? t.amount) || 0;
-          const status = normalizeStatus(
-            (transaction.status as CompanyDeposit["status"]) ?? t.status,
-          );
-          const createdAt = String(
-            t.created_at ??
-              t.date ??
-              transaction.created_at ??
-              new Date().toISOString(),
-          );
-          return {
-            id: t.id ?? Date.now(),
-            reference:
-              reference ||
-              `PF-DEP-${Math.floor(100000 + Math.random() * 900000)}`,
-            amount,
-            method: t.method ?? "Bank Transfer",
-            status,
-            date: createdAt,
-          };
-        });
-        mapped.sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-        );
-        setDeposits(mapped);
-      })
-      .catch(() => undefined)
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [companyId]);
-
-  useEffect(() => {
-    loadDeposits();
-  }, [loadDeposits]);
+  
+  const deposits = useMemo<DepositRow[]>(() => {
+    const mapped: DepositRow[] = rawDeposits.map((t) => {
+      const transaction = t.transaction ?? ({} as Record<string, unknown>);
+      const reference = String(
+        transaction.reference ??
+        t.reference ??
+        t.reference_no ??
+        t.transaction_reference ??
+        t.ref ??
+        "",
+      );
+      const amount = Number(transaction.amount ?? t.amount) || 0;
+      const status = normalizeStatus(
+        (transaction.status as CompanyDeposit["status"]) ?? t.status,
+      );
+      const createdAt = String(
+        t.created_at ??
+        t.date ??
+        transaction.created_at ??
+        "",
+      );
+      return {
+        id: t.id ?? reference,
+        reference:
+          reference || `PF-DEP-${t.id || "0"}`,
+        amount,
+        method: t.method ?? "Bank Transfer",
+        status,
+        date: createdAt,
+      };
+    });
+    return mapped.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
+  }, [rawDeposits]);
 
   const totalBalance = useMemo(() => {
     return deposits
@@ -330,7 +313,7 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
           companyId={companyId}
           onClose={() => setShowDepositModal(false)}
           onDepositSuccess={() => {
-            void loadDeposits();
+            void reloadDeposits();
           }}
         />
       )}

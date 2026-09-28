@@ -24,12 +24,13 @@ export const decryptToken = async (jwtToken: string) => {
   try {
     const { payload } = await jwtDecrypt(jwtToken, SECRET_KEY);
     return payload.token;
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorObj = err as { code?: string };
     // jose automatically handles validation errors
-    if (err.code === 'ERR_JWT_EXPIRED') {
+    if (errorObj?.code === 'ERR_JWT_EXPIRED') {
       console.warn("Token expired");
     } else {
-      console.error("Token is invalid or tampered", err.code);
+      console.error("Token is invalid or tampered", errorObj?.code);
     }
     return null;
   }

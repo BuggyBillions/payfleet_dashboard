@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Modal from "../Modal";
 import ActionButton from "../../ui/ActionButton";
 import { useCreateTier, useUpdateTier } from "../../../hooks/useTier";
@@ -23,14 +23,7 @@ const CreateEditTierModal: React.FC<CreateEditTierModalProps> = ({ tier, onClose
     tier?.requirements || "" 
   );
 
-  useEffect(() => {
-    if (tier) {
-      setName(tier.name || "");
-      setLevel(Number(tier.level || 1));
-      setNoOfStaff(tier.no_of_staff ? String(tier.no_of_staff) : "10");
-      setRequirements(tier.requirements || "");
-    }
-  }, [tier]);
+
 
   const createMutation = useCreateTier();
   const updateMutation = useUpdateTier();

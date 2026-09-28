@@ -767,12 +767,13 @@ export type PaymentCategory =
 export type ExtendedPaymentStatus = StatusType | "processing" | "cancelled";
 
 export interface CompanyPaymentItem {
-  id: number;
+  id: number | string;
   reference: string;
   batchId: string;
   companyId: number;
   companyName: string;
-  companyEmail: string;
+  companyEmail?: string;
+  email?: string;
   employeeName: string;
   employeeEmail: string;
   employeeRole: string;
@@ -791,6 +792,7 @@ export interface CompanyPaymentItem {
   approvedAt?: string;
   rejectionReason?: string;
   gatewayRef?: string;
+  [key: string]: unknown;
 }
 
 export interface DemoDeposit {
@@ -959,7 +961,11 @@ export interface GetDepositsParams {
 
 export interface ManageDepositProps {
   defaultFilter?: "all" | "pending";
-  role?: "superadmin" | "financial" | string;
+  role?: "admin" | "financial" | string;
+}
+export interface ManagePaymentsProps {
+  defaultFilter?: "all" | "pending";
+  role?: "admin" | "financial" | string;
 }
 
 export interface DepositsProps {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import Modal from "../../components/modal/Modal";
 import { toast } from "sonner";
@@ -31,9 +31,9 @@ import {
 import { useStaffs } from "../../hooks/useStaff";
 import { useCompanies } from "../../hooks/useCompany";
 
-export type { ChatUser, ChatMessage, Conversation };
+import { CompanyLogoAvatar as AvatarDisplay } from "../../components/ui/CompanyLogoAvatar";
 
-export interface PresetOption {
+interface PresetOption {
   id: string;
   label: string;
   question: string;
@@ -41,7 +41,7 @@ export interface PresetOption {
   action?: "live_agent";
 }
 
-export const PRESET_OPTIONS: PresetOption[] = [
+const PRESET_OPTIONS: PresetOption[] = [
   {
     id: "deposit-guide",
     label: "How to make a deposit",
@@ -83,13 +83,28 @@ const INITIAL_SUPPORT_MESSAGE: ChatMessage = {
   status: "read",
 };
 
-import {
-  CompanyLogoAvatar as AvatarDisplay,
-  getCompanyLogoUrl,
-  getAvatarInitials,
-} from "../../helpers/logoHelper";
+let chatMsgCounter = 0;
+const generateChatMsgId = (prefix = "msg"): string => {
+  chatMsgCounter += 1;
+  return `${prefix}-${chatMsgCounter}-${Date.now().toString(36)}`;
+};
 
-export { AvatarDisplay, getCompanyLogoUrl, getAvatarInitials };
+const getFormattedChatTime = (): string => {
+  return new Date().toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+interface RawMessageProperties {
+  sender_id?: { role?: string; name?: string } | string | number;
+  sender?: { role?: string; name?: string };
+  sender_type?: string;
+  senderType?: string;
+  role?: string;
+  senderRole?: string;
+  sender_role?: string;
+}
 
 const Communication: React.FC = () => {
   const { user, role } = useUser();
@@ -114,11 +129,16 @@ const Communication: React.FC = () => {
     );
   }, [currentRole, location.pathname]);
 
-  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeChatId, setActiveChatId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [inputMsg, setInputMsg] = useState("");
   const [tabToShow, setTabToShow] = useState<"sidebar" | "main">("sidebar");
+
+  // Local optimistic state
+  const [optimisticMessages, setOptimisticMessages] = useState<Record<string, ChatMessage[]>>({});
+  const [customCreatedConversations, setCustomCreatedConversations] = useState<Conversation[]>([]);
+  const [clearedConversationIds, setClearedConversationIds] = useState<string[]>([]);
+  const [readConversationIds, setReadConversationIds] = useState<string[]>([]);
 
   // Profile Modal State
   const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -187,24 +207,27 @@ const Communication: React.FC = () => {
     return map;
   }, [companyData?.items]);
 
-  const getConversationLogo = (conv?: Conversation | null): string | null => {
-    if (!conv) return null;
-    if (conv.logo) return conv.logo;
-    if (conv.avatar) return conv.avatar;
-    const idMatch = companyLogoMap.get(String(conv.id).toLowerCase());
-    if (idMatch) return idMatch;
-    const nameMatch = companyLogoMap.get(String(conv.name).trim().toLowerCase());
-    if (nameMatch) return nameMatch;
-    if (conv.email) {
-      const emailMatch = companyLogoMap.get(conv.email.trim().toLowerCase());
-      if (emailMatch) return emailMatch;
-    }
-    return null;
-  };
+  const getConversationLogo = useCallback(
+    (conv?: Conversation | null): string | null => {
+      if (!conv) return null;
+      if (conv.logo) return conv.logo;
+      if (conv.avatar) return conv.avatar;
+      const idMatch = companyLogoMap.get(String(conv.id).toLowerCase());
+      if (idMatch) return idMatch;
+      const nameMatch = companyLogoMap.get(String(conv.name).trim().toLowerCase());
+      if (nameMatch) return nameMatch;
+      if (conv.email) {
+        const emailMatch = companyLogoMap.get(conv.email.trim().toLowerCase());
+        if (emailMatch) return emailMatch;
+      }
+      return null;
+    },
+    [companyLogoMap]
+  );
 
   // Build real user list for New Chat Modal
   const availableUsers: ChatUser[] = useMemo(() => {
-    const comps = (companyData?.items || []).map((c, idx) => ({
+    const comps: ChatUser[] = (companyData?.items || []).map((c, idx) => ({
       id: Number(c.id || idx + 1),
       name: c.name || c.companyName || "Corporate Client",
       email: c.email || "",
@@ -214,190 +237,148 @@ const Communication: React.FC = () => {
       online: Boolean(c.status === "active" || c.is_active),
     }));
 
-    return comps;
-  }, [companyData?.items, staffData?.items, isAdminUser]);
+    const staffs: ChatUser[] = (staffData?.items || []).map((s) => ({
+      id: Number(s.id),
+      name: s.first_name
+        ? `${s.first_name} ${s.last_name || ""}`.trim()
+        : s.name || "Staff Member",
+      email: s.email || "",
+      role: String(s.role || "Staff"),
+      logo: null,
+      avatar: null,
+      online: Boolean(s.status === "active" || s.is_active),
+    }));
 
-  // Synchronize server conversation threads
-  useEffect(() => {
-    if (isStaffUser && serverConversations && serverConversations.length > 0) {
-      const serverConvs = serverConversations;
-      setConversations((prev) => {
-        // Merge server conversations with current local state to preserve message history & local chats
-        const updated = serverConvs.map((sc) => {
-          const existing = prev.find((p) => String(p.id) === String(sc.id));
-          if (existing) {
-            const messagesToKeep =
-              existing.messages.length > (sc.messages || []).length
-                ? existing.messages
-                : sc.messages || [];
+    return [...comps, ...staffs];
+  }, [companyData?.items, staffData?.items]);
 
-            const existingCustomPending = existing.messages.filter(
-              (m) =>
-                m.isMe &&
-                typeof m.id === "number" &&
-                m.id > 1000000000 &&
-                !messagesToKeep.some((srv) => srv.text === m.text)
-            );
+  // Reactive conversations list combining queries and local state
+  const conversations: Conversation[] = useMemo(() => {
+    if (isStaffUser) {
+      const serverConvs = serverConversations || [];
+      const updated = serverConvs.map((sc) => {
+        const scId = String(sc.id);
+        const single = String(singleConvData?.id) === scId ? singleConvData : null;
 
-            return {
-              ...sc,
-              name:
-                existing.name &&
-                existing.name !== "User" &&
-                !existing.name.startsWith("Client #")
-                  ? existing.name
-                  : sc.name,
-              logo: sc.logo || existing.logo || getConversationLogo(sc),
-              avatar: sc.avatar || existing.avatar || getConversationLogo(sc),
-              messages: [...messagesToKeep, ...existingCustomPending],
-            };
-          }
-          return {
-            ...sc,
-            logo: sc.logo || getConversationLogo(sc),
-            avatar: sc.avatar || getConversationLogo(sc),
-          };
-        });
+        let msgs =
+          single?.messages && single.messages.length > 0
+            ? single.messages
+            : sc.messages || [];
 
-        // Retain any custom / new local conversation that hasn't synced to server yet
-        const customLocal = prev.filter(
-          (p) => !serverConvs.some((sc) => String(sc.id) === String(p.id))
+        if (clearedConversationIds.includes(scId)) {
+          msgs = [];
+        }
+
+        const pending = (optimisticMessages[scId] || []).filter(
+          (m) => !msgs.some((srv) => srv.text === m.text)
         );
 
-        return [...updated, ...customLocal];
+        const allMsgs = [...msgs, ...pending];
+        const lastMsg = allMsgs[allMsgs.length - 1];
+        const unreadCount = readConversationIds.includes(scId) ? 0 : sc.unread ?? 0;
+
+        return {
+          ...sc,
+          name:
+            single?.name &&
+            !single.name.startsWith("Client #") &&
+            single.name !== "User"
+              ? single.name
+              : sc.name,
+          email: single?.email || sc.email,
+          phone: single?.phone || sc.phone,
+          role: single?.role || sc.role,
+          logo: single?.logo || sc.logo || getConversationLogo(sc),
+          avatar: single?.avatar || sc.avatar || getConversationLogo(sc),
+          unread: unreadCount,
+          lastMessage: lastMsg?.text || sc.lastMessage || "No messages",
+          lastMessageTime: lastMsg?.timestamp || sc.lastMessageTime || "Just now",
+          messages: allMsgs,
+        };
       });
 
-      if (!activeChatId && serverConvs[0]?.id) {
-        setActiveChatId(String(serverConvs[0].id));
-      }
-    } else if (!isStaffUser && companyMessages !== undefined) {
-      // Company support conversation thread
+      const customLocal = customCreatedConversations.filter(
+        (p) => !serverConvs.some((sc) => String(sc.id) === String(p.id))
+      );
+
+      return [...updated, ...customLocal];
+    } else {
+      // Company support view
       const compMsgs = companyMessages || [];
-      const mergedMessages =
+      let baseMsgs =
         compMsgs.length > 0
           ? [INITIAL_SUPPORT_MESSAGE, ...compMsgs]
           : [INITIAL_SUPPORT_MESSAGE];
-
-      setConversations((prev) => {
-        const existing = prev.find((c) => c.id === "support-desk");
-        const existingCustomPending =
-          existing?.messages.filter(
-            (m) =>
-              m.isMe &&
-              typeof m.id === "number" &&
-              m.id > 1000000000 &&
-              !compMsgs.some((srv) => srv.text === m.text)
-          ) || [];
-
-        const fullList = [...mergedMessages, ...existingCustomPending];
-        const lastMsg = fullList[fullList.length - 1];
-
-        const supportConv: Conversation = {
-          id: "support-desk",
-          name: "Payfleet Support Desk",
-          type: "chat",
-          role: "Official Support Representative",
-          email: "support@payfleet.ng",
-          phone: "+234 800 72935338",
-          department: "Customer Support & Operations",
-          online: true,
-          unread: 0,
-          lastMessage: lastMsg?.text || "Support channel open",
-          lastMessageTime: lastMsg?.timestamp || "Just now",
-          created_at: "2024-01-01",
-          messages: fullList,
-        };
-
-        const otherConvs = prev.filter((c) => c.id !== "support-desk");
-        return [supportConv, ...otherConvs];
-      });
-
-      if (!activeChatId) {
-        setActiveChatId("support-desk");
+      if (clearedConversationIds.includes("support-desk")) {
+        baseMsgs = [];
       }
+      const pending = (optimisticMessages["support-desk"] || []).filter(
+        (m) => !baseMsgs.some((srv) => srv.text === m.text)
+      );
+      const fullList = [...baseMsgs, ...pending];
+      const lastMsg = fullList[fullList.length - 1];
+
+      const supportConv: Conversation = {
+        id: "support-desk",
+        name: "Payfleet Support Desk",
+        type: "chat",
+        role: "Official Support Representative",
+        email: "support@payfleet.ng",
+        phone: "+234 800 72935338",
+        department: "Customer Support & Operations",
+        online: true,
+        unread: 0,
+        lastMessage: lastMsg?.text || "Support channel open",
+        lastMessageTime: lastMsg?.timestamp || "Just now",
+        created_at: "2024-01-01",
+        messages: fullList,
+      };
+
+      const customLocal = customCreatedConversations.filter(
+        (p) => p.id !== "support-desk"
+      );
+
+      return [supportConv, ...customLocal];
     }
-  }, [serverConversations, companyMessages, isStaffUser]);
+  }, [
+    isStaffUser,
+    serverConversations,
+    singleConvData,
+    companyMessages,
+    optimisticMessages,
+    customCreatedConversations,
+    clearedConversationIds,
+    readConversationIds,
+    getConversationLogo,
+  ]);
+
+  const effectiveActiveChatId =
+    activeChatId ||
+    (conversations[0]?.id ? String(conversations[0].id) : isStaffUser ? "" : "support-desk");
 
   // Mark messages as read when opening company chat
   useEffect(() => {
-    if (!isStaffUser && activeChatId === "support-desk") {
+    if (!isStaffUser && effectiveActiveChatId === "support-desk") {
       markAsReadMutation.mutate();
     }
-  }, [activeChatId, isStaffUser]);
-
-  // Synchronize single conversation messages and details when loaded from API
-  useEffect(() => {
-    if (singleConvData && singleConvData.id) {
-      setConversations((prev) =>
-        prev.map((c) => {
-          if (String(c.id) === String(singleConvData.id)) {
-            const serverMsgs = singleConvData.messages || [];
-            const pendingMsgs = c.messages.filter(
-              (m) =>
-                m.isMe &&
-                typeof m.id === "number" &&
-                m.id > 1000000000 &&
-                !serverMsgs.some((s) => s.text === m.text)
-            );
-            return {
-              ...c,
-              ...(singleConvData.name &&
-              !singleConvData.name.startsWith("Client #") &&
-              singleConvData.name !== "User"
-                ? { name: singleConvData.name }
-                : {}),
-              ...(singleConvData.email ? { email: singleConvData.email } : {}),
-              ...(singleConvData.phone ? { phone: singleConvData.phone } : {}),
-              ...(singleConvData.role ? { role: singleConvData.role } : {}),
-              logo: singleConvData.logo || c.logo || getConversationLogo(singleConvData),
-              avatar: singleConvData.avatar || c.avatar || getConversationLogo(singleConvData),
-              messages:
-                serverMsgs.length > 0
-                  ? [...serverMsgs, ...pendingMsgs]
-                  : c.messages,
-            };
-          }
-          return c;
-        })
-      );
-    }
-  }, [singleConvData]);
+  }, [effectiveActiveChatId, isStaffUser, markAsReadMutation]);
 
   // Active Conversation Object
   const activeConversation = useMemo(() => {
     return (
-      conversations.find((c) => String(c.id) === String(activeChatId)) ||
+      conversations.find((c) => String(c.id) === String(effectiveActiveChatId)) ||
       conversations[0] ||
       null
     );
-  }, [conversations, activeChatId]);
+  }, [conversations, effectiveActiveChatId]);
 
   // Combined messages to display in active conversation
   const displayedMessages: ChatMessage[] = useMemo(() => {
     if (!activeConversation) return [];
-
-    let baseMsgs = activeConversation.messages || [];
-
-    if (
-      isStaffUser &&
-      singleConvData &&
-      String(singleConvData.id) === String(activeChatId) &&
-      singleConvData.messages &&
-      singleConvData.messages.length > 0
-    ) {
-      const serverMsgs = singleConvData.messages;
-      const pendingMsgs = baseMsgs.filter(
-        (m) =>
-          m.isMe &&
-          typeof m.id === "number" &&
-          m.id > 1000000000 &&
-          !serverMsgs.some((s) => s.text === m.text)
-      );
-      baseMsgs = [...serverMsgs, ...pendingMsgs];
-    }
-
-    return baseMsgs.filter((m) => Boolean(m && m.text && m.text.trim()));
-  }, [activeConversation, singleConvData, activeChatId, isStaffUser]);
+    return (activeConversation.messages || []).filter(
+      (m) => Boolean(m && m.text && m.text.trim())
+    );
+  }, [activeConversation]);
 
   // Filter conversations by search
   const filteredConversations = useMemo(() => {
@@ -430,13 +411,10 @@ const Communication: React.FC = () => {
     if (!inputMsg.trim() || !activeConversation || isSending) return;
 
     const messageText = inputMsg.trim();
-    const timeString = new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const timeString = getFormattedChatTime();
 
     const newMsg: ChatMessage = {
-      id: Date.now(),
+      id: generateChatMsgId("user-msg"),
       senderId: 999,
       senderName: user?.name || "Me",
       text: messageText,
@@ -445,20 +423,11 @@ const Communication: React.FC = () => {
       status: "sent",
     };
 
-    // Optimistically update conversation state
-    setConversations((prev) =>
-      prev.map((conv) => {
-        if (String(conv.id) === String(activeConversation.id)) {
-          return {
-            ...conv,
-            lastMessage: messageText,
-            lastMessageTime: timeString,
-            messages: [...conv.messages, newMsg],
-          };
-        }
-        return conv;
-      })
-    );
+    const convId = String(activeConversation.id);
+    setOptimisticMessages((prev) => ({
+      ...prev,
+      [convId]: [...(prev[convId] || []), newMsg],
+    }));
 
     setInputMsg("");
     setTimeout(scrollToBottom, 50);
@@ -510,13 +479,10 @@ const Communication: React.FC = () => {
   };
 
   const handleSelectPreset = (preset: PresetOption) => {
-    const timeString = new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const timeString = getFormattedChatTime();
 
     const userMsg: ChatMessage = {
-      id: Date.now(),
+      id: generateChatMsgId("preset-q"),
       senderId: 999,
       senderName: user?.first_name || user?.name || "Me",
       text: preset.question,
@@ -526,7 +492,7 @@ const Communication: React.FC = () => {
     };
 
     const botReply: ChatMessage = {
-      id: Date.now() + 1,
+      id: generateChatMsgId("preset-a"),
       senderId: 101,
       senderName: "Payfleet Support",
       text: preset.answer,
@@ -535,19 +501,11 @@ const Communication: React.FC = () => {
       status: "read",
     };
 
-    setConversations((prev) =>
-      prev.map((conv) => {
-        if (conv.id === "support-desk" || String(conv.id) === String(activeChatId)) {
-          return {
-            ...conv,
-            lastMessage: preset.answer,
-            lastMessageTime: timeString,
-            messages: [...conv.messages, userMsg, botReply],
-          };
-        }
-        return conv;
-      })
-    );
+    const convId = String(activeConversation?.id || activeChatId || "support-desk");
+    setOptimisticMessages((prev) => ({
+      ...prev,
+      [convId]: [...(prev[convId] || []), userMsg, botReply],
+    }));
 
     if (preset.action === "live_agent") {
       setTimeout(() => {
@@ -587,7 +545,7 @@ const Communication: React.FC = () => {
         lastMessageTime: "Just now",
         messages: [],
       };
-      setConversations((prev) => [newConv, ...prev]);
+      setCustomCreatedConversations((prev) => [newConv, ...prev]);
       setActiveChatId(newConv.id);
     }
 
@@ -614,20 +572,21 @@ const Communication: React.FC = () => {
 
   const isMessageOnRight = (msg: ChatMessage): boolean => {
     // 1. Check sender_type / role / senderRole on the message object (including sender_id object)
+    const raw = msg as unknown as RawMessageProperties;
     const senderObj =
-      (msg as any).sender_id && typeof (msg as any).sender_id === "object"
-        ? (msg as any).sender_id
-        : (msg as any).sender && typeof (msg as any).sender === "object"
-        ? (msg as any).sender
+      typeof raw.sender_id === "object" && raw.sender_id !== null
+        ? raw.sender_id
+        : typeof raw.sender === "object" && raw.sender !== null
+        ? raw.sender
         : null;
 
     const roleOrType = String(
       senderObj?.role ||
-      (msg as any).sender_type ||
-      (msg as any).senderType ||
-      (msg as any).role ||
-      (msg as any).senderRole ||
-      (msg as any).sender_role ||
+      raw.sender_type ||
+      raw.senderType ||
+      raw.role ||
+      raw.senderRole ||
+      raw.sender_role ||
       ""
     ).toLowerCase();
 
@@ -776,13 +735,8 @@ const Communication: React.FC = () => {
                     onClick={() => {
                       setActiveChatId(String(conv.id));
                       setTabToShow("main");
-                      // Clear unread
-                      setConversations((prev) =>
-                        prev.map((c) =>
-                          String(c.id) === String(conv.id)
-                            ? { ...c, unread: 0 }
-                            : c
-                        )
+                      setReadConversationIds((prev) =>
+                        prev.includes(String(conv.id)) ? prev : [...prev, String(conv.id)]
                       );
                     }}
                     className={`p-2.5 sm:p-3.5 flex items-start gap-2.5 sm:gap-3 cursor-pointer transition ${
@@ -904,13 +858,15 @@ const Communication: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      setConversations((prev) =>
-                        prev.map((c) =>
-                          String(c.id) === String(activeConversation.id)
-                            ? { ...c, messages: [] }
-                            : c
-                        )
+                      const convId = String(activeConversation.id);
+                      setClearedConversationIds((prev) =>
+                        prev.includes(convId) ? prev : [...prev, convId]
                       );
+                      setOptimisticMessages((prev) => {
+                        const copy = { ...prev };
+                        delete copy[convId];
+                        return copy;
+                      });
                       toast.info("Conversation cleared locally");
                     }}
                     className="p-1.5 sm:p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition cursor-pointer"

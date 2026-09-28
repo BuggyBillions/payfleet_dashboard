@@ -1,3 +1,4 @@
+import api from "../helpers/api";
 import type {
   PaymentCategory,
   ExtendedPaymentStatus,
@@ -6,295 +7,539 @@ import type {
 
 export type { PaymentCategory, ExtendedPaymentStatus, CompanyPaymentItem };
 
-const SEED_COMPANY_PAYMENTS: CompanyPaymentItem[] = [
-  {
-    id: 1,
-    reference: "PF-PAY-904121",
-    batchId: "BATCH-2026-SEP-01",
-    companyId: 101,
-    companyName: "Acme Technologies Ltd",
-    companyEmail: "finance@acmetech.io",
-    employeeName: "Deji Doess",
-    employeeEmail: "deji.doess@acmetech.io",
-    employeeRole: "Senior Frontend Engineer",
-    department: "Engineering",
-    bankName: "Guaranty Trust Bank (GTBank)",
-    accountNumber: "0128938471",
-    accountName: "Deji Doess",
-    amount: 650000,
-    fee: 50,
-    netAmount: 650000,
-    paymentType: "Salary",
-    status: "successful",
-    date: "2026-09-24T11:20:00",
-    narration: "September 2026 Staff Salary Disbursal",
-    approvedBy: "Finance Clearance Desk",
-    approvedAt: "2026-09-24T11:22:15",
-    gatewayRef: "GTB-TRF-882710491",
-  },
-  {
-    id: 2,
-    reference: "PF-PAY-904122",
-    batchId: "BATCH-2026-SEP-01",
-    companyId: 101,
-    companyName: "Acme Technologies Ltd",
-    companyEmail: "finance@acmetech.io",
-    employeeName: "Adaeze Nwosu",
-    employeeEmail: "adaeze.nwosu@acmetech.io",
-    employeeRole: "Lead Product Designer",
-    department: "Product Design",
-    bankName: "Access Bank",
-    accountNumber: "0719827364",
-    accountName: "Adaeze Nwosu",
-    amount: 580000,
-    fee: 50,
-    netAmount: 580000,
-    paymentType: "Salary",
-    status: "successful",
-    date: "2026-09-24T11:20:00",
-    narration: "September 2026 Staff Salary Disbursal",
-    approvedBy: "Finance Clearance Desk",
-    approvedAt: "2026-09-24T11:22:18",
-    gatewayRef: "ACC-TRF-991827364",
-  },
-  {
-    id: 3,
-    reference: "PF-PAY-904123",
-    batchId: "BATCH-2026-SEP-02",
-    companyId: 102,
-    companyName: "Sunmence Tech Limited",
-    companyEmail: "company@payfleet.io",
-    employeeName: "Tunde Bakare",
-    employeeEmail: "tunde.bakare@sunmence.com",
-    employeeRole: "DevOps & Infrastructure Lead",
-    department: "Engineering",
-    bankName: "Zenith Bank",
-    accountNumber: "2081928374",
-    accountName: "Tunde Bakare",
-    amount: 720000,
-    fee: 50,
-    netAmount: 720000,
-    paymentType: "Salary",
-    status: "pending",
-    date: "2026-09-24T14:45:00",
-    narration: "September Salary Disbursal",
-  },
-  {
-    id: 4,
-    reference: "PF-PAY-904124",
-    batchId: "BATCH-2026-SEP-02",
-    companyId: 102,
-    companyName: "Sunmence Tech Limited",
-    companyEmail: "company@payfleet.io",
-    employeeName: "Grace Adeyemi",
-    employeeEmail: "grace.adeyemi@sunmence.com",
-    employeeRole: "Head of Marketing & Growth",
-    department: "Marketing",
-    bankName: "First Bank of Nigeria",
-    accountNumber: "3091827364",
-    accountName: "Grace Adeyemi",
-    amount: 500000,
-    fee: 50,
-    netAmount: 500000,
-    paymentType: "Salary",
-    status: "pending",
-    date: "2026-09-24T14:45:00",
-    narration: "September Salary Disbursal",
-  },
-  {
-    id: 5,
-    reference: "PF-PAY-904125",
-    batchId: "BATCH-2026-SEP-03",
-    companyId: 103,
-    companyName: "Global Logistics Inc",
-    companyEmail: "billing@globallogistics.com",
-    employeeName: "Chiamaka Eze",
-    employeeEmail: "chiamaka.eze@globallogistics.com",
-    employeeRole: "Fleet Operations Specialist",
-    department: "Operations",
-    bankName: "United Bank for Africa (UBA)",
-    accountNumber: "2109876543",
-    accountName: "Chiamaka Eze",
-    amount: 320000,
-    fee: 50,
-    netAmount: 320000,
-    paymentType: "Salary",
-    status: "successful",
-    date: "2026-09-23T16:10:00",
-    narration: "Fleet Operations Monthly Payout",
-    approvedBy: "System Auto-Disburse",
-    approvedAt: "2026-09-23T16:12:00",
-    gatewayRef: "UBA-TRF-102938475",
-  },
-  {
-    id: 6,
-    reference: "PF-PAY-904126",
-    batchId: "BATCH-2026-SEP-03",
-    companyId: 103,
-    companyName: "Global Logistics Inc",
-    companyEmail: "billing@globallogistics.com",
-    employeeName: "Oluwaseun Adeleke",
-    employeeEmail: "seun.adeleke@globallogistics.com",
-    employeeRole: "Logistics Dispatch Supervisor",
-    department: "Operations",
-    bankName: "Kuda Microfinance Bank",
-    accountNumber: "2001928374",
-    accountName: "Oluwaseun Adeleke",
-    amount: 180000,
-    fee: 50,
-    netAmount: 180000,
-    paymentType: "Bonus",
-    status: "successful",
-    date: "2026-09-23T16:10:00",
-    narration: "Q3 High Performer Operational Bonus",
-    approvedBy: "System Auto-Disburse",
-    approvedAt: "2026-09-23T16:12:00",
-    gatewayRef: "KUD-TRF-491827364",
-  },
-  {
-    id: 7,
-    reference: "PF-PAY-904127",
-    batchId: "BATCH-2026-SEP-04",
-    companyId: 104,
-    companyName: "Apex Health Systems",
-    companyEmail: "accounts@apexhealth.ng",
-    employeeName: "Dr. Fatima Bello",
-    employeeEmail: "fatima.bello@apexhealth.ng",
-    employeeRole: "Chief Medical Officer",
-    department: "Clinical Care",
-    bankName: "Zenith Bank",
-    accountNumber: "1019283746",
-    accountName: "Fatima Bello",
-    amount: 1250000,
-    fee: 50,
-    netAmount: 1250000,
-    paymentType: "Salary",
-    status: "processing",
-    date: "2026-09-24T15:30:00",
-    narration: "Medical Consultants Monthly Retainer",
-  },
-  {
-    id: 8,
-    reference: "PF-PAY-904128",
-    batchId: "BATCH-2026-SEP-04",
-    companyId: 104,
-    companyName: "Apex Health Systems",
-    companyEmail: "accounts@apexhealth.ng",
-    employeeName: "Emeka Okafor",
-    employeeEmail: "emeka.okafor@apexhealth.ng",
-    employeeRole: "Head of Laboratory Diagnostics",
-    department: "Diagnostics",
-    bankName: "Stanbic IBTC Bank",
-    accountNumber: "0029384756",
-    accountName: "Emeka Okafor",
-    amount: 450000,
-    fee: 50,
-    netAmount: 450000,
-    paymentType: "Allowance",
-    status: "failed",
-    date: "2026-09-23T09:15:00",
-    narration: "Hazards & Clinical Equipment Allowance",
-    rejectionReason: "Beneficiary bank account inactive or temporarily restricted by recipient institution (NIBSS 91: Inactive Account).",
-  },
-  {
-    id: 9,
-    reference: "PF-PAY-904129",
-    batchId: "BATCH-2026-SEP-05",
-    companyId: 105,
-    companyName: "Sterling Retail Hub",
-    companyEmail: "admin@sterlinghub.com",
-    employeeName: "Ibrahim Mustapha",
-    employeeEmail: "ibrahim.mustapha@sterlinghub.com",
-    employeeRole: "Store Inventory Manager",
-    department: "Inventory",
-    bankName: "Wema Bank",
-    accountNumber: "0239485716",
-    accountName: "Ibrahim Mustapha",
-    amount: 280000,
-    fee: 50,
-    netAmount: 280000,
-    paymentType: "Salary",
-    status: "successful",
-    date: "2026-09-22T13:40:00",
-    narration: "Store Team Monthly Salary",
-    approvedBy: "Finance Clearance Desk",
-    approvedAt: "2026-09-22T13:45:00",
-    gatewayRef: "WEM-TRF-662910481",
-  },
-  {
-    id: 10,
-    reference: "PF-PAY-904130",
-    batchId: "BATCH-2026-SEP-05",
-    companyId: 105,
-    companyName: "Sterling Retail Hub",
-    companyEmail: "admin@sterlinghub.com",
-    employeeName: "Blessing Johnson",
-    employeeEmail: "blessing.johnson@sterlinghub.com",
-    employeeRole: "Retail Sales Lead",
-    department: "Sales",
-    bankName: "Access Bank",
-    accountNumber: "0691827364",
-    accountName: "Blessing Johnson",
-    amount: 150000,
-    fee: 50,
-    netAmount: 150000,
-    paymentType: "Commission",
-    status: "pending",
-    date: "2026-09-24T16:00:00",
-    narration: "August Sales Target Commission",
-  },
-  {
-    id: 11,
-    reference: "PF-PAY-904131",
-    batchId: "BATCH-2026-SEP-06",
-    companyId: 106,
-    companyName: "Bluecrest Energy",
-    companyEmail: "treasury@bluecrestenergy.com",
-    employeeName: "Ken Nnamdi",
-    employeeEmail: "ken.nnamdi@bluecrestenergy.com",
-    employeeRole: "Petroleum Field Engineer",
-    department: "Field Engineering",
-    bankName: "Standard Chartered Bank",
-    accountNumber: "5001928374",
-    accountName: "Ken Nnamdi",
-    amount: 1100000,
-    fee: 50,
-    netAmount: 1100000,
-    paymentType: "Salary",
-    status: "successful",
-    date: "2026-09-21T08:30:00",
-    narration: "Offshore Engineering Field Payout",
-    approvedBy: "System Auto-Disburse",
-    approvedAt: "2026-09-21T08:32:00",
-    gatewayRef: "SCB-TRF-391827465",
-  },
-  {
-    id: 12,
-    reference: "PF-PAY-904132",
-    batchId: "BATCH-2026-SEP-06",
-    companyId: 106,
-    companyName: "Bluecrest Energy",
-    companyEmail: "treasury@bluecrestenergy.com",
-    employeeName: "Halima Abubakar",
-    employeeEmail: "halima.abubakar@bluecrestenergy.com",
-    employeeRole: "Safety & Compliance Officer",
-    department: "HSE Compliance",
-    bankName: "Guaranty Trust Bank (GTBank)",
-    accountNumber: "0182938475",
-    accountName: "Halima Abubakar",
-    amount: 350000,
-    fee: 50,
-    netAmount: 350000,
-    paymentType: "Reimbursement",
-    status: "successful",
-    date: "2026-09-21T08:30:00",
-    narration: "Offshore Safety Gear Reimbursement",
-    approvedBy: "System Auto-Disburse",
-    approvedAt: "2026-09-21T08:32:00",
-    gatewayRef: "GTB-TRF-772918402",
-  },
-];
+export interface GetAdminPaymentsParams {
+  page?: number;
+  per_page?: number;
+  status?: string;
+  search?: string;
+  searchTerm?: string;
+  company_id?: number | string;
+  date_from?: string;
+  date_to?: string;
+}
 
-export const getInitialCompanyPayments = (): CompanyPaymentItem[] => [
-  ...SEED_COMPANY_PAYMENTS,
-];
+export interface AdminPaymentsListResponse {
+  items: CompanyPaymentItem[];
+  totalItems: number;
+  currentPage: number;
+  totalPages: number;
+  perPage: number;
+  totalDisbursed: number;
+  successfulCount: number;
+  pendingCount: number;
+  pendingAmount: number;
+  failedCount: number;
+  failedAmount: number;
+  raw?: Record<string, unknown>;
+}
+
+const normalizeStatus = (rawStatus: unknown): ExtendedPaymentStatus => {
+  const str = String(rawStatus ?? "").toLowerCase().trim();
+  if (
+    str.includes("success") ||
+    str === "paid" ||
+    str === "completed" ||
+    str === "1" ||
+    str === "approved" ||
+    str === "settled"
+  ) {
+    return "successful";
+  }
+  if (
+    str.includes("fail") ||
+    str.includes("reject") ||
+    str === "declined" ||
+    str === "0"
+  ) {
+    return "failed";
+  }
+  if (str === "cancelled" || str === "canceled" || str === "reversed") {
+    return "cancelled";
+  }
+  if (str === "processing" || str === "in_progress") {
+    return "processing";
+  }
+  return "pending";
+};
+
+interface RawAdminPaymentItem {
+  id?: string | number;
+  reference?: string;
+  reference_no?: string;
+  transaction_reference?: string;
+  trans_ref?: string;
+  trx_ref?: string;
+  ref?: string;
+  batch_id?: string;
+  batchId?: string;
+  batch_no?: string;
+  batch?: string;
+  company_id?: string | number;
+  company_name?: string;
+  companyName?: string;
+  company?: { id?: string | number; name?: string; email?: string; company_name?: string } | string;
+  company_email?: string;
+  companyEmail?: string;
+  employee_id?: string | number;
+  employee_name?: string;
+  employeeName?: string;
+  beneficiary_name?: string;
+  account_name?: string;
+  accountName?: string;
+  employee?: {
+    id?: string | number;
+    name?: string;
+    full_name?: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    job_title?: string;
+    role?: string;
+    department?: string;
+    bank_name?: string;
+    account_number?: string;
+    account_name?: string;
+  };
+  employee_email?: string;
+  employeeEmail?: string;
+  employee_role?: string;
+  employeeRole?: string;
+  job_title?: string;
+  department?: string;
+  bank_name?: string;
+  bankName?: string;
+  bank?: string;
+  account_number?: string;
+  accountNumber?: string;
+  amount?: number | string;
+  net_amount?: number | string;
+  estimate_pay?: number | string;
+  fee?: number | string;
+  netAmount?: number | string;
+  payment_type?: string;
+  paymentType?: string;
+  category?: string;
+  type?: string;
+  status?: string | number | boolean;
+  payment_status?: string | number | boolean;
+  date?: string;
+  created_at?: string;
+  payment_date?: string;
+  updated_at?: string;
+  narration?: string;
+  description?: string;
+  approved_by?: string;
+  approvedBy?: string;
+  approved_at?: string;
+  approvedAt?: string;
+  gateway_ref?: string;
+  gatewayRef?: string;
+  rejection_reason?: string;
+  rejectionReason?: string;
+  reason?: string;
+  transaction?: {
+    id?: string | number;
+    reference?: string;
+    amount?: number | string;
+    fee?: number | string;
+    status?: string | number | boolean;
+    created_at?: string;
+    description?: string;
+    gateway_ref?: string;
+  };
+}
+
+export const parsePaymentItem = (item: RawAdminPaymentItem): CompanyPaymentItem => {
+  const comp = typeof item.company === "object" && item.company !== null ? item.company : {};
+  const emp = typeof item.employee === "object" && item.employee !== null ? item.employee : {};
+  const txn = typeof item.transaction === "object" && item.transaction !== null ? item.transaction : {};
+
+  const companyName = String(
+    comp.name ||
+    comp.company_name ||
+    item.company_name ||
+    item.companyName ||
+    (typeof item.company === "string" ? item.company : "") ||
+    "Payfleet Client"
+  );
+
+  const companyEmail = String(
+    comp.email ||
+    item.company_email ||
+    item.companyEmail ||
+    "—"
+  );
+
+  const employeeName = String(
+    emp.name ||
+    emp.full_name ||
+    (emp.first_name ? `${emp.first_name} ${emp.last_name || ""}`.trim() : "") ||
+    item.employee_name ||
+    item.employeeName ||
+    item.beneficiary_name ||
+    item.account_name ||
+    "Employee Beneficiary"
+  );
+
+  const employeeEmail = String(
+    emp.email ||
+    item.employee_email ||
+    item.employeeEmail ||
+    "—"
+  );
+
+  const employeeRole = String(
+    emp.job_title ||
+    emp.role ||
+    item.employee_role ||
+    item.employeeRole ||
+    item.job_title ||
+    "Staff"
+  );
+
+  const department = String(
+    emp.department ||
+    item.department ||
+    "Operations"
+  );
+
+  const bankName = String(
+    emp.bank_name ||
+    item.bank_name ||
+    item.bankName ||
+    item.bank ||
+    "Commercial Bank"
+  );
+
+  const accountNumber = String(
+    emp.account_number ||
+    item.account_number ||
+    item.accountNumber ||
+    "—"
+  );
+
+  const accountName = String(
+    emp.account_name ||
+    item.account_name ||
+    item.accountName ||
+    employeeName
+  );
+
+  const rawAmount =
+    item.amount ??
+    txn.amount ??
+    item.net_amount ??
+    item.estimate_pay ??
+    0;
+  const amount = Number(rawAmount) || 0;
+
+  const rawFee = item.fee ?? txn.fee ?? 0;
+  const fee = Number(rawFee) || 0;
+
+  const rawNetAmount = item.net_amount ?? item.netAmount ?? amount;
+  const netAmount = Number(rawNetAmount) || amount;
+
+  const rawCategory =
+    item.payment_type ||
+    item.paymentType ||
+    item.category ||
+    item.type ||
+    "Salary";
+  let paymentType: PaymentCategory = "Salary";
+  const catLower = String(rawCategory).toLowerCase();
+  if (catLower.includes("bonus")) paymentType = "Bonus";
+  else if (catLower.includes("allowance")) paymentType = "Allowance";
+  else if (catLower.includes("reimburse")) paymentType = "Reimbursement";
+  else if (catLower.includes("commission")) paymentType = "Commission";
+
+  const status = normalizeStatus(
+    item.status ?? txn.status ?? item.payment_status
+  );
+
+  const reference = String(
+    item.reference ||
+    txn.reference ||
+    item.reference_no ||
+    item.transaction_reference ||
+    item.trans_ref ||
+    item.trx_ref ||
+    item.ref ||
+    (item.id ? `PF-PAY-${String(item.id).padStart(6, "0")}` : "—")
+  );
+
+  const batchId = String(
+    item.batch_id ||
+    item.batchId ||
+    item.batch_no ||
+    item.batch ||
+    `BATCH-${reference.slice(-6)}`
+  );
+
+  const date = String(
+    item.date ||
+    item.created_at ||
+    txn.created_at ||
+    item.payment_date ||
+    item.updated_at ||
+    new Date().toISOString()
+  );
+
+  const narration = String(
+    item.narration ||
+    item.description ||
+    txn.description ||
+    `${paymentType} Disbursal`
+  );
+
+  const approvedBy =
+    item.approved_by ||
+    item.approvedBy ||
+    (status === "successful" ? "Finance Clearance Desk" : undefined);
+
+  const approvedAt =
+    item.approved_at ||
+    item.approvedAt ||
+    (status === "successful" ? date : undefined);
+
+  const gatewayRef = String(
+    item.gateway_ref ||
+    item.gatewayRef ||
+    txn.gateway_ref ||
+    reference
+  );
+
+  const rejectionReason =
+    item.rejection_reason ||
+    item.rejectionReason ||
+    item.reason ||
+    undefined;
+
+  return {
+    id: item.id || txn.id || reference,
+    reference,
+    batchId,
+    companyId: Number(item.company_id || comp.id || 0),
+    companyName,
+    companyEmail,
+    employeeName,
+    employeeEmail,
+    employeeRole,
+    department,
+    bankName,
+    accountNumber,
+    accountName,
+    amount,
+    fee,
+    netAmount,
+    paymentType,
+    status,
+    date,
+    narration,
+    approvedBy,
+    approvedAt,
+    gatewayRef,
+    rejectionReason,
+  };
+};
+
+/**
+ * Fetch Admin Payments from GET /admin-payment
+ * Supports ?status=pending or any other status, page, per_page, search query
+ */
+export const getAdminPaymentsService = async ({
+  page = 1,
+  per_page = 10,
+  status = "all",
+  search = "",
+  searchTerm = "",
+  company_id,
+  date_from,
+  date_to,
+}: GetAdminPaymentsParams = {}): Promise<AdminPaymentsListResponse> => {
+  const querySearch = (searchTerm || search || "").trim();
+
+  const params: Record<string, unknown> = {
+    page,
+    per_page,
+  };
+
+  if (status && status !== "all") {
+    params.status = status;
+  }
+  if (querySearch) {
+    params.search = querySearch;
+  }
+  if (company_id) {
+    params.company_id = company_id;
+  }
+  if (date_from) {
+    params.date_from = date_from;
+  }
+  if (date_to) {
+    params.date_to = date_to;
+  }
+
+  const response = await api.get("/admin-payment", { params });
+  const resData = response.data;
+
+  const rawList = Array.isArray(resData?.data)
+    ? resData.data
+    : resData?.data?.data ||
+      resData?.data?.payments ||
+      resData?.payments ||
+      resData?.items ||
+      (Array.isArray(resData) ? resData : []);
+
+  const items: CompanyPaymentItem[] = Array.isArray(rawList)
+    ? rawList.map(parsePaymentItem)
+    : [];
+
+  let totalItems = items.length;
+  let currentPage = page;
+  let totalPages = Math.max(1, Math.ceil(totalItems / per_page));
+
+  if (resData?.pagination) {
+    totalItems = Number(resData.pagination.total ?? totalItems);
+    totalPages = Number(resData.pagination.last_page ?? totalPages);
+    currentPage = Number(resData.pagination.current_page ?? currentPage);
+  } else if (resData?.data?.total !== undefined) {
+    totalItems = Number(resData.data.total);
+    totalPages = Number(resData.data.last_page ?? totalPages);
+    currentPage = Number(resData.data.current_page ?? currentPage);
+  }
+
+  // Calculate live stats
+  const successfulItems = items.filter((p) => p.status === "successful");
+  const totalDisbursed = successfulItems.reduce((sum, p) => sum + p.amount, 0);
+  const successfulCount = successfulItems.length;
+
+  const pendingItems = items.filter(
+    (p) => p.status === "pending" || p.status === "processing"
+  );
+  const pendingCount = pendingItems.length;
+  const pendingAmount = pendingItems.reduce((sum, p) => sum + p.amount, 0);
+
+  const failedItems = items.filter(
+    (p) => p.status === "failed" || p.status === "cancelled"
+  );
+  const failedCount = failedItems.length;
+  const failedAmount = failedItems.reduce((sum, p) => sum + p.amount, 0);
+
+  return {
+    items,
+    totalItems,
+    currentPage,
+    totalPages,
+    perPage: per_page,
+    totalDisbursed,
+    successfulCount,
+    pendingCount,
+    pendingAmount,
+    failedCount,
+    failedAmount,
+    raw: resData,
+  };
+};
+
+/**
+ * Fetch a single payment disbursement by ID
+ * GET /each-payment/{id}
+ */
+export const getEachAdminPaymentService = async (
+  id: number | string
+): Promise<CompanyPaymentItem> => {
+  const response = await api.get(`/each-payment/${id}`);
+  const resData = response.data;
+  const rawItem =
+    resData?.data?.payment ||
+    resData?.data?.data ||
+    resData?.data ||
+    resData?.payment ||
+    resData;
+  return parsePaymentItem(rawItem);
+};
+
+/**
+ * Approve payment disbursement: POST /admin-payment/{id}/approve or /confirm-payment/{id}
+ */
+export const approveAdminPaymentService = async (id: number | string) => {
+  try {
+    const response = await api.post(`/admin-payment/${id}/approve`);
+    return response.data;
+  } catch {
+    try {
+      const response = await api.post(`/confirm-payment/${id}`);
+      return response.data;
+    } catch {
+      const response = await api.put(`/admin-payment/${id}`, { status: "successful" });
+      return response.data;
+    }
+  }
+};
+
+/**
+ * Reject payment disbursement: POST /admin-payment/{id}/reject
+ */
+export const rejectAdminPaymentService = async (
+  id: number | string,
+  payload?: { reason?: string; description?: string } | string
+) => {
+  const reasonText =
+    typeof payload === "string"
+      ? payload
+      : payload?.reason || payload?.description || "Disbursement rejected by Super Admin";
+
+  try {
+    const response = await api.post(`/admin-payment/${id}/reject`, {
+      reason: reasonText,
+      rejection_reason: reasonText,
+    });
+    return response.data;
+  } catch {
+    try {
+      const response = await api.put(`/decline-payment/${id}`, {
+        reason: reasonText,
+      });
+      return response.data;
+    } catch {
+      const response = await api.put(`/admin-payment/${id}`, {
+        status: "cancelled",
+        reason: reasonText,
+      });
+      return response.data;
+    }
+  }
+};
+
+/**
+ * Retry / Re-query payout
+ */
+export const retryAdminPaymentService = async (id: number | string) => {
+  try {
+    const response = await api.post(`/admin-payment/${id}/retry`);
+    return response.data;
+  } catch {
+    const response = await api.post(`/requery-payment/${id}`);
+    return response.data;
+  }
+};
+
+/**
+ * Batch approve disbursements
+ */
+export const batchApproveAdminPaymentsService = async (
+  ids: (number | string)[]
+) => {
+  try {
+    const response = await api.post("/admin-payment/batch-approve", { ids });
+    return response.data;
+  } catch {
+    // Sequentially approve
+    return Promise.all(ids.map((id) => approveAdminPaymentService(id)));
+  }
+};
+
+/**
+ * Kept for backward compatibility if imported elsewhere
+ */
+export const getInitialCompanyPayments = (): CompanyPaymentItem[] => [];

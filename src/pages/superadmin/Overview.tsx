@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import OverviewCards from "../../components/cards/OverviewCards";
 import PageHeader from "../../components/navs/PageHeader";
@@ -12,14 +12,12 @@ import {
 } from "../../helpers/formatterUtility";
 import { useCompanies, useCompanyStats } from "../../hooks/useCompany";
 import { useDeposits, useDepositStats } from "../../hooks/useDeposit";
-import { useStaffs, useStaffStats } from "../../hooks/useStaff";
+import { useStaffStats } from "../../hooks/useStaff";
 import { useAllTiers } from "../../hooks/useTier";
 import { useAdminStats } from "../../hooks/useAdminStats";
 import { useAdminSupportConversations } from "../../hooks/useSupportChat";
-import {
-  getInitialCompanyPayments,
-  type CompanyPaymentItem,
-} from "../../services/adminPaymentService";
+import { useAdminPayments } from "../../hooks/useAdminPayments";
+import type { CompanyPaymentItem } from "../../services/adminPaymentService";
 import { getTierConfig } from "../../services/tierService";
 import type {
   CompanyProps,
@@ -40,7 +38,7 @@ import {
   LuArrowDownToLine,
   LuPlus,
 } from "react-icons/lu";
-import { FaMoneyBillWave } from "react-icons/fa6";
+import { FaLayerGroup, FaMoneyBillWave } from "react-icons/fa6";
 import { BsChatText } from "react-icons/bs";
 
 const SuperAdminOverview: React.FC = () => {
@@ -48,7 +46,7 @@ const SuperAdminOverview: React.FC = () => {
   const navigate = useNavigate();
 
   // 1. Admin Platform Stats (GET /admin-stats)
-  const { data: adminStats, isLoading: isAdminStatsLoading } = useAdminStats();
+  const { data: adminStats } = useAdminStats();
 
   // 2. Company Data & Stats
   const {
@@ -66,8 +64,7 @@ const SuperAdminOverview: React.FC = () => {
   } = useDeposits({ page: 1, per_page: 5 });
   const { data: depositStats } = useDepositStats();
 
-  // 4. Staff Data & Stats
-  const { data: staffData } = useStaffs({ page: 1, per_page: 5 });
+  // 4. Staff Stats (GET /staff-stats)
   const { data: staffStats } = useStaffStats();
 
   // 5. Tiers Data
@@ -76,16 +73,16 @@ const SuperAdminOverview: React.FC = () => {
   // 6. Live Support Conversations
   const { data: recentConversations = [] } = useAdminSupportConversations();
 
-  // 7. Recent Disbursements
-  const [payments] = useState<CompanyPaymentItem[]>(() =>
-    getInitialCompanyPayments()
-  );
+  // 7. Recent Disbursements (GET /admin-payment)
+  const { data: paymentsData } = useAdminPayments({ page: 1, per_page: 5 });
+  const payments = paymentsData?.items || [];
 
   // Derived Metrics
   const companiesList = companiesData?.items || [];
   const depositsList = depositsData?.items || [];
-  const staffList = staffData?.items || [];
-  const tiersList: TierItem[] = Array.isArray(tiersData) ? tiersData : [];
+  const tiersList: TierItem[] = Array.isArray(tiersData) && tiersData.length > 0
+    ? tiersData
+    : (adminStats?.tiers && adminStats.tiers.length > 0 ? adminStats.tiers : []);
 
   const totalCompanies =
     adminStats?.totalCompanies ||
@@ -108,37 +105,35 @@ const SuperAdminOverview: React.FC = () => {
   const successfulPayments = payments.filter((p) => p.status === "successful");
   const totalDisbursed =
     adminStats?.totalDisbursed ||
+    paymentsData?.totalDisbursed ||
     successfulPayments.reduce((sum, p) => sum + p.amount, 0);
+
+  const isCompanyVerified = (company?: CompanyProps | null) => {
+    if (!company) return false;
+    if (company.user?.is_verified !== undefined) {
+      return company.user.is_verified === 1 || Boolean(company.user.is_verified);
+    }
+    if (company.is_verified !== undefined) {
+      return company.is_verified === 1 || Boolean(company.is_verified);
+    }
+    const v = String(company.verificationStatus || company.status || "").toLowerCase();
+    return v === "verified" || v === "successful";
+  };
+
 
   const totalPlatformVolume =
     adminStats?.totalPlatformVolume ||
     (totalClearedDeposits + totalDisbursed);
 
-  const totalStaffCount =
-    adminStats?.totalStaff ||
-    staffStats?.totalStaff ||
-    (staffData?.totalItems || staffList.length);
-  const activeStaffCount =
-    adminStats?.activeStaff ?? (staffStats?.activeStaff ?? totalStaffCount);
-  const financeOfficersCount =
-    adminStats?.financeStaff ??
-    (staffStats?.financeStaff ??
-      (staffList.filter((s) => s.role?.toLowerCase().includes("finance")).length ||
-        6));
-  const supportOfficersCount =
-    adminStats?.supportStaff ??
-    (staffStats?.supportStaff ??
-      (staffList.filter((s) => s.role?.toLowerCase().includes("support")).length ||
-        4));
-  const superAdminsCount =
-    adminStats?.superAdmins ??
-    (staffStats?.totalStaff
-      ? Math.max(
-          0,
-          staffStats.totalStaff -
-            (staffStats.financeStaff + staffStats.supportStaff)
-        ) || 2
-      : staffList.filter((s) => s.role?.toLowerCase().includes("admin")).length || 2);
+  const totalStaffCount = staffStats?.totalStaff ?? adminStats?.totalStaff ?? 0;
+  const activeStaffCount = staffStats?.activeStaff ?? adminStats?.activeStaff ?? totalStaffCount;
+  const inactiveStaffCount = staffStats?.inactiveStaff ?? Math.max(0, totalStaffCount - activeStaffCount);
+  const financeOfficersCount = staffStats?.financeStaff ?? adminStats?.financeStaff ?? 0;
+  const supportOfficersCount = staffStats?.supportStaff ?? adminStats?.supportStaff ?? 0;
+
+
+  const activeStaffPercentage =
+    totalStaffCount > 0 ? Math.round((activeStaffCount / totalStaffCount) * 100) : 100;
 
   // Recent 5 payments
   const recentPayments = payments.slice(0, 5);
@@ -153,7 +148,7 @@ const SuperAdminOverview: React.FC = () => {
             {item.name || item.companyName || "Company"}
           </span>
           <span className="text-[11px] text-textBlack/50 font-mono">
-            RC: {item.rc_number || item.rcNumber || "N/A"}
+            {item.email || "N/A"}
           </span>
         </div>
       ),
@@ -167,7 +162,7 @@ const SuperAdminOverview: React.FC = () => {
             <span className="text-xs text-textBlack/80 font-medium">
               {tier.name}
             </span>
-            <span className="text-[10px] text-textBlack/50 truncate max-w-[120px]">
+            <span className="text-[10px] text-textBlack/50 truncate max-w-30">
               {item.industry || "General Business"}
             </span>
           </div>
@@ -176,14 +171,9 @@ const SuperAdminOverview: React.FC = () => {
     },
     {
       label: "Status",
-      render: (item) => {
-        const status =
-          typeof item.status === "boolean"
-            ? item.status
-              ? "Active"
-              : "Inactive"
-            : String(item.status || (item.is_active ? "Active" : "Inactive"));
-        return <StatusBadge status={status} />;
+      render: (item: CompanyProps) => {
+        const verified = isCompanyVerified(item);
+        return <StatusBadge status={verified ? "Verified" : "Pending Verification"} />;
       },
     },
     {
@@ -228,14 +218,6 @@ const SuperAdminOverview: React.FC = () => {
       render: (item) => (
         <span className="font-bold text-primary text-xs">
           {formatterUtility(item.amount)}
-        </span>
-      ),
-    },
-    {
-      label: "Method",
-      render: (item) => (
-        <span className="text-xs text-textBlack/70 font-medium">
-          {item.method || "Bank Transfer"}
         </span>
       ),
     },
@@ -311,31 +293,32 @@ const SuperAdminOverview: React.FC = () => {
           heading={`Welcome, ${user?.name || "Super Admin"}`}
           value="Enterprise platform administration, real-time liquidity, compliance verifications & operations"
         />
-        <div className="flex items-center justify-end gap-2 shrink-0 flex-wrap">
+        <div className="grid grid-cols-2 lg:grid-cols-3 items-center justify-end gap-2 shrink-0 flex-wrap">
           <ActionButton
             text="Verify Companies"
             onClick={() =>
               navigate("/admin/dashboard/company-verification")
             }
+            buttonStyle="text-xs"
             icon={<LuShieldCheck size={16} />}
           />
           <ActionButton
             text="Deposit Queue"
             onClick={() => navigate("/admin/dashboard/deposit/pending")}
             overideBg={true}
-            buttonStyle="border border-primary/20 bg-secondary text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+            buttonStyle="border border-primary/20 bg-secondary text-primary hover:bg-primary/10 transition-colors cursor-pointer text-xs"
             icon={<LuArrowDownToLine size={15} />}
           />
           <ActionButton
             text="Manage Staff"
             onClick={() => navigate("/admin/dashboard/staff")}
             overideBg={true}
-            buttonStyle="border border-primary/20 bg-secondary text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+            buttonStyle="border border-primary/20 bg-secondary text-primary hover:bg-primary/10 transition-colors cursor-pointer text-xs"
             icon={<LuUsersRound size={15} />}
           />
           <ActionButton
             onClick={() => navigate("/admin/dashboard/chat")}
-            buttonStyle="border border-primary/20 bg-secondary text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+            buttonStyle="border border-primary/20 bg-secondary text-primary hover:bg-primary/10 transition-colors cursor-pointer text-xs"
             title="Support Desk"
             icon={<BsChatText size={15} />}
             overideBg={true}
@@ -350,9 +333,9 @@ const SuperAdminOverview: React.FC = () => {
           title="Platform Volume"
           value={
             <div className="flex flex-col">
-              <span>{formatterUtility(totalPlatformVolume || 11790000)}</span>
+              <span>{formatterUtility(totalPlatformVolume)}</span>
               <span className="text-[10px] font-normal text-textBlack/50">
-                Deposits + Payouts
+                Total Deposits
               </span>
             </div>
           }
@@ -363,7 +346,7 @@ const SuperAdminOverview: React.FC = () => {
           title="Active Companies"
           value={
             <div className="flex flex-col">
-              <span>{totalCompanies || 48}</span>
+              <span>{totalCompanies}</span>
               <span className="text-[10px] font-normal text-textBlack/50">
                 {activeCompanies} Active • {verifiedCompanies} Verified
               </span>
@@ -377,7 +360,7 @@ const SuperAdminOverview: React.FC = () => {
           value={
             <div className="flex flex-col">
               <span className={pendingCompanies > 0 ? "text-amber-600" : ""}>
-                {pendingCompanies || 5}
+                {pendingCompanies}
               </span>
               <span className="text-[10px] font-normal text-textBlack/50">
                 KYC / RC Review
@@ -391,7 +374,7 @@ const SuperAdminOverview: React.FC = () => {
           title="Cleared Liquidity"
           value={
             <div className="flex flex-col">
-              <span>{formatterUtility(totalClearedDeposits || 8500000)}</span>
+              <span>{formatterUtility(totalClearedDeposits)}</span>
               <span className="text-[10px] font-normal text-textBlack/50">
                 {pendingDepositsCount} Pending ({formatterUtility(pendingDepositsVolume)})
               </span>
@@ -404,7 +387,7 @@ const SuperAdminOverview: React.FC = () => {
           title="Disbursements"
           value={
             <div className="flex flex-col">
-              <span>{formatterUtility(totalDisbursed || 3290000)}</span>
+              <span>{formatterUtility(totalDisbursed)}</span>
               <span className="text-[10px] font-normal text-textBlack/50">
                 {successfulPayments.length} Completed Payouts
               </span>
@@ -417,9 +400,9 @@ const SuperAdminOverview: React.FC = () => {
           title="System Staff"
           value={
             <div className="flex flex-col">
-              <span>{totalStaffCount || 12}</span>
+              <span>{totalStaffCount}</span>
               <span className="text-[10px] font-normal text-textBlack/50">
-                {activeStaffCount} Active Officers
+                {activeStaffCount} Active ({activeStaffPercentage}%)
               </span>
             </div>
           }
@@ -516,7 +499,7 @@ const SuperAdminOverview: React.FC = () => {
             <div className="flex items-center justify-between border-b border-primary/10 pb-3 flex-wrap gap-2">
               <div>
                 <h3 className="font-semibold text-base text-textBlack flex items-center gap-2">
-                  Recent Payroll & Vendor Disbursements
+                  Recent Payroll Disbursements
                 </h3>
                 <p className="text-xs text-textBlack/60">
                   Latest live payout executions across registered corporate entities
@@ -563,14 +546,15 @@ const SuperAdminOverview: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate("/admin/dashboard/tier")}
-                className="text-xs font-semibold text-primary hover:underline cursor-pointer"
+                className="text-xs flex gap-2 items-center font-semibold text-primary hover:underline cursor-pointer"
               >
-                Manage Tiers
+                <FaLayerGroup />
+                Manage
               </button>
             </div>
 
             <div className="space-y-3.5">
-              {tiersList.length > 0 ? (
+              {tiersList.length > 0 && (
                 tiersList.slice(0, 4).map((tierItem: TierItem) => (
                   <div key={tierItem.id} className="space-y-1">
                     <div className="flex justify-between items-center text-xs">
@@ -596,36 +580,6 @@ const SuperAdminOverview: React.FC = () => {
                     </div>
                   </div>
                 ))
-              ) : (
-                <>
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-semibold text-textBlack">Tier 1 (Starter)</span>
-                      <span className="text-textBlack/60 font-mono text-[11px]">24 Companies</span>
-                    </div>
-                    <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
-                      <div className="bg-primary h-2 rounded-full w-[50%]" />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-semibold text-textBlack">Tier 2 (Growth)</span>
-                      <span className="text-textBlack/60 font-mono text-[11px]">16 Companies</span>
-                    </div>
-                    <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
-                      <div className="bg-primary h-2 rounded-full w-[33%]" />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-semibold text-textBlack">Tier 3 (Enterprise)</span>
-                      <span className="text-textBlack/60 font-mono text-[11px]">8 Companies</span>
-                    </div>
-                    <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
-                      <div className="bg-primary h-2 rounded-full w-[17%]" />
-                    </div>
-                  </div>
-                </>
               )}
             </div>
           </div>
@@ -650,7 +604,24 @@ const SuperAdminOverview: React.FC = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="p-3 rounded-xl bg-secondary/60 border border-primary/10">
+                <span className="text-[10px] text-textBlack/60 block">Total Staff</span>
+                <span className="text-sm font-bold text-textBlack mt-0.5 block">
+                  {totalStaffCount}
+                </span>
+              </div>
+              <div className="p-3 flex rounded-xl justify-between items-end bg-secondary/60 border border-primary/10">
+                <div>
+                  <span className="text-[10px] text-textBlack/60 block">Active Status</span>
+                  <span className="text-sm font-bold text-emerald-600 mt-0.5 block">
+                    {activeStaffCount} ({activeStaffPercentage}%)
+                  </span>
+                </div>
+                <span className={`text-sm font-bold mt-0.5 block ${inactiveStaffCount > 0 ? "text-amber-600" : "text-textBlack"}`}>
+                  {inactiveStaffCount} <span className="text-[10px]">Inactive</span>
+                </span>
+              </div>
               <div className="p-3 rounded-xl bg-secondary/60 border border-primary/10">
                 <span className="text-[10px] text-textBlack/60 block">Finance Officers</span>
                 <span className="text-sm font-bold text-textBlack mt-0.5 block">
@@ -661,18 +632,6 @@ const SuperAdminOverview: React.FC = () => {
                 <span className="text-[10px] text-textBlack/60 block">Support Officers</span>
                 <span className="text-sm font-bold text-textBlack mt-0.5 block">
                   {supportOfficersCount}
-                </span>
-              </div>
-              <div className="p-3 rounded-xl bg-secondary/60 border border-primary/10">
-                <span className="text-[10px] text-textBlack/60 block">Super Admins</span>
-                <span className="text-sm font-bold text-textBlack mt-0.5 block">
-                  {superAdminsCount}
-                </span>
-              </div>
-              <div className="p-3 rounded-xl bg-secondary/60 border border-primary/10">
-                <span className="text-[10px] text-textBlack/60 block">Active Status</span>
-                <span className="text-sm font-bold text-green-600 mt-0.5 block">
-                  100% Active
                 </span>
               </div>
             </div>

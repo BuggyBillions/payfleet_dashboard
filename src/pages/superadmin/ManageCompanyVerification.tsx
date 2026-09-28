@@ -10,7 +10,6 @@ import type {
 import { useCompanies, useCompanyStats } from "../../hooks/useCompany";
 import { useTierRequests } from "../../hooks/useTier";
 import { getTierConfig } from "../../services/tierService";
-import { CompanyLogoAvatar } from "../../helpers/logoHelper";
 import ChangeTierModal from "../../components/modal/tier/ChangeTierModal";
 import ReviewTierRequestModal from "../../components/modal/tier/ReviewTierRequestModal";
 import ViewCompanyModal from "../../components/modal/view/ViewCompanyModal";
@@ -60,8 +59,9 @@ const ManageCompanyVerification: React.FC = () => {
 
   const tierRequests: TierUpgradeRequest[] = useMemo(() => {
     if (Array.isArray(rawTierRequests)) return rawTierRequests;
-    if (rawTierRequests && typeof rawTierRequests === "object" && Array.isArray((rawTierRequests as any).data)) {
-      return (rawTierRequests as any).data;
+    const resObj = rawTierRequests as { data?: TierUpgradeRequest[] } | null | undefined;
+    if (resObj && typeof resObj === "object" && Array.isArray(resObj.data)) {
+      return resObj.data;
     }
     return [];
   }, [rawTierRequests]);
