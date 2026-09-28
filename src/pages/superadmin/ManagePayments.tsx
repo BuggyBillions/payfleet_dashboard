@@ -13,12 +13,8 @@ import {
 import {
   useAdminPayments,
   useAdminPayment,
-  useApproveAdminPayment,
-  useRejectAdminPayment,
-  useRetryAdminPayment,
-  useBatchApproveAdminPayments,
 } from "../../hooks/useAdminPayments";
-import { FiSearch, FiDownload, FiCheckCircle, FiRefreshCw } from "react-icons/fi";
+import { FiSearch, FiDownload, FiRefreshCw } from "react-icons/fi";
 import {
   LuClock,
   LuCopy,
@@ -46,7 +42,6 @@ const SuperAdminManagePayments: React.FC<ManagePaymentsProps> = ({
   const [endDateFilter, setEndDateFilter] = useState<string>("");
   const [minAmountFilter, setMinAmountFilter] = useState<string>("");
   const [maxAmountFilter, setMaxAmountFilter] = useState<string>("");
-  const [selectedRowIds, setSelectedRowIds] = useState<(string | number)[]>([]);
 
   // Filter Modal Temporary State
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -88,17 +83,7 @@ const SuperAdminManagePayments: React.FC<ManagePaymentsProps> = ({
   );
   const activePayment = eachPaymentData || selectedPayment;
 
-  // Mutations
-  const approveMutation = useApproveAdminPayment();
-  const rejectMutation = useRejectAdminPayment();
-  const retryMutation = useRetryAdminPayment();
-  const batchApproveMutation = useBatchApproveAdminPayments();
 
-  const isSubmitting =
-    approveMutation.isPending ||
-    rejectMutation.isPending ||
-    retryMutation.isPending ||
-    batchApproveMutation.isPending;
 
   // Distinct company names for dropdown filter
   const companyOptions = useMemo(() => {
@@ -229,16 +214,6 @@ const SuperAdminManagePayments: React.FC<ManagePaymentsProps> = ({
     }
   };
 
-  const handleBatchApprove = async () => {
-    if (selectedRowIds.length === 0) return;
-
-    try {
-      await batchApproveMutation.mutateAsync(selectedRowIds);
-      setSelectedRowIds([]);
-    } catch {
-      // Error handled by hook toast
-    }
-  };
 
   const handleExportCSV = () => {
     const headers = [
@@ -292,22 +267,6 @@ const SuperAdminManagePayments: React.FC<ManagePaymentsProps> = ({
     toast.success(`Exported ${filteredPayments.length} payment records to CSV`);
   };
 
-  // Row Selection logic
-  const handleToggleRowSelection = (id: string | number) => {
-    setSelectedRowIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
-
-  const handleToggleAllRows = (checked: boolean) => {
-    if (checked) {
-      const allIds = filteredPayments.map((item) => item.id);
-      setSelectedRowIds(Array.from(new Set([...selectedRowIds, ...allIds])));
-    } else {
-      const pageIds = new Set<string | number>(filteredPayments.map((item) => item.id));
-      setSelectedRowIds(selectedRowIds.filter((id) => !pageIds.has(id)));
-    }
-  };
 
   // Table Columns
   const columns: TableColumnProps<CompanyPaymentItem>[] = [
@@ -456,16 +415,6 @@ const SuperAdminManagePayments: React.FC<ManagePaymentsProps> = ({
             overideBg={true}
             buttonStyle="border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 text-gray-700 dark:text-gray-200 bg-white dark:bg-[#1A1921] shadow-xs cursor-pointer"
           />
-          {selectedRowIds.length > 0 && (
-            <ActionButton
-              text={`Approve Selected (${selectedRowIds.length})`}
-              icon={<FiCheckCircle size={14} />}
-              onClick={handleBatchApprove}
-              disabled={isSubmitting}
-              overideBg={true}
-              buttonStyle="bg-primary hover:bg-emerald-700 text-white shadow-xs cursor-pointer"
-            />
-          )}
         </div>
       </div>
 
@@ -493,33 +442,7 @@ const SuperAdminManagePayments: React.FC<ManagePaymentsProps> = ({
         />
       </div>
 
-      {/* Status Filter Tabs (Quick navigation) */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
-        {[
-          { key: "pending", label: "Pending" },
-          { key: "all", label: "All Payments" },
-          { key: "successful", label: "Successful" },
-          { key: "failed", label: "Failed" },
-        ].map((tab) => {
-          const isSelected = statusFilter === tab.key;
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => {
-                setStatusFilter(tab.key);
-                setCurrentPage(1);
-              }}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer border ${isSelected
-                ? "bg-primary text-white border-primary shadow-xs"
-                : "bg-secondary text-textBlack/70 border-primary/10 hover:bg-primary/5 hover:text-textBlack"
-                }`}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+  
 
       {/* Toolbar: Search & Filter Trigger */}
       <div className="p-4 rounded-xl bg-tertiary border border-primary/10 flex flex-col gap-3">
@@ -653,11 +576,6 @@ const SuperAdminManagePayments: React.FC<ManagePaymentsProps> = ({
           setCurrentPage={setCurrentPage}
           itemsPerPage={itemsPerPage}
           setItemsPerPage={setItemsPerPage}
-          selectable={true}
-          selectedRowIds={selectedRowIds}
-          onToggleRowSelection={handleToggleRowSelection}
-          onToggleAllRows={handleToggleAllRows}
-          getRowId={(item) => item.id}
         />
       </div>
 

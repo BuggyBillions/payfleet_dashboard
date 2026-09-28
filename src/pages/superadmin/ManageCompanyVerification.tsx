@@ -10,7 +10,6 @@ import type {
 import { useCompanies, useCompanyStats } from "../../hooks/useCompany";
 import { useTierRequests } from "../../hooks/useTier";
 import { getTierConfig } from "../../services/tierService";
-import ChangeTierModal from "../../components/modal/tier/ChangeTierModal";
 import ReviewTierRequestModal from "../../components/modal/tier/ReviewTierRequestModal";
 import ViewCompanyModal from "../../components/modal/view/ViewCompanyModal";
 import { formatPrettyDate } from "../../helpers/formatterUtility";
@@ -29,7 +28,6 @@ const ManageCompanyVerification: React.FC = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Modals state
-  const [selectedCompanyForTier, setSelectedCompanyForTier] = useState<CompanyProps | null>(null);
   const [selectedCompanyForView, setSelectedCompanyForView] = useState<CompanyProps | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<TierUpgradeRequest | null>(null);
 
@@ -302,17 +300,6 @@ const ManageCompanyVerification: React.FC = () => {
         <ViewCompanyModal
           selectedCompany={selectedCompanyForView}
           onClose={() => setSelectedCompanyForView(null)}
-        />
-      )}
-
-      {/* Admin Change Tier Modal */}
-      {selectedCompanyForTier && (
-        <ChangeTierModal
-          company={selectedCompanyForTier}
-          onClose={() => {
-            setSelectedCompanyForTier(null);
-            refetchCompanies();
-          }}
         />
       )}
 

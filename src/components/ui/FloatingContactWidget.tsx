@@ -296,13 +296,13 @@ const FloatingContactWidget: React.FC = () => {
             </div>
 
             {/* Navigation tabs */}
-            <div className="grid grid-cols-2 bg-gray-50 text-xs font-semibold">
+            <div className="grid grid-cols-2 bg-tertiary text-xs font-semibold">
               <button
                 type="button"
                 onClick={() => setActiveTab("chat")}
                 className={`py-2.5 text-center transition border-b cursor-pointer ${activeTab === "chat"
-                  ? "border-primary text-primary bg-textWhite font-bold"
-                  : "border-b border-textBlack bg-tertiary text-textBlack/50 hover:text-textBlack/80"
+                  ? "border-primary border-b-2 text-primary bg-black/20 font-bold"
+                  : "border-b border-textBlack text-textBlack/50 hover:text-textBlack/80"
                   }`}
               >
                 Live Chat
@@ -311,8 +311,8 @@ const FloatingContactWidget: React.FC = () => {
                 type="button"
                 onClick={() => setActiveTab("contact")}
                 className={`py-2.5 text-center transition border-b cursor-pointer ${activeTab === "contact"
-                  ? "border-primary text-primary bg-textWhite font-bold"
-                  : "border-b border-textBlack bg-tertiary text-textBlack/50 hover:text-textBlack/80"
+                   ? "border-primary border-b-2 text-primary bg-black/20 font-bold"
+                  : "border-b border-textBlack text-textBlack/50 hover:text-textBlack/80"
                   }`}
               >
                 Contact Channels
@@ -402,7 +402,7 @@ const FloatingContactWidget: React.FC = () => {
                 {/* Input form */}
                 <form
                   onSubmit={handleSendMessage}
-                  className="p-3 bg-textWhite border-t border-gray-100 flex items-center gap-2"
+                  className="p-3 bg-tertiary border-t border-gray-100 flex items-center gap-2"
                 >
                   <input
                     ref={inputRef}

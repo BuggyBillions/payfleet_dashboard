@@ -11,7 +11,6 @@ import { useCompanies, useCompanyStats, useDeleteCompany } from "../../hooks/use
 import { getTierConfig } from "../../services/tierService";
 import { formatterUtility } from "../../helpers/formatterUtility";
 import { CompanyLogoAvatar } from "../../components/ui/CompanyLogoAvatar";
-import ChangeTierModal from "../../components/modal/tier/ChangeTierModal";
 import { FiSearch } from "react-icons/fi";
 import { HiOutlineBuildingOffice2 } from "react-icons/hi2";
 import { LuShieldCheck, LuBuilding, LuSlidersHorizontal, LuWallet } from "react-icons/lu";
@@ -175,12 +174,6 @@ const SupportManageCompany: React.FC = () => {
       key: "name",
       render: (item: CompanyProps) => (
         <div className="flex items-center gap-2.5">
-          <CompanyLogoAvatar
-            name={item.name || item.companyName}
-            logo={item.logo}
-            className="w-8 h-8 rounded-lg"
-            textClassName="text-xs font-bold"
-          />
           <div className="flex flex-col min-w-0">
             <span className="font-semibold text-textBlack text-xs truncate">
               {item.name || item.companyName || "N/A"}
@@ -436,17 +429,6 @@ const SupportManageCompany: React.FC = () => {
         <ViewCompanyModal
           selectedCompany={selectedCompany}
           onClose={() => setSelectedCompany(null)}
-        />
-      )}
-
-      {/* Change Tier Modal */}
-      {companyForTierChange && (
-        <ChangeTierModal
-          company={companyForTierChange}
-          onClose={() => {
-            setCompanyForTierChange(null);
-            refetch();
-          }}
         />
       )}
     </div>

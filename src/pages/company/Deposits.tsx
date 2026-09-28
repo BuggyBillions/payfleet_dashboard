@@ -20,8 +20,7 @@ import {
   type CompanyDeposit,
 } from "../../services/depositService";
 import { FiSearch } from "react-icons/fi";
-import { useNavigate } from "react-router-dom";
-import { decryptToken, encryptToken } from "../../helpers/tokenHelper";
+import { encryptToken } from "../../helpers/tokenHelper";
 
 interface DepositRow extends Omit<DemoDeposit, "id"> {
   id: number | string;
@@ -220,16 +219,12 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
     return Math.ceil(filteredDeposits.length / itemsPerPage) || 1;
   }, [filteredDeposits.length, itemsPerPage]);
 
-  const paginatedDeposits = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredDeposits.slice(start, start + itemsPerPage);
-  }, [filteredDeposits, currentPage, itemsPerPage]);
+  const safeCurrentPage = Math.min(currentPage, totalPages) || 1;
 
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(1);
-    }
-  }, [currentPage, totalPages]);
+  const paginatedDeposits = useMemo(() => {
+    const start = (safeCurrentPage - 1) * itemsPerPage;
+    return filteredDeposits.slice(start, start + itemsPerPage);
+  }, [filteredDeposits, safeCurrentPage, itemsPerPage]);
 
 
   return (
@@ -286,7 +281,7 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
           data={paginatedDeposits}
           isLoading={loading}
           error={null}
-          currentPage={currentPage}
+          currentPage={safeCurrentPage}
           totalPages={totalPages}
           totalItems={filteredDeposits.length}
           itemsPerPage={itemsPerPage}

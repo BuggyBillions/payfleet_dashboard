@@ -9,7 +9,7 @@ import type {
   SalaryPayment,
   SalaryPaymentMonth,
 } from "../../lib/interfaces";
-import { LuHistory, LuRefreshCw, LuCircleCheck, LuX } from "react-icons/lu";
+import { LuHistory, LuRefreshCw, LuX } from "react-icons/lu";
 import { FaMoneyBillWave } from "react-icons/fa6";
 import { LuTriangleAlert } from "react-icons/lu";
 import { IoSearchOutline } from "react-icons/io5";
@@ -470,7 +470,6 @@ const PaymentHistory: React.FC = () => {
           </div>
         ) : isFailedTab && failedPayments.length === 0 ? (
           <div className="bg-tertiary rounded-xl p-10 text-center">
-            <LuCircleCheck className="mx-auto text-emerald-500 mb-2" size={22} />
             <p className="text-xs font-medium text-textBlack">
               No failed transactions
             </p>
