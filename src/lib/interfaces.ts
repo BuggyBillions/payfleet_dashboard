@@ -1,4 +1,4 @@
-import React from "react";
+import React, { type Dispatch, type SetStateAction } from "react";
 import type { IconType } from "react-icons/lib";
 
 // ==========================================
@@ -350,6 +350,7 @@ export interface UserContextType {
   getVerificationToken: () => void;
   logout: () => void;
   isLoggedIn: boolean;
+  setToken: Dispatch<SetStateAction<string | null>>;
   refreshUser: (token: string) => Promise<void>;
   loading: boolean;
 }

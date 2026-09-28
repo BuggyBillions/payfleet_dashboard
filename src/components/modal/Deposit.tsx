@@ -47,7 +47,7 @@ const Deposit: React.FC<DepositModalProps> = ({
   const { user, refreshUser } = useUser();
 
   if (!token) {
-    toast.error('Unauthorized');
+    toast.error('Unauthorized, no token');
     navigate('/')
   }
 
@@ -56,10 +56,10 @@ const Deposit: React.FC<DepositModalProps> = ({
       if (!token) return;
       const deToken = await decryptToken(String(token));
       if (deToken) {
+        localStorage.setItem("token", deToken)
         refreshUser(String(deToken));
       } else {
         console.error("Failed to decrypt token")
-        toast.error('Unauthorized');
         navigate('/')
       }
     }

@@ -1,4 +1,5 @@
 import { base64url, EncryptJWT, jwtDecrypt } from 'jose';
+import { toast } from 'sonner';
 
 
 // Convert the hex string into a raw 32-byte (256-bit) Uint8Array
@@ -23,13 +24,16 @@ export const encryptToken = async (token: string, expiresInMinutes = 5) => {
 export const decryptToken = async (jwtToken: string) => {
   try {
     const { payload } = await jwtDecrypt(jwtToken, SECRET_KEY);
+    toast.info(JSON.stringify(payload, null, 2))
     return payload.token;
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorObj = err as { code?: string };
     // jose automatically handles validation errors
-    if (err.code === 'ERR_JWT_EXPIRED') {
+    if (errorObj?.code === 'ERR_JWT_EXPIRED') {
       console.warn("Token expired");
+      toast.error("expired")
     } else {
-      console.error("Token is invalid or tampered", err.code);
+      console.error("Decryption error details:", err);
     }
     return null;
   }
