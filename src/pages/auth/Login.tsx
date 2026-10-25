@@ -156,10 +156,10 @@ const Login: React.FC = () => {
         </h1>
         <Link
           to={"/"}
-          className="bg-white p-2 md:rounded-lg absolute md:top-8 md:h-auto h-15 top-0 md:left-8 left-0 lg:w-1/5 md:w-1/3 w-full flex items-center justify-center"
+          className="absolute md:top-0 md:h-auto h-15 -top-5 md:left-8 left-0 lg:w-1/5 md:w-1/3 w-full"
         >
           <img
-            src={assets.logo}
+            src={assets.whiteLogo}
             alt="PayFleet Logo"
             className="md:w-full w-1/3 mx-auto object-cover"
           />

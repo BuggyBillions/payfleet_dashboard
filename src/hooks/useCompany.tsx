@@ -12,9 +12,18 @@ import {
   type CompanyStatsResponse,
   type MyCompanyStatsResponse,
   type CompanyActivityLogListResponse,
+  resolveCompanyRegNo,
 } from "../services/companyService";
 import { toast } from "sonner";
 import { getErrorMessage } from "../helpers/api";
+
+export const useResolveCompanyRegNo = (reg_no: string) => {
+  return useQuery({
+    queryKey: ["resolvedRegNo", reg_no],
+    queryFn: () => resolveCompanyRegNo(reg_no),
+    enabled: reg_no && reg_no.length >= 6 && reg_no.length <= 8 ? true : false,
+  });
+};
 
 export const useCompanies = ({
   page = 1,
@@ -109,7 +118,9 @@ export const useVerifyCompany = () => {
       }
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error, "Failed to update verification status"));
+      toast.error(
+        getErrorMessage(error, "Failed to update verification status"),
+      );
     },
   });
 };
