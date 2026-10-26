@@ -71,10 +71,10 @@ const Forgotpassword: React.FC = () => {
       <div className="md:h-full h-[35vh] overflow-hidden bg-primary md:w-1/2 w-full flex flex-col gap-4 items-start justify-center lg:px-8 md:px-6 px-0 pb-8 md:pt-0 pt-15 relative">
         <Link
           to={"/"}
-          className="bg-white p-2 md:rounded-lg absolute md:top-8 md:h-auto h-15 top-0 md:left-8 left-0 lg:w-1/5 md:w-1/3 w-full"
+          className="absolute md:top-0 md:h-auto h-15 -top-5 md:left-8 left-0 lg:w-1/5 md:w-1/3 w-full"
         >
           <img
-            src={assets.logo}
+            src={assets.whiteLogo}
             alt="PayFleet Logo"
             className="md:w-full w-1/3 mx-auto object-cover"
           />

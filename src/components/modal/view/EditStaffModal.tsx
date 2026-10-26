@@ -9,6 +9,11 @@ import { createStaffService } from '../../../services/staffService';
 import api from '../../../helpers/api';
 import { toast } from 'sonner';
 import { FaEye, FaEyeSlash } from "react-icons/fa6";
+import PasswordStrengthIndicator from '../../ui/PasswordStrengthIndicator';
+import {
+     passwordValidationSchema,
+     optionalPasswordValidationSchema,
+} from '../../../helpers/passwordUtils';
 
 const TEAM_ROLES = [
      "Finance",
@@ -56,16 +61,8 @@ const EditStaffModal: React.FC<EditStaffModalProps> = ({
                     .required("Role is required"),
 
                password: isEdit
-                    ? Yup.string()
-                         .test(
-                              "min-length",
-                              "Password must be at least 8 characters",
-                              (val) => !val || val.length >= 8
-                         )
-                         .nullable()
-                    : Yup.string()
-                         .min(8, "Password must be at least 8 characters")
-                         .required("Password is required to create staff"),
+                    ? optionalPasswordValidationSchema
+                    : passwordValidationSchema,
           }),
           onSubmit: async (values, { setSubmitting }) => {
                try {
@@ -249,6 +246,7 @@ const EditStaffModal: React.FC<EditStaffModalProps> = ({
                                                   {showPassword ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
                                              </button>
                                         </div>
+                                        <PasswordStrengthIndicator password={formik.values.password} />
                                         {formik.touched.password && formik.errors.password && (
                                              <p className="text-red-500 text-xs mt-1">
                                                   {formik.errors.password}

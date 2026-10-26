@@ -21,6 +21,8 @@ import {
 } from "../../lib/companyDocuments";
 import type { SettingsTab, PasswordFieldProps } from "../../lib/interfaces";
 import { TbLockPassword } from "react-icons/tb";
+import PasswordStrengthIndicator from "../../components/ui/PasswordStrengthIndicator";
+import { validatePasswordRequirements } from "../../helpers/passwordUtils";
 
 type DocumentField = DocumentKey;
 
@@ -286,8 +288,9 @@ const Settings: React.FC = () => {
       toast.error("Please enter your new password");
       return;
     }
-    if (passwordState.new_password.length < 6) {
-      toast.error("New password must be at least 6 characters");
+    const validation = validatePasswordRequirements(passwordState.new_password);
+    if (!validation.isValid) {
+      toast.error(validation.error || "Password does not meet the security requirements");
       return;
     }
     if (passwordState.new_password !== passwordState.confirm_password) {
@@ -491,16 +494,19 @@ const Settings: React.FC = () => {
                 onToggle={() => toggleField("pwd_current")}
                 placeholder="Enter current password"
               />
-              <PasswordField
-                label="New Password"
-                value={passwordState.new_password}
-                onChange={(value) =>
-                  setPasswordState((prev) => ({ ...prev, new_password: value }))
-                }
-                visible={isFieldVisible("pwd_new")}
-                onToggle={() => toggleField("pwd_new")}
-                placeholder="Enter new password"
-              />
+              <div className="flex flex-col gap-1.5">
+                <PasswordField
+                  label="New Password"
+                  value={passwordState.new_password}
+                  onChange={(value) =>
+                    setPasswordState((prev) => ({ ...prev, new_password: value }))
+                  }
+                  visible={isFieldVisible("pwd_new")}
+                  onToggle={() => toggleField("pwd_new")}
+                  placeholder="Enter new password"
+                />
+                <PasswordStrengthIndicator password={passwordState.new_password} />
+              </div>
               <PasswordField
                 label="Confirm New Password"
                 value={passwordState.confirm_password}

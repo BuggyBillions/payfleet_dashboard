@@ -2,20 +2,20 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #2A5D56;
+  --color-primary: #2a5d56;
   --color-secondary: #f4f6f1;
-  --color-tertiary: #FFFFFF;
-  --color-textWhite: #FFFFFF;
+  --color-tertiary: #ffffff;
+  --color-textWhite: #ffffff;
   --color-textBlack: #000000;
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 .dark {
-  --color-primary: #2A5D56;
-  --color-secondary: #1A1921;
+  --color-primary: #2a5d56;
+  --color-secondary: #1a1921;
   --color-tertiary: #131217;
-  --color-textBlack: #FFFFFF;
+  --color-textBlack: #ffffff;
   --color-textWhite: #000000;
 }
 
@@ -46,7 +46,8 @@ input[type="number"] {
   -moz-appearance: textfield; /* Firefox */
 }
 
-:disabled {
+:disabled,
+.read-only {
   opacity: 0.6;
   cursor: not-allowed;
 }

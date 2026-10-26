@@ -18,9 +18,17 @@ import {
 import { BsArrowLeftRight } from "react-icons/bs";
 import { RiSmartphoneLine } from "react-icons/ri";
 import { motion, AnimatePresence } from "framer-motion";
-import type { DepositModalProps, PaymentMethod, ModalView } from "../../lib/interfaces";
+import type {
+  DepositModalProps,
+  PaymentMethod,
+  ModalView,
+} from "../../lib/interfaces";
 import { useAccount } from "../../hooks/useBank";
-import { companyFunding, getEachCompanyDeposit, getCompanyDeposits } from "../../services/depositService";
+import {
+  companyFunding,
+  getEachCompanyDeposit,
+  getCompanyDeposits,
+} from "../../services/depositService";
 import { getErrorMessage } from "../../helpers/api";
 import Modal from "../../components/modal/Modal";
 import FormattedInput from "../../components/ui/FormattedInput";
@@ -46,15 +54,15 @@ const Deposit: React.FC<DepositModalProps> = ({
   onClose,
   defaultAmount,
   onDepositSuccess,
-  companyId
+  companyId,
 }) => {
   const navigate = useNavigate();
   const { token } = useParams<{ token: string }>();
   const { user, refreshUser } = useUser();
 
   if (!token) {
-    toast.error('Unauthorized, no token');
-    navigate('/')
+    toast.error("Unauthorized, no token");
+    navigate(-1);
   }
 
   useEffect(() => {
@@ -65,37 +73,34 @@ const Deposit: React.FC<DepositModalProps> = ({
         localStorage.setItem("token", String(deToken));
         refreshUser(String(deToken));
       } else {
-        console.error("Failed to decrypt token")
-        navigate('/')
+        console.error("Failed to decrypt token");
+        navigate(-1);
       }
-    }
+    };
 
     verifyToken();
   }, [token, navigate, refreshUser]);
-
-
-
-
-
 
   // 5-second initial loading state before modal content reveals
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   const effectiveCompanyId =
     companyId ||
-    (user as unknown as { company_details?: { id?: string | number } })?.company_details?.id ||
+    (user as unknown as { company_details?: { id?: string | number } })
+      ?.company_details?.id ||
     (user as unknown as { company_id?: string | number })?.company_id ||
     (user as unknown as { company?: { id?: string | number } })?.company?.id ||
     user?.id;
 
   // Start with 'amount' view unless defaultAmount is provided
   const [view, setView] = useState<ModalView>(
-    defaultAmount && defaultAmount > 0 ? "transfer_details" : "amount"
+    defaultAmount && defaultAmount > 0 ? "transfer_details" : "amount",
   );
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("transfer");
+  const [selectedMethod, setSelectedMethod] =
+    useState<PaymentMethod>("transfer");
   const [amount, setAmount] = useState<number>(defaultAmount || 0);
   const [customAmountStr, setCustomAmountStr] = useState<string>(
-    defaultAmount && defaultAmount > 0 ? defaultAmount.toString() : ""
+    defaultAmount && defaultAmount > 0 ? defaultAmount.toString() : "",
   );
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -111,7 +116,9 @@ const Deposit: React.FC<DepositModalProps> = ({
 
   // Simulation verification state in waiting screen
   const [isReceived, setIsReceived] = useState(false);
-  const [reference, setReference] = useState(() => `PF-DEP-${Math.floor(100000 + Math.random() * 900000)}`);
+  const [reference, setReference] = useState(
+    () => `PF-DEP-${Math.floor(100000 + Math.random() * 900000)}`,
+  );
   const [depositId, setDepositId] = useState<number | string | null>(null);
   const [checkoutAmount, setCheckoutAmount] = useState<number | null>(null);
 
@@ -132,7 +139,12 @@ const Deposit: React.FC<DepositModalProps> = ({
 
   // If defaultAmount is provided on mount, trigger company funding registration
   useEffect(() => {
-    if (defaultAmount && defaultAmount > 0 && effectiveCompanyId && !checkoutAmount) {
+    if (
+      defaultAmount &&
+      defaultAmount > 0 &&
+      effectiveCompanyId &&
+      !checkoutAmount
+    ) {
       companyFunding({
         company_id: effectiveCompanyId,
         amount: defaultAmount,
@@ -171,64 +183,35 @@ const Deposit: React.FC<DepositModalProps> = ({
   }, [view]);
 
   // Function to check payment status from backend
-  const checkPaymentStatus = useCallback(async (isManual = false) => {
-    if (isCheckingStatus || isReceived) return;
-    setIsCheckingStatus(true);
+  const checkPaymentStatus = useCallback(
+    async (isManual = false) => {
+      if (isCheckingStatus || isReceived) return;
+      setIsCheckingStatus(true);
 
-    try {
-      let isApproved = false;
+      try {
+        let isApproved = false;
 
-      // 1. Check by depositId (/each-company-deposit/{id})
-      if (depositId) {
-        try {
-          const eachRes = await getEachCompanyDeposit(depositId);
-          const itemData = (eachRes as Record<string, unknown>)?.data as Record<string, unknown> || eachRes;
-          const rawStatus = String(
-            itemData?.status ||
-            (itemData?.transaction as Record<string, unknown>)?.status ||
-            itemData?.payment_status ||
-            (eachRes as Record<string, unknown>)?.status ||
-            ((eachRes as Record<string, unknown>)?.transaction as Record<string, unknown>)?.status ||
-            ""
-          ).toLowerCase();
-
-          if (
-            rawStatus === "successful" ||
-            rawStatus === "approved" ||
-            rawStatus === "completed" ||
-            rawStatus === "success" ||
-            rawStatus === "credited" ||
-            rawStatus === "paid" ||
-            rawStatus === "1"
-          ) {
-            isApproved = true;
-          }
-        } catch {
-          // fallback to list check
-        }
-      }
-
-      // 2. Check by company deposits list (/company-deposit)
-      if (!isApproved && (effectiveCompanyId || reference)) {
-        try {
-          const list = await getCompanyDeposits(effectiveCompanyId);
-          const matching = list.find(
-            (d) =>
-              (reference &&
-                (d.reference === reference ||
-                  d.reference_no === reference ||
-                  d.transaction_reference === reference ||
-                  d.ref === reference ||
-                  (d.transaction && d.transaction.reference === reference))) ||
-              (depositId && (String(d.id) === String(depositId) || (d.transaction && String(d.transaction.id) === String(depositId))))
-          );
-
-          if (matching) {
+        // 1. Check by depositId (/each-company-deposit/{id})
+        if (depositId) {
+          try {
+            const eachRes = await getEachCompanyDeposit(depositId);
+            const itemData =
+              ((eachRes as Record<string, unknown>)?.data as Record<
+                string,
+                unknown
+              >) || eachRes;
             const rawStatus = String(
-              matching.status ||
-              matching.transaction?.status ||
-              (matching as Record<string, unknown>)?.payment_status ||
-              ""
+              itemData?.status ||
+                (itemData?.transaction as Record<string, unknown>)?.status ||
+                itemData?.payment_status ||
+                (eachRes as Record<string, unknown>)?.status ||
+                (
+                  (eachRes as Record<string, unknown>)?.transaction as Record<
+                    string,
+                    unknown
+                  >
+                )?.status ||
+                "",
             ).toLowerCase();
 
             if (
@@ -242,58 +225,110 @@ const Deposit: React.FC<DepositModalProps> = ({
             ) {
               isApproved = true;
             }
+          } catch {
+            // fallback to list check
           }
-        } catch {
-          // ignore error
         }
-      }
 
-      if (isApproved) {
-        setIsReceived(true);
+        // 2. Check by company deposits list (/company-deposit)
+        if (!isApproved && (effectiveCompanyId || reference)) {
+          try {
+            const list = await getCompanyDeposits(effectiveCompanyId);
+            const matching = list.find(
+              (d) =>
+                (reference &&
+                  (d.reference === reference ||
+                    d.reference_no === reference ||
+                    d.transaction_reference === reference ||
+                    d.ref === reference ||
+                    (d.transaction &&
+                      d.transaction.reference === reference))) ||
+                (depositId &&
+                  (String(d.id) === String(depositId) ||
+                    (d.transaction &&
+                      String(d.transaction.id) === String(depositId)))),
+            );
 
-        setTimeout(() => {
-          setView("success");
-          const approvedDeposit: DemoDeposit = {
-            id: Number(depositId) || Date.now(),
-            reference,
-            amount: checkoutAmount || amount,
-            method: activeAccount?.bank_name ? `Bank Transfer (${activeAccount?.bank_name})` : "Bank Transfer",
-            status: "successful",
-            date: new Date().toISOString(),
-          };
-          onDepositSuccess?.(approvedDeposit);
-          toast.success("Deposit approved by Finance team! Wallet credited successfully.");
-        }, 1000);
-      } else {
+            if (matching) {
+              const rawStatus = String(
+                matching.status ||
+                  matching.transaction?.status ||
+                  (matching as Record<string, unknown>)?.payment_status ||
+                  "",
+              ).toLowerCase();
+
+              if (
+                rawStatus === "successful" ||
+                rawStatus === "approved" ||
+                rawStatus === "completed" ||
+                rawStatus === "success" ||
+                rawStatus === "credited" ||
+                rawStatus === "paid" ||
+                rawStatus === "1"
+              ) {
+                isApproved = true;
+              }
+            }
+          } catch {
+            // ignore error
+          }
+        }
+
+        if (isApproved) {
+          setIsReceived(true);
+
+          setTimeout(() => {
+            setView("success");
+            const approvedDeposit: DemoDeposit = {
+              id: Number(depositId) || Date.now(),
+              reference,
+              amount: checkoutAmount || amount,
+              method: activeAccount?.bank_name
+                ? `Bank Transfer (${activeAccount?.bank_name})`
+                : "Bank Transfer",
+              status: "successful",
+              date: new Date().toISOString(),
+            };
+            onDepositSuccess?.(approvedDeposit);
+            toast.success(
+              "Deposit approved by Finance team! Wallet credited successfully.",
+            );
+          }, 1000);
+        } else {
+          if (isManual) {
+            const elapsedSeconds = TOTAL_WAITING_SECONDS - waitingSeconds;
+            const remainingForApproval = Math.max(
+              0,
+              APPROVAL_WAIT_SECONDS - elapsedSeconds,
+            );
+            toast.info(
+              `Transaction is under review by Finance team (Pending). Estimated approval in ${formatTime(
+                remainingForApproval,
+              )}.`,
+            );
+          }
+        }
+      } catch {
         if (isManual) {
-          const elapsedSeconds = TOTAL_WAITING_SECONDS - waitingSeconds;
-          const remainingForApproval = Math.max(0, APPROVAL_WAIT_SECONDS - elapsedSeconds);
-          toast.info(
-            `Transaction is under review by Finance team (Pending). Estimated approval in ${formatTime(
-              remainingForApproval
-            )}.`
-          );
+          toast.info("Transaction is under review by Finance team (Pending).");
         }
+      } finally {
+        setIsCheckingStatus(false);
       }
-    } catch {
-      if (isManual) {
-        toast.info("Transaction is under review by Finance team (Pending).");
-      }
-    } finally {
-      setIsCheckingStatus(false);
-    }
-  }, [
-    isCheckingStatus,
-    isReceived,
-    depositId,
-    effectiveCompanyId,
-    reference,
-    checkoutAmount,
-    amount,
-    activeAccount?.bank_name,
-    onDepositSuccess,
-    waitingSeconds,
-  ]);
+    },
+    [
+      isCheckingStatus,
+      isReceived,
+      depositId,
+      effectiveCompanyId,
+      reference,
+      checkoutAmount,
+      amount,
+      activeAccount?.bank_name,
+      onDepositSuccess,
+      waitingSeconds,
+    ],
+  );
 
   // Waiting screen countdown and automated status polling
   useEffect(() => {
@@ -380,7 +415,7 @@ const Deposit: React.FC<DepositModalProps> = ({
       } catch (error) {
         console.warn(
           "Backend funding notification error (proceeding in simulation mode):",
-          getErrorMessage(error)
+          getErrorMessage(error),
         );
       } finally {
         setIsSubmitting(false);
@@ -401,12 +436,16 @@ const Deposit: React.FC<DepositModalProps> = ({
       id: Number(depositId) || Date.now(),
       reference,
       amount: checkoutAmount || amount,
-      method: activeAccount?.bank_name ? `Bank Transfer (${activeAccount?.bank_name})` : "Bank Transfer",
+      method: activeAccount?.bank_name
+        ? `Bank Transfer (${activeAccount?.bank_name})`
+        : "Bank Transfer",
       status: "pending",
       date: new Date().toISOString(),
     };
     onDepositSuccess?.(pendingDeposit);
-    toast.info("Deposit logged with status: PENDING. Awaiting Finance verification.");
+    toast.info(
+      "Deposit logged with status: PENDING. Awaiting Finance verification.",
+    );
 
     // Trigger initial status verification
     setTimeout(() => {
@@ -419,24 +458,38 @@ const Deposit: React.FC<DepositModalProps> = ({
   };
 
   const displayAmount =
-    view === "transfer_details" || view === "waiting_confirmation" || view === "success"
-      ? (checkoutAmount && checkoutAmount > 0 ? checkoutAmount : amount)
+    view === "transfer_details" ||
+    view === "waiting_confirmation" ||
+    view === "success"
+      ? checkoutAmount && checkoutAmount > 0
+        ? checkoutAmount
+        : amount
       : amount;
 
-  const formattedAmountText = displayAmount > 0 ? `NGN ${displayAmount.toLocaleString()}` : "NGN 0";
+  const formattedAmountText =
+    displayAmount > 0 ? `NGN ${displayAmount.toLocaleString()}` : "NGN 0";
   const isLockedView = view === "waiting_confirmation" || view === "success";
 
   // Calculate elapsed progress for 5-minute approval window
   const elapsedSeconds = TOTAL_WAITING_SECONDS - waitingSeconds;
   const progressPercent = isReceived
     ? 100
-    : Math.min(92, 10 + Math.floor((elapsedSeconds / APPROVAL_WAIT_SECONDS) * 82));
+    : Math.min(
+        92,
+        10 + Math.floor((elapsedSeconds / APPROVAL_WAIT_SECONDS) * 82),
+      );
 
-  const paymentChannels: { id: PaymentMethod; label: string; icon: React.ReactNode }[] = [
+  const paymentChannels: {
+    id: PaymentMethod;
+    label: string;
+    icon: React.ReactNode;
+    isDisabled?: boolean;
+  }[] = [
     {
       id: "card",
       label: "Card",
       icon: <LuCreditCard size={16} className="text-gray-500" />,
+      isDisabled: true,
     },
     {
       id: "transfer",
@@ -446,21 +499,31 @@ const Deposit: React.FC<DepositModalProps> = ({
           <BsArrowLeftRight size={11} />
         </div>
       ),
+      isDisabled: false,
     },
     {
       id: "bank",
       label: "Bank",
       icon: <LuBuilding size={16} className="text-gray-500" />,
+      isDisabled: true,
     },
     {
       id: "ussd",
       label: "USSD",
       icon: <HiHashtag size={16} className="text-gray-500" />,
+      isDisabled: true,
     },
     {
       id: "opay",
       label: "OPay",
-      icon: <img src={opayLogoBase64} alt="OPay" className="w-4 h-4 object-contain" />,
+      icon: (
+        <img
+          src={opayLogoBase64}
+          alt="OPay"
+          className="w-4 h-4 object-contain"
+        />
+      ),
+      isDisabled: true,
     },
   ];
 
@@ -472,21 +535,31 @@ const Deposit: React.FC<DepositModalProps> = ({
           <button
             key={item.id}
             type="button"
-            disabled={isLockedView}
+            disabled={isLockedView || item.isDisabled}
             onClick={() => handleMethodSelect(item.id)}
-            className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition group ${isLockedView ? "cursor-not-allowed opacity-60" : "cursor-pointer"
-              } ${isSelected
+            className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition group ${
+              isLockedView || item.isDisabled
+                ? "cursor-not-allowed opacity-60"
+                : "cursor-pointer"
+            } ${
+              isSelected
                 ? "bg-white text-primary shadow-xs font-bold ring-1 ring-black/5"
                 : "text-gray-700 hover:bg-gray-200/60"
-              }`}
+            }`}
           >
             <div className="flex items-center gap-3">
               {item.icon}
-              <span className={isSelected ? "text-primary font-bold" : "text-gray-700"}>
+              <span
+                className={
+                  isSelected ? "text-primary font-bold" : "text-gray-700"
+                }
+              >
                 {item.label}
               </span>
             </div>
-            {isSelected && <span className="w-1.5 h-4 bg-primary rounded-full" />}
+            {isSelected && (
+              <span className="w-1.5 h-4 bg-primary rounded-full" />
+            )}
           </button>
         );
       })}
@@ -537,7 +610,6 @@ const Deposit: React.FC<DepositModalProps> = ({
                     </p>
                     {renderNavButtons()}
                   </div>
-
                 </div>
 
                 {/* MOBILE SLIDE-IN OVERLAY DRAWER & BACKDROP */}
@@ -559,7 +631,11 @@ const Deposit: React.FC<DepositModalProps> = ({
                         initial={{ x: "-100%" }}
                         animate={{ x: 0 }}
                         exit={{ x: "-100%" }}
-                        transition={{ type: "spring", damping: 25, stiffness: 280 }}
+                        transition={{
+                          type: "spring",
+                          damping: 25,
+                          stiffness: 280,
+                        }}
                         className="md:hidden absolute inset-y-0 left-0 z-40 w-64 max-w-[82%] bg-[#F9FAFB] border-r border-gray-200 shadow-2xl p-5 flex flex-col justify-between"
                       >
                         <div>
@@ -578,8 +654,6 @@ const Deposit: React.FC<DepositModalProps> = ({
                           </div>
                           {renderNavButtons()}
                         </div>
-
-
                       </motion.div>
                     </>
                   )}
@@ -595,12 +669,22 @@ const Deposit: React.FC<DepositModalProps> = ({
                       title="Change payment method"
                     >
                       <div className="p-1 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                        {selectedMethod === "card" && <LuCreditCard size={13} />}
-                        {selectedMethod === "transfer" && <BsArrowLeftRight size={13} />}
+                        {selectedMethod === "card" && (
+                          <LuCreditCard size={13} />
+                        )}
+                        {selectedMethod === "transfer" && (
+                          <BsArrowLeftRight size={13} />
+                        )}
                         {selectedMethod === "bank" && <LuBuilding size={13} />}
-                        {selectedMethod === "ussd" && <RiSmartphoneLine size={13} />}
+                        {selectedMethod === "ussd" && (
+                          <RiSmartphoneLine size={13} />
+                        )}
                         {selectedMethod === "opay" && (
-                          <img src={opayLogoBase64} alt="OPay" className="w-3.5 h-3.5 object-contain" />
+                          <img
+                            src={opayLogoBase64}
+                            alt="OPay"
+                            className="w-3.5 h-3.5 object-contain"
+                          />
                         )}
                       </div>
                       <span className="[writing-mode:vertical-rl] text-[9px] font-bold tracking-widest uppercase text-gray-400 group-hover:text-primary transition-colors">
@@ -674,7 +758,9 @@ const Deposit: React.FC<DepositModalProps> = ({
                             </span>
                           )
                         ) : (
-                          <span className="text-xs font-bold text-gray-400">--</span>
+                          <span className="text-xs font-bold text-gray-400">
+                            --
+                          </span>
                         )}
                       </div>
                     </div>
@@ -697,16 +783,22 @@ const Deposit: React.FC<DepositModalProps> = ({
                               Enter Deposit Amount
                             </h3>
                             <p className="text-xs text-gray-500">
-                              Input the amount you wish to deposit to generate your dedicated bank transfer details.
+                              Input the amount you wish to deposit to generate
+                              your dedicated bank transfer details.
                             </p>
                           </div>
 
                           <div className="space-y-1.5">
-                            <label htmlFor={inputId} className="text-xs font-medium text-gray-700 block">
+                            <label
+                              htmlFor={inputId}
+                              className="text-xs font-medium text-gray-700 block"
+                            >
                               Amount to Pay (NGN)
                             </label>
                             <div className="relative flex items-center">
-                              <span className="absolute left-3 text-gray-500 font-bold text-base">₦</span>
+                              <span className="absolute left-3 text-gray-500 font-bold text-base">
+                                ₦
+                              </span>
                               <FormattedInput
                                 id={inputId}
                                 type="number"
@@ -720,7 +812,9 @@ const Deposit: React.FC<DepositModalProps> = ({
                                   const val = parseFloat(inputValue);
                                   if (!isNaN(val)) setAmount(val);
                                   if (val > 1000000) {
-                                    toast.error("Maximum deposit amount is ₦1,000,000");
+                                    toast.error(
+                                      "Maximum deposit amount is ₦1,000,000",
+                                    );
                                     setTimeout(() => {
                                       setCustomAmountStr("1000000");
                                       setAmount(1000000);
@@ -736,9 +830,13 @@ const Deposit: React.FC<DepositModalProps> = ({
 
                           {/* Quick amount chips */}
                           <div className="space-y-1">
-                            <p className="text-[10px] text-gray-400 font-semibold uppercase">Quick Select</p>
+                            <p className="text-[10px] text-gray-400 font-semibold uppercase">
+                              Quick Select
+                            </p>
                             <div className="grid grid-cols-3 gap-1.5">
-                              {[50000, 100000, 250000, 500000, 700000, 1000000].map((amt) => (
+                              {[
+                                50000, 100000, 250000, 500000, 700000, 1000000,
+                              ].map((amt) => (
                                 <button
                                   key={amt}
                                   type="button"
@@ -746,10 +844,11 @@ const Deposit: React.FC<DepositModalProps> = ({
                                     setAmount(amt);
                                     setCustomAmountStr(amt.toString());
                                   }}
-                                  className={`py-1.5 px-2 md:text-xs text-[10px] font-semibold rounded border transition cursor-pointer text-center ${customAmountStr === amt.toString()
-                                    ? "border-primary bg-primary/10 text-primary"
-                                    : "border-gray-200 text-gray-600 hover:border-gray-300 bg-white"
-                                    }`}
+                                  className={`py-1.5 px-2 md:text-xs text-[10px] font-semibold rounded border transition cursor-pointer text-center ${
+                                    customAmountStr === amt.toString()
+                                      ? "border-primary bg-primary/10 text-primary"
+                                      : "border-gray-200 text-gray-600 hover:border-gray-300 bg-white"
+                                  }`}
                                 >
                                   ₦{amt.toLocaleString()}
                                 </button>
@@ -761,18 +860,26 @@ const Deposit: React.FC<DepositModalProps> = ({
                             <button
                               type="button"
                               onClick={handleProceedToDetails}
-                              disabled={isSubmitting || !customAmountStr || parseFloat(customAmountStr) < 100}
+                              disabled={
+                                isSubmitting ||
+                                !customAmountStr ||
+                                parseFloat(customAmountStr) < 100
+                              }
                               className="w-full h-11 bg-primary disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg hover:bg-[#234d47] transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                             >
                               {isSubmitting ? (
                                 <>
-                                  <LuLoader size={14} className="animate-spin" />
+                                  <LuLoader
+                                    size={14}
+                                    className="animate-spin"
+                                  />
                                   <span>Processing...</span>
                                 </>
                               ) : (
                                 <>
                                   <span>
-                                    {customAmountStr && parseFloat(customAmountStr) >= 100
+                                    {customAmountStr &&
+                                    parseFloat(customAmountStr) >= 100
                                       ? `Proceed with NGN ${parseFloat(customAmountStr).toLocaleString()}`
                                       : "Enter an amount to continue"}
                                   </span>
@@ -794,13 +901,17 @@ const Deposit: React.FC<DepositModalProps> = ({
                           className="space-y-4"
                         >
                           <h3 className="text-sm font-bold text-gray-800 text-center">
-                            Transfer {formattedAmountText} {accountName ? `to ${accountName.toUpperCase()}` : ""}
+                            Transfer {formattedAmountText}{" "}
+                            {accountName
+                              ? `to ${accountName.toUpperCase()}`
+                              : ""}
                           </h3>
 
                           {/* Transfer Details Card */}
                           {loadingAccount ? (
                             <div className="p-8 text-center text-xs text-primary animate-pulse bg-tertiary rounded-lg border border-primary/10">
-                              Loading settlement account details (/get-account)...
+                              Loading settlement account details
+                              (/get-account)...
                             </div>
                           ) : (
                             <div className="bg-[#F8F9FA] rounded-lg p-4 space-y-3.5 border border-gray-100">
@@ -826,12 +937,20 @@ const Deposit: React.FC<DepositModalProps> = ({
                                   {accountNumber && (
                                     <button
                                       type="button"
-                                      onClick={() => handleCopy(accountNumber, "Account number")}
+                                      onClick={() =>
+                                        handleCopy(
+                                          accountNumber,
+                                          "Account number",
+                                        )
+                                      }
                                       className="text-gray-400 hover:text-gray-700 transition cursor-pointer p-1"
                                       title="Copy Account Number"
                                     >
                                       {copiedField === "Account number" ? (
-                                        <LuCheck size={14} className="text-primary" />
+                                        <LuCheck
+                                          size={14}
+                                          className="text-primary"
+                                        />
                                       ) : (
                                         <LuCopy size={14} />
                                       )}
@@ -851,12 +970,20 @@ const Deposit: React.FC<DepositModalProps> = ({
                                   </p>
                                   <button
                                     type="button"
-                                    onClick={() => handleCopy(displayAmount.toString(), "Amount")}
+                                    onClick={() =>
+                                      handleCopy(
+                                        displayAmount.toString(),
+                                        "Amount",
+                                      )
+                                    }
                                     className="text-gray-400 hover:text-gray-700 transition cursor-pointer p-1"
                                     title="Copy Amount"
                                   >
                                     {copiedField === "Amount" ? (
-                                      <LuCheck size={14} className="text-primary" />
+                                      <LuCheck
+                                        size={14}
+                                        className="text-primary"
+                                      />
                                     ) : (
                                       <LuCopy size={14} />
                                     )}
@@ -871,8 +998,12 @@ const Deposit: React.FC<DepositModalProps> = ({
 
                           {/* Instruction text */}
                           <p className="text-[11px] text-gray-500 leading-relaxed text-center">
-                            Search for {bankName || "the settlement bank"} in your bank app. This account is for this transaction only and expires in{" "}
-                            <span className="text-primary font-bold">{formatTime(expirySeconds)}</span>
+                            Search for {bankName || "the settlement bank"} in
+                            your bank app. This account is for this transaction
+                            only and expires in{" "}
+                            <span className="text-primary font-bold">
+                              {formatTime(expirySeconds)}
+                            </span>
                           </p>
 
                           {/* Action Button */}
@@ -898,12 +1029,12 @@ const Deposit: React.FC<DepositModalProps> = ({
                           className="py-2 flex flex-col items-center justify-center text-center space-y-4"
                         >
                           <div className="space-y-1">
-
                             <h3 className="text-sm font-bold text-gray-800">
                               Reconciling Transfer with Finance Team
                             </h3>
                             <p className="text-xs text-gray-500 max-w-sm">
-                              Your transfer notification has been submitted. Review and approval typically takes ~5 minutes.
+                              Your transfer notification has been submitted.
+                              Review and approval typically takes ~5 minutes.
                             </p>
                           </div>
 
@@ -931,20 +1062,27 @@ const Deposit: React.FC<DepositModalProps> = ({
                               {/* Received / Approved Step */}
                               <div className="flex flex-col items-center gap-1">
                                 <div
-                                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs transition-all duration-300 ${isReceived
-                                    ? "bg-primary text-white shadow-xs"
-                                    : "bg-amber-50 border-2 border-dashed border-amber-300 text-amber-600"
-                                    }`}
+                                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs transition-all duration-300 ${
+                                    isReceived
+                                      ? "bg-primary text-white shadow-xs"
+                                      : "bg-amber-50 border-2 border-dashed border-amber-300 text-amber-600"
+                                  }`}
                                 >
                                   {isReceived ? (
                                     <LuCheck size={15} className="stroke-[3]" />
                                   ) : (
-                                    <LuLoader size={13} className="animate-spin text-amber-600" />
+                                    <LuLoader
+                                      size={13}
+                                      className="animate-spin text-amber-600"
+                                    />
                                   )}
                                 </div>
                                 <span
-                                  className={`text-[11px] font-medium transition-colors ${isReceived ? "text-primary font-bold" : "text-amber-700 font-semibold"
-                                    }`}
+                                  className={`text-[11px] font-medium transition-colors ${
+                                    isReceived
+                                      ? "text-primary font-bold"
+                                      : "text-amber-700 font-semibold"
+                                  }`}
                                 >
                                   {isReceived ? "Approved" : "Verifying"}
                                 </span>
@@ -958,7 +1096,9 @@ const Deposit: React.FC<DepositModalProps> = ({
                               <LuClock size={13} className="text-primary" />
                               <span>Session timer:</span>
                             </span>
-                            <span className="font-mono font-bold text-gray-800">{formatTime(waitingSeconds)}</span>
+                            <span className="font-mono font-bold text-gray-800">
+                              {formatTime(waitingSeconds)}
+                            </span>
                           </div>
 
                           {/* Action & Exit options */}
@@ -1012,14 +1152,21 @@ const Deposit: React.FC<DepositModalProps> = ({
                               Deposit Approved & Credited!
                             </h3>
                             <p className="text-xs text-gray-500">
-                              Your deposit of <strong className="text-primary">{formattedAmountText}</strong> has been confirmed by Finance and credited to your wallet.
+                              Your deposit of{" "}
+                              <strong className="text-primary">
+                                {formattedAmountText}
+                              </strong>{" "}
+                              has been confirmed by Finance and credited to your
+                              wallet.
                             </p>
                           </div>
 
                           <div className="w-full bg-[#F8F9FA] rounded-lg p-3 text-xs text-left space-y-1.5 border border-gray-100">
                             <div className="flex justify-between">
                               <span className="text-gray-500">Reference:</span>
-                              <span className="font-mono font-semibold text-gray-800">{reference}</span>
+                              <span className="font-mono font-semibold text-gray-800">
+                                {reference}
+                              </span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-500">Channel:</span>
@@ -1029,7 +1176,9 @@ const Deposit: React.FC<DepositModalProps> = ({
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-500">Status:</span>
-                              <span className="text-primary font-bold">SUCCESSFUL</span>
+                              <span className="text-primary font-bold">
+                                SUCCESSFUL
+                              </span>
                             </div>
                           </div>
 
@@ -1056,7 +1205,9 @@ const Deposit: React.FC<DepositModalProps> = ({
         <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-secondary font-medium">
           <LuLock size={12} className="text-primary" />
           <span>Secured by</span>
-          <span className="font-bold text-primary tracking-tight text-base">payfleet</span>
+          <span className="font-bold text-primary tracking-tight text-base">
+            payfleet
+          </span>
         </div>
       </div>
     </Modal>
