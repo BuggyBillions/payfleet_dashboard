@@ -34,7 +34,7 @@ const Login: React.FC = () => {
   const completeLogin = (
     token: string,
     user: UserProps,
-    message = "Login successful"
+    message = "Login successful",
   ) => {
     login(token, user, user.role || "company");
     toast.success(message);
@@ -154,16 +154,16 @@ const Login: React.FC = () => {
         <h1 className="text-white text-xl px-10 lg:px-0 lg:text-4xl lg:leading-12 lg:max-w-100 font-semibold">
           Welcome Back! Securely access your dashboard.
         </h1>
-        <Link
-          to={"/"}
-          className="absolute md:top-0 md:h-auto h-15 -top-5 md:left-8 left-0 lg:w-1/5 md:w-1/3 w-full"
-        >
-          <img
-            src={assets.whiteLogo}
-            alt="PayFleet Logo"
-            className="md:w-full w-1/3 mx-auto object-cover"
-          />
-        </Link>
+      <Link
+           to={"/"}
+           className="absolute -md:top-5 md:h-45 h-15 top-3 md:left-8 left-0 lg:w-1/5 md:w-1/3 w-full"
+         >
+           <img
+             src={assets.whiteLogo}
+             alt="PayFleet Logo"
+             className="md:w-full w-1/3 mx-auto object-cover h-full"
+           />
+         </Link>
       </div>
 
       <div className="md:w-1/2 w-full md:h-full h-[65vh] overflow-y-auto lg:p-12 p-8 flex flex-col md:justify-center bg-white md:rounded-none rounded-t-4xl">
@@ -178,7 +178,10 @@ const Login: React.FC = () => {
           <form onSubmit={formik.handleSubmit} className="space-y-4">
             {/* Email Field */}
             <div className="flex flex-col gap-1">
-              <label htmlFor="email" className="text-xs font-medium text-gray-700">
+              <label
+                htmlFor="email"
+                className="text-xs font-medium text-gray-700"
+              >
                 Email Address
               </label>
               <input
@@ -205,7 +208,10 @@ const Login: React.FC = () => {
             {/* Password Field */}
             <div className="flex flex-col gap-1">
               <div className="flex items-center justify-between">
-                <label htmlFor="password" className="text-xs font-medium text-gray-700">
+                <label
+                  htmlFor="password"
+                  className="text-xs font-medium text-gray-700"
+                >
                   Password
                 </label>
                 <Link
@@ -237,7 +243,11 @@ const Login: React.FC = () => {
                   onClick={() => setPasswordVisibility(!passwordVisibility)}
                   className="text-gray-400 hover:text-gray-600 transition cursor-pointer p-1"
                 >
-                  {passwordVisibility ? <FaEyeSlash size={17} /> : <FaEye size={17} />}
+                  {passwordVisibility ? (
+                    <FaEyeSlash size={17} />
+                  ) : (
+                    <FaEye size={17} />
+                  )}
                 </button>
               </div>
               {formik.touched.password && formik.errors.password && (
