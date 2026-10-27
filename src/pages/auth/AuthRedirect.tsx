@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useUser } from "../../hooks/useUser";
-import { decryptToken } from "../../helpers/tokenHelper";
+import { decryptAuthToken } from "../../helpers/tokenHelper";
 import { getUserService } from "../../services/authService";
 import { assets } from "../../assets/assets";
 
@@ -26,6 +26,7 @@ const AuthRedirect = () => {
 
     const tempStored = sessionStorage.getItem("tempToken");
     const encryptedToken = urlToken || tempStored;
+    console.log(encryptedToken);
 
     if (!encryptedToken) {
       console.log("No token found after reload");
@@ -35,14 +36,15 @@ const AuthRedirect = () => {
     const verifyAndRedirect = async () => {
       let token;
       try {
-        token = await decryptToken(decodeURIComponent(encryptedToken));
+        token = await decryptAuthToken(encryptedToken);
       } catch {
         console.log("Failed to decode or decrypt token");
         return;
       }
-
-      if (!token) return;
       try {
+        console.log(token);
+        if (!token) return;
+        console.log("verification started");
         const data = await getUserService(token);
         if (data) {
           setToken(token);
