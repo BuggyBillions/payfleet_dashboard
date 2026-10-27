@@ -67,8 +67,8 @@ const Register: React.FC = () => {
   }, [textSets]);
 
   const steps = [
-    { component: StepOne, fields: ["reg_no", "name"] },
-    { component: StepTwo, fields: ["phone", "email", "password"] },
+    { component: StepOne, fields: ["name", "phone"] },
+    { component: StepTwo, fields: ["email", "password"] },
     // { component: StepThree, fields: ["logo"] },
     // { component: StepFour, fields: ["about", "address", ] },
   ];
@@ -115,7 +115,7 @@ const Register: React.FC = () => {
 
   const formik = useFormik<RegisterFormValues>({
     initialValues: {
-      reg_no: "",
+      // reg_no: "",
       name: "",
       email: "",
       // logo: null,
@@ -174,7 +174,7 @@ const Register: React.FC = () => {
   return (
     <div className="w-screen h-screen flex md:flex-row flex-col items-start bg-primary">
       <div className="md:h-full h-[35vh] overflow-hidden bg-primary md:w-1/2 w-full flex flex-col gap-4 items-start justify-center lg:px-8 md:px-6 px-0 pb-8 md:pt-0 pt-15 relative">
-     <Link
+        <Link
           to={"/"}
           className="absolute -md:top-5 md:h-45 h-15 top-3 md:left-8 left-0 lg:w-1/5 md:w-1/3 w-full"
         >

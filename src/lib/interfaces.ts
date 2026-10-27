@@ -343,7 +343,7 @@ export interface ResetPasswordValues {
   token: string;
   password: string;
   confirmPassword: string;
-} 
+}
 
 export interface UserContextType {
   user: UserProps | null;
@@ -355,6 +355,8 @@ export interface UserContextType {
   logout: () => void;
   isLoggedIn: boolean;
   setToken: Dispatch<SetStateAction<string | null>>;
+  setUser: Dispatch<SetStateAction<UserProps | null>>;
+  setRole: Dispatch<SetStateAction<string | null>>;
   refreshUser: (token: string) => Promise<void>;
   loading: boolean;
 }

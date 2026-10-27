@@ -35,6 +35,7 @@ import Notifications from "./pages/company/Notifications";
 import ManageCompanyVerification from "./pages/superadmin/ManageCompanyVerification";
 import Deposits from "./pages/company/Deposits";
 import Deposit from "./components/modal/Deposit";
+import AuthRedirect from "./pages/auth/AuthRedirect";
 
 function App() {
   const navigate = useNavigate();
@@ -45,13 +46,12 @@ function App() {
         <Route
           index
           path="/payment/:token"
-          element={
-            <Deposit onClose={() => navigate('/dashboard/overview')}  />
-          }
+          element={<Deposit onClose={() => navigate("/dashboard/overview")} />}
         />
         <Route index path="/" element={<Login />} />
         <Route path="/getstarted" element={<Register />} />
         <Route path="/forgotpassword" element={<Forgotpassword />} />
+        <Route path="/auth-redirect" element={<AuthRedirect />} />
         <Route path="*" element={<NotFound />} />
         <Route
           index
@@ -86,10 +86,7 @@ function App() {
           index
           path="/dashboard/deposits"
           element={
-            <MainLayout
-              pageName="All Deposits"
-              children={<Deposits />}
-            />
+            <MainLayout pageName="All Deposits" children={<Deposits />} />
           }
         />
 
@@ -117,20 +114,14 @@ function App() {
           index
           path="/dashboard/notifications"
           element={
-            <MainLayout
-              pageName="Notifications"
-              children={<Notifications />}
-            />
+            <MainLayout pageName="Notifications" children={<Notifications />} />
           }
         />
         <Route
           index
           path="/dashboard/activity-log"
           element={
-            <MainLayout
-              pageName="Activity Log"
-              children={<ActivityLog />}
-            />
+            <MainLayout pageName="Activity Log" children={<ActivityLog />} />
           }
         />
         <Route
@@ -188,7 +179,9 @@ function App() {
         <Route
           index
           path="/admin/dashboard/banks"
-          element={<MainLayout pageName="Manage Banks" children={<ManageBanks />} />}
+          element={
+            <MainLayout pageName="Manage Banks" children={<ManageBanks />} />
+          }
         />
         <Route
           index
@@ -206,7 +199,9 @@ function App() {
           element={
             <MainLayout
               pageName="Manage Payments"
-              children={<SuperAdminManagePayments defaultFilter="all"  role="admin" />}
+              children={
+                <SuperAdminManagePayments defaultFilter="all" role="admin" />
+              }
             />
           }
         />
@@ -255,7 +250,12 @@ function App() {
           element={
             <MainLayout
               pageName="Manage Payments"
-              children={<SuperAdminManagePayments defaultFilter="pending" role="finance" />}
+              children={
+                <SuperAdminManagePayments
+                  defaultFilter="pending"
+                  role="finance"
+                />
+              }
             />
           }
         />
