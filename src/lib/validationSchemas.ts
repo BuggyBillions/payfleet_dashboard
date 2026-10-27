@@ -4,11 +4,11 @@ import { passwordValidationSchema } from "../helpers/passwordUtils";
 export { passwordValidationSchema };
 
 export const RegisterFormSchema = Yup.object({
-  reg_no: Yup.string().required("Company registration number is required"),
-  name: Yup.string().required("Company name is required."),
+  // reg_no: Yup.string().required("Company registration number is required"),
+  name: Yup.string().required("Please provide your name"),
   email: Yup.string()
     .email("Please enter a valid email address.")
-    .required("Company email is required."),
+    .required("Email is required."),
 
   logo: Yup.mixed().nullable().optional(),
   about: Yup.string().optional(),
@@ -37,7 +37,10 @@ export const ForgotPasswordSchema = Yup.object({
     .matches(/[A-Z]/, "Password must contain at least one capital letter")
     .matches(/[a-z]/, "Password must contain at least one small letter")
     .matches(/[0-9]/, "Password must contain at least one number")
-    .matches(/[^A-Za-z0-9]/, "Password must contain at least one special character")
+    .matches(
+      /[^A-Za-z0-9]/,
+      "Password must contain at least one special character",
+    )
     .optional(),
   confirmPassword: Yup.string()
     .oneOf([Yup.ref("password")], "Passwords must match")
