@@ -34,7 +34,9 @@ const PaymentFeeBreakdownModal: React.FC<PaymentFeeBreakdownModalProps> = ({
   if (!isOpen) return null;
 
   const count = Math.max(1, employeeCount || 1);
-  const breakdown = calculateFeeBreakdown(settings, count);
+  const breakdown = calculateFeeBreakdown(settings, count, totalPayoutAmount);
+  const appliesFedGovtFee =
+    typeof totalPayoutAmount === "number" && totalPayoutAmount > 10000;
   const hasBaseAmount = typeof totalPayoutAmount === "number" && totalPayoutAmount > 0;
   const grandTotal = hasBaseAmount ? totalPayoutAmount + breakdown.totalFees : breakdown.totalFees;
 
@@ -130,7 +132,8 @@ const PaymentFeeBreakdownModal: React.FC<PaymentFeeBreakdownModalProps> = ({
                 </span>
               </div>
 
-              {/* Federal Government Fee */}
+              {/* Federal Government Fee - only applies to amounts higher than 10,000 */}
+              {appliesFedGovtFee && (
               <div className="flex items-center justify-between pt-1 border-t border-primary/5">
                 <div className="flex flex-col">
                   <span className="font-medium text-textBlack">Federal Government Fee</span>
@@ -142,6 +145,8 @@ const PaymentFeeBreakdownModal: React.FC<PaymentFeeBreakdownModalProps> = ({
                   {formatterUtility(breakdown.totalFedGovtFee)}
                 </span>
               </div>
+
+              )}
 
               {/* Payfleet Fee */}
               <div className="flex items-center justify-between pt-1 border-t border-primary/5">

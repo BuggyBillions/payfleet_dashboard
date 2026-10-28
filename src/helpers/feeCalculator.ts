@@ -27,11 +27,17 @@ export const roundToTwoDecimals = (val: number): number => {
  */
 export const calculateFeeBreakdown = (
   settings: PaymentSettings | null | undefined,
-  employeeCount: number = 1
+  employeeCount: number = 1,
+  totalPayoutAmount?: number
 ): FeeBreakdown => {
   const count = Math.max(1, Math.floor(employeeCount || 1));
   const vat = Number(settings?.vat) || 0;
-  const fedGovt = Number(settings?.federal_government_fee) || 0;
+  // Federal Government Fee only applies to amount higher than 10,000; if lower, do not record
+  const appliesFedGovtFee =
+    typeof totalPayoutAmount === "number" && totalPayoutAmount > 10000;
+  const fedGovt = appliesFedGovtFee
+    ? Number(settings?.federal_government_fee) || 0
+    : 0;
   const payfleet = Number(settings?.payfleet_fee) || 0;
 
   const totalFeePerEmployee = roundToTwoDecimals(vat + fedGovt + payfleet);

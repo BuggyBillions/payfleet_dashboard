@@ -80,7 +80,12 @@ const ProcessPayments: React.FC = () => {
 
   const totalEstimatePayout = useMemo(() => {
     return includedEmployees.reduce(
-      (sum, item) => sum + (Number(item.estimate_pay) || 0),
+      (sum, item) => {
+        const basePay = Number(item.estimate_pay) || 0;
+        const deduction = Number(item.deduction_amount) || 0;
+        const calculatedPay = basePay - deduction;
+        return sum + (calculatedPay > 0 ? calculatedPay : 0);
+      },
       0,
     );
   }, [includedEmployees]);
