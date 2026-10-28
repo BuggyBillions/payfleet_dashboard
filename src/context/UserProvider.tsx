@@ -5,6 +5,8 @@ import type { UserProps, UserProviderProps } from "../lib/interfaces";
 import { UserContext } from "./UserContext";
 import { getUserService } from "../services/authService";
 
+// const LANDING_URL = import.meta.env.VITE_LANDING_URL;
+
 export const UserProvider = ({ children }: UserProviderProps) => {
   const [user, setUser] = useState<UserProps | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -13,15 +15,15 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   const logout = useCallback(() => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    localStorage.removeItem("role");
-    setToken(null);
-    setUser(null);
-    setRole(null);
-    setIsAuthenticated(false);
+    // localStorage.removeItem("token");
+    // localStorage.removeItem("user");
+    // localStorage.removeItem("role");
+    // setToken(null);
+    // setUser(null);
+    // setRole(null);
+    // setIsAuthenticated(false);
     toast.success("Logged out successfully");
-    window.location.href = "/";
+    // window.location.href = LANDING_URL;
   }, []);
 
   const refreshUser = useCallback(async (token: string) => {

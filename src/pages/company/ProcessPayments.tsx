@@ -65,7 +65,7 @@ const ProcessPayments: React.FC = () => {
     placeholderData: (prev) => prev,
   });
 
-  const employees = data?.items ?? [];
+  const employees = useMemo(() => data?.items ?? [], [data?.items]);
   const totalItems = data?.totalItems ?? employees.length;
 
   // Calculate included employees for payout

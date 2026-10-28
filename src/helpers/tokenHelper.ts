@@ -1,5 +1,4 @@
 import { base64url, EncryptJWT, jwtDecrypt } from "jose";
-import CryptoJS from "crypto-js";
 import { toast } from "sonner";
 
 // Convert the hex string into a raw 32-byte (256-bit) Uint8Array
@@ -38,45 +37,6 @@ export const decryptToken = async (
     } else {
       console.error("Token is invalid or tampered", errorObj?.code);
     }
-    return null;
-  }
-};
-
-// Encrypt a token or payload string
-export const encryptAuthToken = (token: string, expiresInMinutes = 5) => {
-  const SECRET_KEY2 = import.meta.env.VITE_ENCRYPT_HELPER_SECRET_KEY;
-
-  const payload = JSON.stringify({
-    token,
-    expiresAt: Date.now() + expiresInMinutes * 60 * 1000,
-  });
-
-  return CryptoJS.AES.encrypt(payload, SECRET_KEY2).toString();
-};
-
-// Decrypt token, check expiry, return token or null
-export const decryptAuthToken = (encryptedToken: string) => {
-  const SECRET_KEY2 = import.meta.env.VITE_ENCRYPT_HELPER_SECRET_KEY;
-  try {
-    const bytes = CryptoJS.AES.decrypt(encryptedToken, SECRET_KEY2);
-    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-
-    if (!decrypted) return null;
-
-    const parsed = JSON.parse(decrypted);
-
-    console.log("Decrypted payload:", decrypted);
-    console.log("Parsed payload:", parsed);
-    console.log("Token property:", parsed.token);
-
-    if (parsed.expiresAt < Date.now()) {
-      console.warn("Token expired");
-      return null;
-    }
-
-    return parsed.token;
-  } catch (err) {
-    console.error("Invalid encrypted token format", err);
     return null;
   }
 };
