@@ -18,6 +18,7 @@ interface PaymentFeeBreakdownModalProps {
   onClose: () => void;
   onConfirm: () => void;
   employeeCount: number;
+  fgEligibleCount?: number;
   totalPayoutAmount?: number;
 }
 
@@ -26,6 +27,7 @@ const PaymentFeeBreakdownModal: React.FC<PaymentFeeBreakdownModalProps> = ({
   onClose,
   onConfirm,
   employeeCount,
+  fgEligibleCount,
   totalPayoutAmount,
 }) => {
   const { data: settings, isLoading, isError, error, refetch, isFetching } =
@@ -34,9 +36,12 @@ const PaymentFeeBreakdownModal: React.FC<PaymentFeeBreakdownModalProps> = ({
   if (!isOpen) return null;
 
   const count = Math.max(1, employeeCount || 1);
-  const breakdown = calculateFeeBreakdown(settings, count, totalPayoutAmount);
-  const appliesFedGovtFee =
-    typeof totalPayoutAmount === "number" && totalPayoutAmount > 10000;
+  const breakdown = calculateFeeBreakdown(
+    settings,
+    count,
+    totalPayoutAmount,
+    fgEligibleCount,
+  );
   const hasBaseAmount = typeof totalPayoutAmount === "number" && totalPayoutAmount > 0;
   const grandTotal = hasBaseAmount ? totalPayoutAmount + breakdown.totalFees : breakdown.totalFees;
 
@@ -132,13 +137,13 @@ const PaymentFeeBreakdownModal: React.FC<PaymentFeeBreakdownModalProps> = ({
                 </span>
               </div>
 
-              {/* Federal Government Fee - only applies to amounts higher than 10,000 */}
-              {appliesFedGovtFee && (
+              {/* Federal Government Fee - applies per employee receiving more than 10,000 */}
+              {breakdown.totalFedGovtFee > 0 && (
               <div className="flex items-center justify-between pt-1 border-t border-primary/5">
                 <div className="flex flex-col">
                   <span className="font-medium text-textBlack">Federal Government Fee</span>
                   <span className="text-[10px] text-textBlack/50">
-                    {formatterUtility(breakdown.fedGovtFeePerEmployee)} × {count}
+                    {formatterUtility(breakdown.fedGovtFeePerEmployee)} × {breakdown.fgEligibleCount} staff (&gt; ₦10,000)
                   </span>
                 </div>
                 <span className="font-semibold text-textBlack">

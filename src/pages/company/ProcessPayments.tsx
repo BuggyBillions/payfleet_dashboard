@@ -90,6 +90,15 @@ const ProcessPayments: React.FC = () => {
     );
   }, [includedEmployees]);
 
+  const fgEligibleCount = useMemo(() => {
+    return includedEmployees.filter((item) => {
+      const basePay = Number(item.estimate_pay) || 0;
+      const deduction = Number(item.deduction_amount) || 0;
+      const calculatedPay = basePay - deduction;
+      return calculatedPay > 10000;
+    }).length;
+  }, [includedEmployees]);
+
   // Step 1: Initiate payment -> Open Fee Breakdown Modal
   const handleInitiatePayment = () => {
     if (totalItems === 0) {
@@ -247,6 +256,7 @@ const ProcessPayments: React.FC = () => {
         onClose={() => setIsFeeBreakdownOpen(false)}
         onConfirm={handleConfirmFeeBreakdown}
         employeeCount={payableCount}
+        fgEligibleCount={fgEligibleCount}
         totalPayoutAmount={
           totalEstimatePayout > 0 ? totalEstimatePayout : undefined
         }
