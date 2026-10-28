@@ -144,7 +144,7 @@ const ProcessPayments: React.FC = () => {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div className="flex flex-col">
-          <h2 className="text-lg font-semibold">Process Payments</h2>
+          <h2 className="text-lg text-textBlack font-semibold">Process Payments</h2>
           <p className="text-sm text-gray-500">
             Select staff and process their salary payments
           </p>

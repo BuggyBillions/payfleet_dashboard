@@ -148,13 +148,18 @@ const Settings: React.FC = () => {
       user?.phone_number ||
       user?.company_details?.phone ||
       "",
+    company_name:
+      ((user?.company_details as Record<string, unknown> | undefined)?.company_name as string) ||
+      user?.company_name ||
+      user?.company_details?.name ||
+      "",
     department: currentRole.toUpperCase(),
     address: user?.company_details?.address ?? "",
     about: user?.company_details?.about ?? "",
     bvn: toDigitString(user?.company_details?.bvn) ?? "",
     nin: toDigitString(user?.company_details?.nin) ?? "",
-    reg_no:
-      ((user?.company_details as Record<string, unknown> | undefined)?.reg_no as string) ??
+    bn_number:
+      ((user?.company_details as Record<string, unknown> | undefined)?.bn_number as string) ??
       ((user?.company_details as Record<string, unknown> | undefined)?.rc_number as string) ??
       "",
   });
@@ -180,7 +185,6 @@ const Settings: React.FC = () => {
     proof_of_address:
       ((user?.company_details as Record<string, unknown> | undefined)?.proof_of_address as string) ??
       ((user?.company_details as Record<string, unknown> | undefined)?.proofOfAddress as string) ??
-      ((user?.documents as Record<string, unknown> | undefined)?.proofOfAddress as string) ??
       null,
   };
 
@@ -216,21 +220,34 @@ const Settings: React.FC = () => {
     setDraft(null);
   };
 
-  const handleSaveProfile = async (files: DocumentFiles = {}) => {
+  const handleSaveProfile = async (
+    files: DocumentFiles = {},
+    extra?: { company_name?: string },
+  ) => {
     if (!draft) return;
-    if (!isProfileDirty && Object.keys(files).length === 0) return;
+    if (
+      !isProfileDirty &&
+      Object.keys(files).length === 0 &&
+      !extra?.company_name
+    ) {
+      return;
+    }
 
     setSavingProfile(true);
     try {
       const textFields: Record<string, string | undefined> = {
         name: draft.name.trim() || undefined,
+        company_name:
+          extra?.company_name?.trim() ||
+          draft.company_name?.trim() ||
+          undefined,
         email: draft.email.trim() || undefined,
         phone: draft.phoneNumber.trim() || undefined,
         address: draft.address.trim() || undefined,
         about: draft.about.trim() || undefined,
         bvn: toDigitString(draft.bvn),
         nin: toDigitString(draft.nin),
-        reg_no: draft.reg_no?.trim() || undefined,
+        bn_number: draft.bn_number?.trim() || undefined,
       };
 
       const hasFiles = Object.values(files).some(Boolean);
@@ -377,7 +394,7 @@ const Settings: React.FC = () => {
               <DetailRow label="Company Name" value={profileValues.name} />
               <DetailRow label="Company Email" value={profileValues.email} />
               <DetailRow label="Phone Number" value={profileValues.phoneNumber} />
-              <DetailRow label="Registration No." value={profileValues.reg_no} />
+              <DetailRow label="Registration No." value={profileValues.bn_number} />
               <DetailRow label="Company Address" value={profileValues.address} />
               <DetailRow label="BVN" value={profileValues.bvn} />
               <DetailRow label="NIN" value={profileValues.nin} />

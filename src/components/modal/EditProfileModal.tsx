@@ -6,9 +6,7 @@ import {
   LuUpload,
   LuX,
   LuCheck,
-  LuCheckCircle,
-  LuAlertCircle,
-  LuLoader2,
+  LuLoader,
 } from "react-icons/lu";
 import {
   DOCUMENT_FIELDS,
@@ -18,9 +16,11 @@ import {
 import { useResolveCompanyRegNo } from "../../hooks/useCompany";
 import { toast } from "sonner";
 import { getErrorMessage } from "../../helpers/api";
+import { IoAlertCircleOutline, IoCheckmarkCircleOutline } from "react-icons/io5";
 
 export interface ProfileFormValues {
   name: string;
+  company_name?: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -30,13 +30,13 @@ export interface ProfileFormValues {
   about: string;
   bvn: string;
   nin: string;
-  reg_no: string;
+  bn_number: string;
 }
 
 interface EditProfileModalProps {
   values: ProfileFormValues;
   onChange: (key: keyof ProfileFormValues, value: string) => void;
-  onSubmit: (files: DocumentFiles) => void;
+  onSubmit: (files: DocumentFiles, extra?: { company_name?: string }) => void;
   onClose: () => void;
   saving: boolean;
   isDirty: boolean;
@@ -107,7 +107,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
 }) => {
   const [files, setFiles] = useState<DocumentFiles>({});
   const [regNoToVerify, setRegNoToVerify] = useState<string>("");
-  const initialRegNo = useRef<string>((values.reg_no || "").trim());
+  const initialRegNo = useRef<string>((values.bn_number || "").trim());
   const lastToastedRef = useRef<string>("");
 
   const {
@@ -138,7 +138,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
     return String(resolvedData);
   }, [resolvedData]);
 
-  const currentRegNo = (values.reg_no || "").trim();
+  const currentRegNo = (values.bn_number || "").trim();
   const isRegNoEligible = currentRegNo.length >= 6 && currentRegNo.length <= 8;
   const isUnchangedExisting = Boolean(
     initialRegNo.current && currentRegNo === initialRegNo.current
@@ -151,7 +151,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
       !isRegNoError
   );
 
-  // If reg_no is inputted/edited, verification with CAC is required before submission
+  // If bn_number is inputted/edited, verification with CAC is required before submission
   const isRegNoValid = !currentRegNo || isUnchangedExisting || isVerified;
 
   useEffect(() => {
@@ -163,6 +163,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
     ) {
       lastToastedRef.current = `success-${currentRegNo}`;
       toast.success(`Registration verified: ${resolvedCompanyName}`);
+      onChange("company_name", resolvedCompanyName);
     }
   }, [isRegNoSuccess, resolvedCompanyName, regNoToVerify, currentRegNo]);
 
@@ -210,7 +211,11 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
             }
             return;
           }
-          onSubmit(files);
+          const verifiedName =
+            (isVerified && resolvedCompanyName) ||
+            values.company_name ||
+            undefined;
+          onSubmit(files, verifiedName ? { company_name: verifiedName } : undefined);
         }}
         className="flex flex-col gap-5"
       >
@@ -264,10 +269,10 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 type="text"
                 inputMode="numeric"
                 maxLength={8}
-                value={values.reg_no}
+                value={values.bn_number}
                 onChange={(e) => {
                   const val = e.target.value.replace(/\D/g, "");
-                  onChange("reg_no", val);
+                  onChange("bn_number", val);
                 }}
                 placeholder="e.g. 1234567"
                 className={`${inputClass} pr-24`}
@@ -293,7 +298,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
               >
                 {isChecking ? (
                   <>
-                    <LuLoader2 size={13} className="animate-spin" />
+                    <LuLoader size={13} className="animate-spin" />
                     <span>Checking...</span>
                   </>
                 ) : isVerified ? (
@@ -308,13 +313,13 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
             </div>
             {isVerified && resolvedCompanyName && (
               <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium">
-                <LuCheckCircle size={12} className="shrink-0" />
+                <IoCheckmarkCircleOutline size={12} className="shrink-0" />
                 <span className="truncate">CAC Verified: {resolvedCompanyName}</span>
               </div>
             )}
             {isRegNoError && regNoToVerify === currentRegNo && (
               <div className="flex items-center gap-1 text-[11px] text-red-500 font-medium">
-                <LuAlertCircle size={12} className="shrink-0" />
+                <IoAlertCircleOutline size={12} className="shrink-0" />
                 <span>Verification failed. Please ensure the RC number is valid.</span>
               </div>
             )}
