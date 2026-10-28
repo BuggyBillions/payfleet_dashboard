@@ -266,8 +266,9 @@ const ProcessPayments: React.FC = () => {
 
       {/* Step 2: Transaction PIN Modal with 4-Pin Box */}
       {isPinModalOpen && (
-        <Modal onClose={closePinModal}>
-          <div className="flex flex-col gap-6 w-full mx-auto p-1">
+        <Modal customMode onClose={closePinModal}>
+          {/* <div className=""></div> */}
+          <div className="flex flex-col gap-6 w-100 px-5 py-4 rounded-md mx-auto p-1 bg-white">
             <div className="flex flex-col text-center sm:text-left space-y-1">
               <h3 className="font-semibold text-base text-textBlack">
                 Confirm Payment
