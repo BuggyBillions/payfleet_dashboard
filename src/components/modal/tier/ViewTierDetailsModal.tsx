@@ -26,7 +26,7 @@ const ViewTierDetailsModal: React.FC<ViewTierDetailsModalProps> = ({
 }) => {
   const { data: tier, isLoading, error } = useTierById(tierId);
 
-  const reqTags = String(tier?.requirements || "")
+  const reqTags = String(tier?.requiremnts || "")
     .split(",")
     .map((r) => r.trim())
     .filter(Boolean);
@@ -127,7 +127,8 @@ const ViewTierDetailsModal: React.FC<ViewTierDetailsModalProps> = ({
             {/* KYC Requirements */}
             <div className="p-4 rounded-xl bg-secondary border border-primary/10 space-y-2">
               <span className="text-[11px] font-semibold text-textBlack/70 flex items-center gap-1.5 uppercase tracking-wider">
-                <LuFileText className="text-primary text-sm" /> Compliance & Verification Requirements
+                <LuFileText className="text-primary text-sm" /> Compliance &
+                Verification Requirements
               </span>
               <div className="flex flex-wrap gap-2 pt-1">
                 {reqTags.length > 0 ? (

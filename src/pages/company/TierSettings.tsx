@@ -34,6 +34,7 @@ const humanize = (value: string): string =>
 const getTierName = (t: Partial<Tier>): string => String(t.name ?? "");
 const getTierLevel = (t: Partial<Tier>): string => String(t.level ?? "—");
 const getTierStaff = (t: Partial<Tier>): string => String(t.no_of_staff ?? "—");
+
 const formatDate = (value?: string): string => {
   if (!value) return "—";
   const date = new Date(value);

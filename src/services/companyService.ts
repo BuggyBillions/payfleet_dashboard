@@ -27,6 +27,10 @@ export interface UpdateCompanyDetailsPayload {
   cac?: string | null;
   mermat?: string | null;
   status_report?: string | null;
+  proof_of_address?: string | File | null;
+  proofOfAddress?: string | File | null;
+  reg_no?: string;
+  rc_number?: string;
   bvn?: string;
   nin?: string;
   pin?: string;

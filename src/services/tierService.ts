@@ -615,6 +615,7 @@ export const requirementField = (
   if (key.includes("cac")) return "cac";
   if (key.includes("mermat") || key.includes("memart")) return "mermat";
   if (key.includes("status")) return "status_report";
+  if (key.includes("proof") || key.includes("address")) return "proof_of_address";
   if (key.includes("logo")) return "logo";
   if (key.includes("bvn")) return "bvn";
   if (key.includes("nin")) return "nin";

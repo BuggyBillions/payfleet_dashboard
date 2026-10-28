@@ -257,6 +257,8 @@ export interface CompanyDetailsProps {
   cac?: string | null;
   mermat?: string | null;
   status_report?: string | null;
+  proof_of_address?: string | null;
+  reg_no?: string;
   nin?: string;
   balance?: string | number;
   created_at?: string;
@@ -413,6 +415,8 @@ export interface CompanyProps {
   cac?: string | null;
   mermat?: string | null;
   status_report?: string | null;
+  proof_of_address?: string | null;
+  reg_no?: string;
   user_id?: number | string;
   verificationStatus?: VerificationStatus;
   documents?: {
@@ -705,6 +709,8 @@ export interface TierUpgradeRequest {
   cac?: string | null;
   mermat?: string | null;
   status_report?: string | null;
+  proof_of_address?: string | null;
+  reg_no?: string;
   directorName?: string;
   directorPhone?: string;
   documentUrl?: string;
@@ -926,6 +932,8 @@ export interface DepositItemProps {
     cac?: string | null;
     mermat?: string | null;
     status_report?: string | null;
+  proof_of_address?: string | null;
+  reg_no?: string;
     [key: string]: unknown;
   };
   transaction?: {
