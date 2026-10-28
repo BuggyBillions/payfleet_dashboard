@@ -27,6 +27,7 @@ import ManageBanks from "./pages/superadmin/ManageBanks";
 import ManageDeposit from "./pages/superadmin/ManageDeposit";
 import SuperAdminManagePayments from "./pages/superadmin/ManagePayments";
 import SuperAdminManageTier from "./pages/superadmin/ManageTier";
+import SuperAdminPaymentSettings from "./pages/superadmin/PaymentSettings";
 import FinancialManageDeposit from "./pages/financial/ManageDeposit";
 import SupportManageCompany from "./pages/support/ManageCompany";
 import SupportManageCompanyVerification from "./pages/support/ManageCompanyVerification";
@@ -202,6 +203,16 @@ function App() {
               children={
                 <SuperAdminManagePayments defaultFilter="all" role="admin" />
               }
+            />
+          }
+        />
+        <Route
+          index
+          path="/admin/dashboard/payment-settings"
+          element={
+            <MainLayout
+              pageName="Payment Settings"
+              children={<SuperAdminPaymentSettings />}
             />
           }
         />

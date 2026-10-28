@@ -5,6 +5,7 @@ import {
   LuHistory,
   LuBuilding2,
   LuScrollText,
+  LuReceipt,
 } from "react-icons/lu";
 import { FaMoneyBillWave, FaUsers } from "react-icons/fa6";
 import { LiaUsersCogSolid } from "react-icons/lia";
@@ -111,6 +112,12 @@ export const navItems: NavItem[] = [
     name: "Manage Payments",
     icon: FaMoneyBillWave,
     path: "/admin/dashboard/payments",
+    role: ["admin"],
+  },
+  {
+    name: "Payment Settings",
+    icon: LuReceipt,
+    path: "/admin/dashboard/payment-settings",
     role: ["admin"],
   },
   {
