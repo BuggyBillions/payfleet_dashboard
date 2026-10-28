@@ -22,9 +22,10 @@ export const encryptToken = async (token: string, expiresInMinutes = 5) => {
 
 // Decrypt token, check expiry automatically
 export const decryptToken = async (jwtToken: string): Promise<string | null> => {
+  console.log("jwtToken", jwtToken);
   try {
     const { payload } = await jwtDecrypt(jwtToken, SECRET_KEY);
-    toast.info(JSON.stringify(payload, null, 2))
+    // toast.info(JSON.stringify(payload, null, 2))
     return (payload.token as string) || null;
   } catch (err: unknown) {
     const errorObj = err as { code?: string };

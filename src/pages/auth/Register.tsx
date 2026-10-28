@@ -7,8 +7,8 @@ import { getErrorMessage } from "../../helpers/api";
 import { toast } from "sonner";
 import StepOne from "./registersteps/StepOne";
 import StepTwo from "./registersteps/StepTwo";
-import StepThree from "./registersteps/StepThree";
-import StepFour from "./registersteps/StepFour";
+// import StepThree from "./registersteps/StepThree";
+// import StepFour from "./registersteps/StepFour";
 import { assets } from "../../assets/assets";
 import { useMutation } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
@@ -67,10 +67,10 @@ const Register: React.FC = () => {
   }, [textSets]);
 
   const steps = [
-    { component: StepOne, fields: ["name"] },
+    { component: StepOne, fields: ["name", "phone"] },
     { component: StepTwo, fields: ["email", "password"] },
-    { component: StepThree, fields: ["logo"] },
-    { component: StepFour, fields: ["about", "address", "phone"] },
+    // { component: StepThree, fields: ["logo"] },
+    // { component: StepFour, fields: ["about", "address", ] },
   ];
 
   const handleCompanyCreateMutation = useMutation({
@@ -95,7 +95,7 @@ const Register: React.FC = () => {
 
         // Jump back to the step containing the invalid field
         const stepIndex = steps.findIndex((step) =>
-          step.fields.some((f) => fieldErrors[f])
+          step.fields.some((f) => fieldErrors[f]),
         );
         if (stepIndex !== -1) {
           setCurrentStep(stepIndex);
@@ -104,8 +104,8 @@ const Register: React.FC = () => {
       toast.error(
         getErrorMessage(
           error,
-          "An error occurred during registration. Please try again."
-        )
+          "An error occurred during registration. Please try again.",
+        ),
       );
     },
     onSettled: () => {
@@ -115,23 +115,29 @@ const Register: React.FC = () => {
 
   const formik = useFormik<RegisterFormValues>({
     initialValues: {
+      // reg_no: "",
       name: "",
       email: "",
-      logo: null,
-      about: "",
-      address: "",
+      // logo: null,
+      // about: "",
+      // address: "",
       phone: "",
       password: "",
     },
     validationSchema: RegisterFormSchema,
+    enableReinitialize: true,
     onSubmit: async (values) => {
       const formData = new FormData();
       formData.append("name", values.name);
       formData.append("email", values.email);
       formData.append("password", values.password);
-      formData.append("about", values.about);
-      formData.append("address", values.address);
       formData.append("phone", values.phone);
+      if (values.address) {
+        formData.append("address", values.address);
+      }
+      if (values.about) {
+        formData.append("about", values.about);
+      }
       if (values.logo) {
         formData.append("logo", values.logo);
       }
@@ -153,7 +159,7 @@ const Register: React.FC = () => {
 
     const errors = await formik.validateForm();
     const hasErrors = fieldsToValidate.some((field) =>
-      Boolean(errors[field as keyof typeof errors])
+      Boolean(errors[field as keyof typeof errors]),
     );
 
     if (!hasErrors) {
@@ -170,12 +176,12 @@ const Register: React.FC = () => {
       <div className="md:h-full h-[35vh] overflow-hidden bg-primary md:w-1/2 w-full flex flex-col gap-4 items-start justify-center lg:px-8 md:px-6 px-0 pb-8 md:pt-0 pt-15 relative">
         <Link
           to={"/"}
-          className="bg-white p-2 md:rounded-lg absolute md:top-8 md:h-auto h-15 top-0 md:left-8 left-0 lg:w-1/5 md:w-1/3 w-full"
+          className="absolute -md:top-5 md:h-45 h-15 top-3 md:left-8 left-0 lg:w-1/5 md:w-1/3 w-full"
         >
           <img
-            src={assets.logo}
+            src={assets.whiteLogo}
             alt="PayFleet Logo"
-            className="md:w-full w-1/3 mx-auto object-cover"
+            className="md:w-full w-1/3 mx-auto object-cover h-full"
           />
         </Link>
         <AnimatePresence mode="wait">

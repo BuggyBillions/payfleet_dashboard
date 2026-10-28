@@ -1,9 +1,10 @@
 export type RegisterFormValues = {
+  reg_no?: string;
   name: string;
   email: string;
-  logo: File | null;
-  about: string;
-  address: string;
+  logo?: File | null;
+  about?: string;
+  address?: string;
   phone: string;
   password: string;
 };
