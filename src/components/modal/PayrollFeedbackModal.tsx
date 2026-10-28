@@ -19,13 +19,13 @@ interface PayrollFeedbackModalProps {
   result: PayEmployeesResponse;
 }
 
-const statusBadgeClasses: Record<string, string> = {
-  paid: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-  success: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-  pending: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-  skipped: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-  failed: "bg-red-500/10 text-red-600 border-red-500/20",
-};
+// const statusBadgeClasses: Record<string, string> = {
+//   paid: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+//   success: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+//   pending: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+//   skipped: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+//   failed: "bg-red-500/10 text-red-600 border-red-500/20",
+// };
 
 const PayrollFeedbackModal: React.FC<PayrollFeedbackModalProps> = ({
   isOpen,
@@ -64,46 +64,46 @@ const PayrollFeedbackModal: React.FC<PayrollFeedbackModalProps> = ({
         {/* Primary Summary Cards (Paid, Skipped, Failed, Deductions) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* Total Paid */}
-          <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
-            <div className="flex items-center justify-between text-emerald-600">
+          <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-secondary">
+            <div className="flex items-center justify-between text-textBlack">
               <span className="text-[11px] font-medium">Total Paid</span>
               <LuCheckCheck size={16} />
             </div>
-            <span className="text-xl font-bold text-emerald-700 dark:text-emerald-400">
+            <span className="text-xl font-bold text-textBlack">
               {summary?.total_paid ?? 0}
             </span>
           </div>
 
           {/* Total Skipped */}
-          <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/20">
-            <div className="flex items-center justify-between text-amber-600">
+          <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-secondary">
+            <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium">Total Skipped</span>
               <LuSkipForward size={16} />
             </div>
-            <span className="text-xl font-bold text-amber-700 dark:text-amber-400">
+            <span className="text-xl font-bold">
               {summary?.total_skipped ?? 0}
             </span>
           </div>
 
           {/* Total Failed */}
-          <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-red-500/5 border border-red-500/20">
-            <div className="flex items-center justify-between text-red-600">
+          <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-secondary">
+            <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium">Total Failed</span>
               <LuCircleAlert size={16} />
             </div>
-            <span className="text-xl font-bold text-red-700 dark:text-red-400">
+            <span className="text-xl font-bold text-textBlack">
               {summary?.total_failed ?? 0}
             </span>
           </div>
 
           {/* Total Deductions */}
-          <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-purple-500/5 border border-purple-500/20">
-            <div className="flex items-center justify-between text-purple-600">
+          <div className="flex flex-col gap-1 p-3.5 rounded-xl bg-secondary">
+            <div className="flex items-center justify-between text-textBlack">
               <span className="text-[11px] font-medium">Deductions</span>
               <LuCoins size={16} />
             </div>
-            <span className="text-xl font-bold text-purple-700 dark:text-purple-400 truncate">
-              {formatterUtility(Number(summary?.total_deductions) ?? 0)}
+            <span className="text-xl font-bold text-textBlack truncate">
+              {formatterUtility(Number(summary?.total_deductions ?? 0))}
             </span>
           </div>
         </div>
@@ -124,19 +124,23 @@ const PayrollFeedbackModal: React.FC<PayrollFeedbackModalProps> = ({
                 <LuWallet size={12} /> Amount Paid
               </span>
               <span className="font-semibold text-textBlack">
-                {formatterUtility(Number(summary.total_amount_paid) ?? 0)}
+                {formatterUtility(Number(summary.total_amount_paid ?? 0))}
               </span>
             </div>
             <div className="flex flex-col">
-              <span className="text-[10px] text-textBlack/50">Processing Fees</span>
+              <span className="text-[10px] text-textBlack/50">
+                Processing Fees
+              </span>
               <span className="font-semibold text-textBlack">
-                {formatterUtility(Number(summary.total_processing_fees) ?? 0)}
+                {formatterUtility(Number(summary.total_processing_fees ?? 0))}
               </span>
             </div>
             <div className="flex flex-col">
-              <span className="text-[10px] text-textBlack/50">Remaining Balance</span>
+              <span className="text-[10px] text-textBlack/50">
+                Remaining Balance
+              </span>
               <span className="font-semibold text-textBlack">
-                {formatterUtility(Number(summary.remaining_balance) ?? 0)}
+                {formatterUtility(Number(summary.remaining_balance ?? 0))}
               </span>
             </div>
           </div>
@@ -159,9 +163,9 @@ const PayrollFeedbackModal: React.FC<PayrollFeedbackModalProps> = ({
               {employeeResults.map((item, idx) => {
                 const displayName =
                   item.employee_name || `Employee #${item.employee_id}`;
-                const badgeClass =
-                  statusBadgeClasses[item.status?.toLowerCase()] ||
-                  "bg-gray-100 text-gray-700 border-gray-200";
+                // const badgeClass =
+                //   statusBadgeClasses[item.status?.toLowerCase()] ||
+                //   "bg-gray-100 text-gray-700 border-gray-200";
 
                 return (
                   <div
@@ -173,13 +177,13 @@ const PayrollFeedbackModal: React.FC<PayrollFeedbackModalProps> = ({
                         <span className="font-semibold text-textBlack truncate">
                           {displayName}
                         </span>
-                        <span
+                        {/* <span
                           className={`text-[10px] px-2 py-0.2 rounded-full font-semibold capitalize border ${badgeClass}`}
                         >
                           {item.status}
-                        </span>
+                        </span> */}
                       </div>
-                      <p className="text-[11px] text-textBlack/70 break-words">
+                      <p className="text-[11px] text-textBlack/70 wrap-break-word">
                         {item.reason}
                       </p>
                       {item.reference && (
