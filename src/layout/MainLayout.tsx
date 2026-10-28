@@ -10,10 +10,7 @@ import type { LayoutProps } from "../lib/interfaces";
 import { assets } from "../assets/assets";
 import { FaXmark } from "react-icons/fa6";
 
-const MainLayout = ({
-  children,
-  pageName,
-}: LayoutProps) => {
+const MainLayout = ({ children, pageName }: LayoutProps) => {
   useEffect(() => {
     document.title = "Payfleet  - " + pageName;
   }, [pageName]);
@@ -114,13 +111,12 @@ const MainLayout = ({
       </div>
       <div className="flex items-start h-[calc(100vh-90px)]">
         <div
-          className={`lg:w-[20%] z-100 bg-black/80 overflow-hidden h-full w-full lg:sticky absolute top-0 transition-all duration-500 lg:rounded-2xl ${isOpen ? "left-0" : "-left-full"
-            }`}
+          className={`lg:w-[20%] z-100 bg-black/80 overflow-hidden h-full w-full lg:sticky absolute top-0 transition-all duration-500 lg:rounded-2xl ${
+            isOpen ? "left-0" : "-left-full"
+          }`}
         >
           <div className="bg-tertiary lg:w-full md:w-3/5 w-4/5 h-full px-2 py-4 lg:pt-0 pt-3 flex flex-col justify-between ">
-
             <div className="lg:hidden flex items-center border-b border-b-secondary justify-between p-4 w-full ">
-
               <img
                 src={assets.logo}
                 alt="Payfleet Logo"
@@ -160,7 +156,7 @@ const MainLayout = ({
                   display: "flex",
                   flexDirection: "column",
                 }}
-                className="md:px-4 h-full overflow-y-scroll no-scrollbar"
+                className="md:px-4 h-full overflow-y-scroll no-scrollbar pb-20"
               >
                 {children}
               </motion.div>

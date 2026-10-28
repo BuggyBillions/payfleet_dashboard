@@ -1,5 +1,11 @@
 import { RxDashboard } from "react-icons/rx";
-import { LuUsersRound, LuArrowDownToLine, LuHistory, LuBuilding2, LuScrollText } from "react-icons/lu";
+import {
+  LuUsersRound,
+  LuArrowDownToLine,
+  LuHistory,
+  LuBuilding2,
+  LuScrollText,
+} from "react-icons/lu";
 import { FaMoneyBillWave, FaUsers } from "react-icons/fa6";
 import { LiaUsersCogSolid } from "react-icons/lia";
 import { BsChat } from "react-icons/bs";
@@ -23,16 +29,18 @@ export const navItems: NavItem[] = [
       {
         name: "All Employees",
         path: "/dashboard/employees",
-      }, {
+      },
+      {
         name: "Add Employee",
-        path: "/dashboard/employees/add"
-      }
-    ]
+        path: "/dashboard/employees/add",
+      },
+    ],
   },
   {
     name: "Deposits",
     icon: LuArrowDownToLine,
-    role: ["company"], path: "/dashboard/deposits"
+    role: ["company"],
+    path: "/dashboard/deposits",
   },
   {
     name: "Process Payments",
@@ -52,12 +60,6 @@ export const navItems: NavItem[] = [
     path: "/dashboard/notifications",
     role: ["company", "user"],
   },
-  {
-    name: "Activity Log",
-    icon: LuScrollText,
-    path: "/dashboard/activity-log",
-    role: ["company"],
-  },
 
   // --- Super Admin Navigation ---
   {
@@ -71,13 +73,13 @@ export const navItems: NavItem[] = [
     icon: FaUsers,
     children: [
       {
-        name: 'All Companies',
+        name: "All Companies",
         path: "/admin/dashboard/company",
       },
       {
-        name: 'Company Verification',
-        path: '/admin/dashboard/company-verification'
-      }
+        name: "Company Verification",
+        path: "/admin/dashboard/company-verification",
+      },
     ],
     role: ["admin"],
   },
@@ -117,6 +119,12 @@ export const navItems: NavItem[] = [
     path: "/admin/dashboard/chat",
     role: ["admin"],
   },
+  {
+    name: "Activity Log",
+    icon: LuScrollText,
+    path: "/dashboard/activity-log",
+    role: ["admin"],
+  },
 
   // --- Financial Navigation --
   {
@@ -129,7 +137,7 @@ export const navItems: NavItem[] = [
     name: "Manage Deposits",
     icon: LuArrowDownToLine,
     role: ["finance"],
-    path: "/financial/dashboard/deposit"
+    path: "/financial/dashboard/deposit",
   },
   {
     name: "Manage Payments",
