@@ -107,7 +107,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
 }) => {
   const [files, setFiles] = useState<DocumentFiles>({});
   const [regNoToVerify, setRegNoToVerify] = useState<string>("");
-  const initialRegNo = useRef<string>((values.bn_number || "").trim());
+  const [initialRegNo] = useState<string>(() => (values.bn_number || "").trim());
   const lastToastedRef = useRef<string>("");
 
   const {
@@ -141,7 +141,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const currentRegNo = (values.bn_number || "").trim();
   const isRegNoEligible = currentRegNo.length >= 6 && currentRegNo.length <= 8;
   const isUnchangedExisting = Boolean(
-    initialRegNo.current && currentRegNo === initialRegNo.current
+    initialRegNo && currentRegNo === initialRegNo
   );
 
   const isVerified = Boolean(
@@ -165,7 +165,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
       toast.success(`Registration verified: ${resolvedCompanyName}`);
       onChange("company_name", resolvedCompanyName);
     }
-  }, [isRegNoSuccess, resolvedCompanyName, regNoToVerify, currentRegNo]);
+  }, [isRegNoSuccess, resolvedCompanyName, regNoToVerify, currentRegNo, onChange]);
 
   useEffect(() => {
     if (
