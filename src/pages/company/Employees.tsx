@@ -14,7 +14,6 @@ import ConfirmDialog from "../../components/modal/ConfirmDialog";
 import ActionCell from "../../components/ui/ActionCell";
 import type { TableColumnProps, Employee, EmployeeDeduction, EmployeeListResponse } from "../../lib/interfaces";
 import { formatShortDate, formatterUtility } from "../../helpers/formatterUtility";
-import { getEmployeeNetPay } from "../../helpers/feeCalculator";
 import { getErrorMessage } from "../../helpers/api";
 import { useUser } from "../../hooks/useUser";
 import { useEmployeeDeductions } from "../../hooks/useEmployeeDeduction";
@@ -116,7 +115,7 @@ const Employees: React.FC = () => {
 
   const { data: employeeDeductions } = useEmployeeDeductions(
     { company_id: companyId, per_page: 500 },
-    Boolean(companyId) && activeTab === "employees",
+    Boolean(companyId),
   );
 
   const {
@@ -150,11 +149,47 @@ const Employees: React.FC = () => {
   const statsEmployees = statsData?.items ?? [];
   const payrollEmployees = statsEmployees.filter(isOnPayroll);
   const onPayrollCount = payrollEmployees.length;
+  const getEmpDeduction = (emp: Employee): number => {
+    const row = deductionByEmployee.get(String(emp.id));
+    const rawVal =
+      row?.amount ||
+      emp.deducted_amount ||
+      emp.deduction_amount ||
+      0;
+    const amount = Number(rawVal);
+    return isNaN(amount) ? 0 : Math.max(0, amount);
+  };
+
+  const getEmpNetPay = (emp: Employee): number => {
+    const gross = Number(emp.estimate_pay) || 0;
+    const deduction = getEmpDeduction(emp);
+    return Math.max(0, gross - deduction);
+  };
+
   const totalPayroll = payrollEmployees.reduce(
-    (sum, emp) => sum + getEmployeeNetPay(emp),
+    (sum, emp) => sum + (Number(emp.estimate_pay) || 0),
     0,
   );
-  const averagePay = onPayrollCount ? totalPayroll / onPayrollCount : 0;
+
+  const expectedAmountToPay = payrollEmployees.reduce(
+    (sum, emp) => sum + getEmpNetPay(emp),
+    0,
+  );
+
+  const totalDeductionsFromList = (employeeDeductions?.items ?? []).reduce(
+    (sum, item) => sum + (Number(item.amount) || 0),
+    0,
+  );
+  const totalDeductionsFromPayroll = payrollEmployees.reduce(
+    (sum, emp) => sum + getEmpDeduction(emp),
+    0,
+  );
+  const expectedAmountToBeDeducted =
+    totalDeductionsFromList > 0
+      ? totalDeductionsFromList
+      : totalDeductionsFromPayroll > 0
+        ? totalDeductionsFromPayroll
+        : Number(deductionsData?.totalAmount) || 0;
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ["employees"] });
@@ -224,20 +259,14 @@ const Employees: React.FC = () => {
       label: "Pay",
       render: (item) => (
         <span className="font-semibold text-primary">
-          {formatterUtility(getEmployeeNetPay(item))}
+          {formatterUtility(getEmpNetPay(item))}
         </span>
       ),
     },
     {
       label: "Deduction",
       render: (item) => {
-        const row = deductionByEmployee.get(String(item.id));
-        const amount = Number(
-          row?.amount ??
-          item.deducted_amount ??
-          item.deduction_amount ??
-          0
-        );
+        const amount = getEmpDeduction(item);
 
         if (!amount) {
           return <span className="text-textBlack/40">—</span>;
@@ -413,11 +442,19 @@ const Employees: React.FC = () => {
           title="Total Payroll"
           value={formatterUtility(totalPayroll)}
         />
-        <OverviewCards
-          icon={TbReceiptDollar}
-          title="Average Pay"
-          value={formatterUtility(averagePay)}
-        />
+        {activeTab === "employees" ? (
+          <OverviewCards
+            icon={TbReceiptDollar}
+            title="Expected Amount to Pay"
+            value={formatterUtility(expectedAmountToPay)}
+          />
+        ) : (
+          <OverviewCards
+            icon={FiMinusCircle}
+            title="Expected Amount to be Deducted"
+            value={formatterUtility(expectedAmountToBeDeducted)}
+          />
+        )}
       </div>
 
       {activeTab === "employees" ? (
