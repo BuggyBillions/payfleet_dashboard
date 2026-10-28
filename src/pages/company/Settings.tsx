@@ -23,6 +23,7 @@ import type { SettingsTab, PasswordFieldProps } from "../../lib/interfaces";
 import { TbLockPassword } from "react-icons/tb";
 import PasswordStrengthIndicator from "../../components/ui/PasswordStrengthIndicator";
 import { validatePasswordRequirements } from "../../helpers/passwordUtils";
+import PinInput from "../../components/ui/PinInput";
 
 type DocumentField = DocumentKey;
 
@@ -453,28 +454,24 @@ const Settings: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex flex-col gap-y-4">
-              <PasswordField
+            <div className="flex flex-col gap-y-6 bg-tertiary p-6 rounded-2xl border border-primary/10">
+              <PinInput
                 label="Current 4-Digit PIN"
                 value={pin.current_pin}
                 onChange={(value) =>
-                  setPin((prev) => ({ ...prev, current_pin: value.replace(/\D/g, "") }))
+                  setPin((prev) => ({ ...prev, current_pin: value }))
                 }
-                visible={isFieldVisible("pin_current")}
-                onToggle={() => toggleField("pin_current")}
-                maxLength={4}
-                placeholder="Enter current PIN"
+                length={4}
+                autoFocus={false}
               />
-              <PasswordField
+              <PinInput
                 label="New 4-Digit PIN"
                 value={pin.new_pin}
                 onChange={(value) =>
-                  setPin((prev) => ({ ...prev, new_pin: value.replace(/\D/g, "") }))
+                  setPin((prev) => ({ ...prev, new_pin: value }))
                 }
-                visible={isFieldVisible("pin_new")}
-                onToggle={() => toggleField("pin_new")}
-                maxLength={4}
-                placeholder="Enter new 4-digit PIN"
+                length={4}
+                autoFocus={false}
               />
             </div>
             <button

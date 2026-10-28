@@ -10,6 +10,7 @@ import { getTierConfig } from "../../../services/tierService";
 import { getEmployees } from "../../../services/employeeService";
 import { useQuery } from "@tanstack/react-query";
 import { formatterUtility } from "../../../helpers/formatterUtility";
+import { getEmployeeNetPay } from "../../../helpers/feeCalculator";
 import { CompanyLogoAvatar } from "../../ui/CompanyLogoAvatar";
 import ReusableTable from "../../../utility/ReusableTable";
 import {
@@ -169,7 +170,7 @@ const ViewCompanyModal: React.FC<ViewCompanyModalProps> = ({
       key: "estimate_pay",
       render: (item: Employee) => (
         <span className="text-xs text-textBlack font-semibold">
-          {formatterUtility(Number(item.estimate_pay) || 0)}
+          {formatterUtility(getEmployeeNetPay(item))}
         </span>
       ),
     },

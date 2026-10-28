@@ -19,6 +19,7 @@ import {
 } from "../../services/depositService";
 import StatusBadge from "../../components/ui/StatusBadge";
 import PageHeader from "../../components/navs/PageHeader";
+import { getEmployeeNetPay } from "../../helpers/feeCalculator";
 
 interface DepositRow {
   id: number | string;
@@ -91,7 +92,7 @@ const Overview: React.FC = () => {
         const employees = empData.items ?? [];
         let payroll = 0;
         employees.forEach((emp) => {
-          payroll += Number(emp.estimate_pay) || 0;
+          payroll += getEmployeeNetPay(emp);
         });
         setTotalEmployees(empData.totalItems ?? employees.length);
         setTotalPayroll(payroll);
