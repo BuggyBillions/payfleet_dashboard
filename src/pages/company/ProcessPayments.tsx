@@ -1,8 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import ReusableTable from "../../utility/ReusableTable";
 import Modal from "../../components/modal/Modal";
-import type { TableColumnProps, Employee, EmployeeListResponse } from "../../lib/interfaces";
+import PaymentFeeBreakdownModal from "../../components/modal/PaymentFeeBreakdownModal";
+import type {
+  TableColumnProps,
+  Employee,
+  EmployeeListResponse,
+} from "../../lib/interfaces";
 import { formatterUtility } from "../../helpers/formatterUtility";
 import { toast } from "sonner";
 import { IoSearchOutline } from "react-icons/io5";
@@ -27,6 +32,9 @@ const ProcessPayments: React.FC = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
+
+  // Modals state
+  const [isFeeBreakdownOpen, setIsFeeBreakdownOpen] = useState(false);
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [pin, setPin] = useState("");
 
@@ -60,7 +68,35 @@ const ProcessPayments: React.FC = () => {
   const employees = data?.items ?? [];
   const totalItems = data?.totalItems ?? employees.length;
 
-  const openPinModal = () => {
+  // Calculate included employees for payout
+  const includedEmployees = useMemo(() => {
+    return employees.filter(isIncludedForPayout);
+  }, [employees]);
+
+  const payableCount = useMemo(() => {
+    if (includedEmployees.length > 0) return includedEmployees.length;
+    return totalItems > 0 ? totalItems : 1;
+  }, [includedEmployees, totalItems]);
+
+  const totalEstimatePayout = useMemo(() => {
+    return includedEmployees.reduce(
+      (sum, item) => sum + (Number(item.estimate_pay) || 0),
+      0,
+    );
+  }, [includedEmployees]);
+
+  // Step 1: Initiate payment -> Open Fee Breakdown Modal
+  const handleInitiatePayment = () => {
+    if (totalItems === 0) {
+      toast.error("No employees found to process payment for.");
+      return;
+    }
+    setIsFeeBreakdownOpen(true);
+  };
+
+  // Step 2: Fee breakdown confirmed -> Open PIN modal
+  const handleConfirmFeeBreakdown = () => {
+    setIsFeeBreakdownOpen(false);
     setPin("");
     setIsPinModalOpen(true);
   };
@@ -87,7 +123,8 @@ const ProcessPayments: React.FC = () => {
     );
   };
 
-  const columns: TableColumnProps<Employee>[] = [    {
+  const columns: TableColumnProps<Employee>[] = [
+    {
       label: "Full Name",
       render: (item) => (
         <span className="font-semibold text-inherit">
@@ -110,11 +147,16 @@ const ProcessPayments: React.FC = () => {
     },
     {
       label: "Pay",
-      render: (item) => (
-        <span className="font-semibold text-primary">
-          {formatterUtility(Number(item.estimate_pay))}
-        </span>
-      ),
+      render: (item) => {
+        const calculatedPay = item.deduction_amount
+          ? +item.estimate_pay - +item.deduction_amount
+          : item.estimate_pay;
+        return (
+          <span className="font-semibold text-primary">
+            {formatterUtility(Number(calculatedPay))}
+          </span>
+        );
+      },
     },
     {
       label: "Payout",
@@ -170,9 +212,9 @@ const ProcessPayments: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={openPinModal}
-              disabled={payAllMutation.isPending}
-              className="flex items-center gap-1.5 px-4 h-9 rounded-md text-xs font-medium bg-primary text-white cursor-pointer disabled:opacity-60"
+              onClick={handleInitiatePayment}
+              disabled={payAllMutation.isPending || isLoading}
+              className="flex items-center gap-1.5 px-4 h-9 rounded-md text-xs font-medium bg-primary text-white cursor-pointer disabled:opacity-60 shadow-xs hover:bg-primary/95 transition"
             >
               <FaMoneyBillWave size={12} />
               Pay
@@ -194,9 +236,21 @@ const ProcessPayments: React.FC = () => {
         />
       </div>
 
+      {/* Step 1: Payment Fee Breakdown Modal */}
+      <PaymentFeeBreakdownModal
+        isOpen={isFeeBreakdownOpen}
+        onClose={() => setIsFeeBreakdownOpen(false)}
+        onConfirm={handleConfirmFeeBreakdown}
+        employeeCount={payableCount}
+        totalPayoutAmount={
+          totalEstimatePayout > 0 ? totalEstimatePayout : undefined
+        }
+      />
+
+      {/* Step 2: Transaction PIN Modal */}
       {isPinModalOpen && (
         <Modal onClose={closePinModal}>
-          <div className="flex flex-col gap-5 max-w-sm">
+          <div className="flex flex-col gap-5">
             <div className="flex flex-col">
               <h3 className="font-semibold text-base text-textBlack">
                 Confirm Payment

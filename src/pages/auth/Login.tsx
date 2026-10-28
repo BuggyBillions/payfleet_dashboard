@@ -140,7 +140,7 @@ const Login: React.FC = () => {
         }
       },
       onError: (error: unknown) => {
-        console.error("Post-OTP login error:", error);
+        // console.error("Post-OTP login error:", error);
         toast.error(getErrorMessage(error));
       },
     });
@@ -154,16 +154,16 @@ const Login: React.FC = () => {
         <h1 className="text-white text-xl px-10 lg:px-0 lg:text-4xl lg:leading-12 lg:max-w-100 font-semibold">
           Welcome Back! Securely access your dashboard.
         </h1>
-      <Link
-           to={"/"}
-           className="absolute -md:top-5 md:h-45 h-15 top-3 md:left-8 left-0 lg:w-1/5 md:w-1/3 w-full"
-         >
-           <img
-             src={assets.whiteLogo}
-             alt="PayFleet Logo"
-             className="md:w-full w-1/3 mx-auto object-cover h-full"
-           />
-         </Link>
+        <Link
+          to={"/"}
+          className="absolute -md:top-5 md:h-45 h-15 top-3 md:left-8 left-0 lg:w-1/5 md:w-1/3 w-full"
+        >
+          <img
+            src={assets.whiteLogo}
+            alt="PayFleet Logo"
+            className="md:w-full w-1/3 mx-auto object-cover h-full"
+          />
+        </Link>
       </div>
 
       <div className="md:w-1/2 w-full md:h-full h-[65vh] overflow-y-auto lg:p-12 p-8 flex flex-col md:justify-center bg-white md:rounded-none rounded-t-4xl">
