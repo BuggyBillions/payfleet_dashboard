@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { LuLoader } from "react-icons/lu";
 import Modal from "./Modal";
 import PaymentFeeBreakdownModal from "./PaymentFeeBreakdownModal";
+import PinInput from "../ui/PinInput";
 import type { SalaryPayment } from "../../lib/interfaces";
 import { useUser } from "../../hooks/useUser";
 import { useRetryPayrollPayment } from "../../hooks/useSalaryPayments";
@@ -10,7 +11,7 @@ import { formatterUtility } from "../../helpers/formatterUtility";
 
 /**
  * Shows fee breakdown for the single employee payout retry,
- * then asks for the transaction PIN and executes POST /retry-payroll/{id}.
+ * then asks for the 4-digit transaction PIN via 4-pin box and executes POST /retry-payroll/{id}.
  */
 const RetryPayrollModal: React.FC<{
   payment: SalaryPayment | null;
@@ -43,7 +44,11 @@ const RetryPayrollModal: React.FC<{
 
     retryMutation.mutate(
       { id: payment.id, pin, company_id: companyId },
-      { onSuccess: close },
+      {
+        onSuccess: () => {
+          close();
+        },
+      },
     );
   };
 
@@ -62,11 +67,11 @@ const RetryPayrollModal: React.FC<{
         />
       )}
 
-      {/* Step 2: Transaction PIN modal */}
+      {/* Step 2: Transaction PIN modal with 4-PIN Box */}
       {step === "pin" && (
         <Modal onClose={close}>
-          <div className="flex flex-col gap-5 max-w-sm">
-            <div className="flex flex-col">
+          <div className="flex flex-col gap-6 max-w-sm w-full mx-auto p-1">
+            <div className="flex flex-col text-center sm:text-left space-y-1">
               <h3 className="font-semibold text-base text-textBlack">
                 Authorize Retry Payment
               </h3>
@@ -77,23 +82,19 @@ const RetryPayrollModal: React.FC<{
               </p>
             </div>
 
-            <label className="flex flex-col space-y-1.5">
-              <span className="font-medium text-xs text-textBlack">
-                Transaction PIN
-              </span>
-              <input
-                type="password"
-                inputMode="numeric"
-                autoFocus
-                maxLength={4}
+            {/* 4-Box PIN Input */}
+            <div className="py-2">
+              <PinInput
                 value={pin}
-                onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-                placeholder="Enter 4-digit PIN"
-                className="w-full text-textBlack border border-primary/10 bg-secondary rounded-lg px-4 h-11 text-xs outline-0 placeholder:text-textBlack/40 focus:border-primary/40 transition"
+                onChange={setPin}
+                length={4}
+                autoFocus
+                disabled={retryMutation.isPending}
+                label="Enter 4-Digit PIN"
               />
-            </label>
+            </div>
 
-            <div className="flex items-center justify-end gap-3">
+            <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 type="button"
                 onClick={close}
@@ -105,13 +106,13 @@ const RetryPayrollModal: React.FC<{
               <button
                 type="button"
                 onClick={handleRetry}
-                disabled={retryMutation.isPending}
-                className="px-6 h-10 text-xs font-medium bg-primary hover:bg-primary/90 text-textBlack rounded-lg transition cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
+                disabled={retryMutation.isPending || pin.length !== 4}
+                className="px-6 h-10 text-xs font-medium bg-primary hover:bg-primary/90 text-white rounded-lg transition cursor-pointer flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed shadow-xs"
               >
                 {retryMutation.isPending && (
                   <LuLoader size={13} className="animate-spin" />
                 )}
-                {retryMutation.isPending ? "Retrying..." : "Retry"}
+                {retryMutation.isPending ? "Retrying..." : "Retry Payment"}
               </button>
             </div>
           </div>

@@ -572,6 +572,7 @@ export interface Employee {
   estimate_pay: number | string;
   paying?: string | number;
   deduction_amount?: number | string | null;
+  deducted_amount?: number | string | null;
   deduction_id?: number | string | null;
   company?: EmployeeCompanyProps;
   created_at?: string;

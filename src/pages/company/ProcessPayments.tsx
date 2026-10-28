@@ -3,12 +3,17 @@ import { useQuery } from "@tanstack/react-query";
 import ReusableTable from "../../utility/ReusableTable";
 import Modal from "../../components/modal/Modal";
 import PaymentFeeBreakdownModal from "../../components/modal/PaymentFeeBreakdownModal";
+import PinInput from "../../components/ui/PinInput";
 import type {
   TableColumnProps,
   Employee,
   EmployeeListResponse,
 } from "../../lib/interfaces";
 import { formatterUtility } from "../../helpers/formatterUtility";
+import {
+  getEmployeeNetPay,
+  getEmployeeDeductionAmount,
+} from "../../helpers/feeCalculator";
 import { toast } from "sonner";
 import { IoSearchOutline } from "react-icons/io5";
 import { FaMoneyBillWave } from "react-icons/fa6";
@@ -78,9 +83,10 @@ const ProcessPayments: React.FC = () => {
     return totalItems > 0 ? totalItems : 1;
   }, [includedEmployees, totalItems]);
 
+  // Check for deducted_amount / deduction_amount and subtract from estimate_pay
   const totalEstimatePayout = useMemo(() => {
     return includedEmployees.reduce(
-      (sum, item) => sum + (Number(item.estimate_pay) || 0),
+      (sum, item) => sum + getEmployeeNetPay(item),
       0,
     );
   }, [includedEmployees]);
@@ -119,7 +125,12 @@ const ProcessPayments: React.FC = () => {
 
     payAllMutation.mutate(
       { pin, company_id: companyId },
-      { onSuccess: () => setIsPinModalOpen(false) },
+      {
+        onSuccess: () => {
+          setIsPinModalOpen(false);
+          setPin("");
+        },
+      },
     );
   };
 
@@ -148,13 +159,19 @@ const ProcessPayments: React.FC = () => {
     {
       label: "Pay",
       render: (item) => {
-        const calculatedPay = item.deduction_amount
-          ? +item.estimate_pay - +item.deduction_amount
-          : item.estimate_pay;
+        const netPay = getEmployeeNetPay(item);
+        const deduction = getEmployeeDeductionAmount(item);
         return (
-          <span className="font-semibold text-primary">
-            {formatterUtility(Number(calculatedPay))}
-          </span>
+          <div className="flex flex-col">
+            <span className="font-semibold text-primary">
+              {formatterUtility(netPay)}
+            </span>
+            {deduction > 0 && (
+              <span className="text-[10px] text-red-500 font-medium">
+                -{formatterUtility(deduction)} ded.
+              </span>
+            )}
+          </div>
         );
       },
     },
@@ -247,11 +264,11 @@ const ProcessPayments: React.FC = () => {
         }
       />
 
-      {/* Step 2: Transaction PIN Modal */}
+      {/* Step 2: Transaction PIN Modal with 4-Pin Box */}
       {isPinModalOpen && (
         <Modal onClose={closePinModal}>
-          <div className="flex flex-col gap-5">
-            <div className="flex flex-col">
+          <div className="flex flex-col gap-6 w-full mx-auto p-1">
+            <div className="flex flex-col text-center sm:text-left space-y-1">
               <h3 className="font-semibold text-base text-textBlack">
                 Confirm Payment
               </h3>
@@ -261,23 +278,19 @@ const ProcessPayments: React.FC = () => {
               </p>
             </div>
 
-            <label className="flex flex-col space-y-1.5">
-              <span className="font-medium text-xs text-textBlack">
-                Transaction PIN
-              </span>
-              <input
-                type="password"
-                inputMode="numeric"
-                autoFocus
-                maxLength={4}
+            {/* 4-Box PIN Input */}
+            <div className="py-2">
+              <PinInput
                 value={pin}
-                onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-                placeholder="Enter 4-digit PIN"
-                className="w-full text-textBlack border border-primary/10 bg-secondary rounded-lg px-4 h-11 text-xs outline-0 placeholder:text-textBlack/40 focus:border-primary/40 transition"
+                onChange={setPin}
+                length={4}
+                autoFocus
+                disabled={payAllMutation.isPending}
+                label="Enter 4-Digit PIN"
               />
-            </label>
+            </div>
 
-            <div className="flex items-center justify-end gap-3">
+            <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 type="button"
                 onClick={closePinModal}
@@ -289,8 +302,8 @@ const ProcessPayments: React.FC = () => {
               <button
                 type="button"
                 onClick={handlePayAll}
-                disabled={payAllMutation.isPending}
-                className="px-6 h-10 text-xs font-medium bg-primary hover:bg-primary/90 text-textBlack rounded-lg transition cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
+                disabled={payAllMutation.isPending || pin.length !== 4}
+                className="px-6 h-10 text-xs font-medium bg-primary hover:bg-primary/90 text-white rounded-lg transition cursor-pointer flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed shadow-xs"
               >
                 {payAllMutation.isPending && (
                   <LuLoader size={13} className="animate-spin" />

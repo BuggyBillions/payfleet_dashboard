@@ -52,3 +52,43 @@ export const calculateFeeBreakdown = (
     totalFees,
   };
 };
+
+/**
+ * Safely extracts any active deduction amount recorded against an employee.
+ * Checks for `deducted_amount` first, then falls back to `deduction_amount`.
+ */
+export const getEmployeeDeductionAmount = (
+  employee: {
+    deducted_amount?: number | string | null;
+    deduction_amount?: number | string | null;
+  } | null | undefined
+): number => {
+  if (!employee) return 0;
+  if (employee.deducted_amount !== undefined && employee.deducted_amount !== null) {
+    const val = Number(employee.deducted_amount);
+    return isNaN(val) ? 0 : Math.max(0, val);
+  }
+  if (employee.deduction_amount !== undefined && employee.deduction_amount !== null) {
+    const val = Number(employee.deduction_amount);
+    return isNaN(val) ? 0 : Math.max(0, val);
+  }
+  return 0;
+};
+
+/**
+ * Calculates net payable salary for an employee:
+ * Net Pay = Max(0, estimate_pay - deduction).
+ * Checks if `deducted_amount` (or `deduction_amount`) exists and subtracts it.
+ */
+export const getEmployeeNetPay = (
+  employee: {
+    estimate_pay?: number | string;
+    deducted_amount?: number | string | null;
+    deduction_amount?: number | string | null;
+  } | null | undefined
+): number => {
+  if (!employee) return 0;
+  const gross = Number(employee.estimate_pay) || 0;
+  const deduction = getEmployeeDeductionAmount(employee);
+  return Math.max(0, roundToTwoDecimals(gross - deduction));
+};

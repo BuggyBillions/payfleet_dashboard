@@ -14,6 +14,7 @@ import ConfirmDialog from "../../components/modal/ConfirmDialog";
 import ActionCell from "../../components/ui/ActionCell";
 import type { TableColumnProps, Employee, EmployeeDeduction, EmployeeListResponse } from "../../lib/interfaces";
 import { formatShortDate, formatterUtility } from "../../helpers/formatterUtility";
+import { getEmployeeNetPay } from "../../helpers/feeCalculator";
 import { getErrorMessage } from "../../helpers/api";
 import { useUser } from "../../hooks/useUser";
 import { useEmployeeDeductions } from "../../hooks/useEmployeeDeduction";
@@ -150,7 +151,7 @@ const Employees: React.FC = () => {
   const payrollEmployees = statsEmployees.filter(isOnPayroll);
   const onPayrollCount = payrollEmployees.length;
   const totalPayroll = payrollEmployees.reduce(
-    (sum, emp) => sum + (Number(emp.estimate_pay) || 0),
+    (sum, emp) => sum + getEmployeeNetPay(emp),
     0,
   );
   const averagePay = onPayrollCount ? totalPayroll / onPayrollCount : 0;
@@ -223,7 +224,7 @@ const Employees: React.FC = () => {
       label: "Pay",
       render: (item) => (
         <span className="font-semibold text-primary">
-          {formatterUtility(Number(item.estimate_pay))}
+          {formatterUtility(getEmployeeNetPay(item))}
         </span>
       ),
     },
@@ -231,7 +232,12 @@ const Employees: React.FC = () => {
       label: "Deduction",
       render: (item) => {
         const row = deductionByEmployee.get(String(item.id));
-        const amount = Number(row?.amount ?? item.deduction_amount ?? 0);
+        const amount = Number(
+          row?.amount ??
+          item.deducted_amount ??
+          item.deduction_amount ??
+          0
+        );
 
         if (!amount) {
           return <span className="text-textBlack/40">—</span>;
