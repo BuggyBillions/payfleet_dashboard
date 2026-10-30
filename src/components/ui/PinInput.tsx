@@ -35,6 +35,7 @@ const PinInput: React.FC<PinInputProps> = ({
       const targetIndex = firstEmptyIndex === -1 ? 0 : firstEmptyIndex;
       inputRefs.current[targetIndex]?.focus();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleChange = (index: number, char: string) => {

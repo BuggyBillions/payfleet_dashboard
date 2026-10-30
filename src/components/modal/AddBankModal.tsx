@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Modal from "./Modal";
 import type { AddBankModalProps, BankItem } from "../../lib/interfaces";
 import { useCreateAccount, useResolveAccount } from "../../hooks/useBank";
@@ -16,6 +16,10 @@ const AddBankModal: React.FC<AddBankModalProps> = ({
 }) => {
   const createAccountMutation = useCreateAccount();
   const resolveAccountMutation = useResolveAccount();
+  const { mutate: resolveAccount, isPending: isResolvingAccount } =
+    resolveAccountMutation;
+
+  const lastResolvedRef = useRef<string>("");
 
   const [bankName, setBankName] = useState(defaultBank?.name || "");
   const [bankCode, setBankCode] = useState(defaultBank?.code || "");
@@ -24,10 +28,16 @@ const AddBankModal: React.FC<AddBankModalProps> = ({
 
   // Auto-resolve account name using /resolve-account when 10 digits and bank_code are present
   useEffect(() => {
-    if (accountNumber.trim().length === 10 && bankCode) {
-      resolveAccountMutation.mutate(
+    const trimmedAccount = accountNumber.trim();
+    if (trimmedAccount.length === 10 && bankCode) {
+      const currentKey = `${bankCode}:${trimmedAccount}`;
+      if (lastResolvedRef.current === currentKey) {
+        return;
+      }
+      lastResolvedRef.current = currentKey;
+      resolveAccount(
         {
-          account_number: accountNumber.trim(),
+          account_number: trimmedAccount,
           bank_code: bankCode,
         },
         {
@@ -47,10 +57,15 @@ const AddBankModal: React.FC<AddBankModalProps> = ({
               toast.success(`Account verified: ${resolvedName}`);
             }
           },
+          onError: () => {
+            setAccountName("");
+          },
         }
       );
+    } else {
+      lastResolvedRef.current = "";
     }
-  }, [accountNumber, bankCode, resolveAccountMutation]);
+  }, [accountNumber, bankCode, resolveAccount]);
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -116,6 +131,7 @@ const AddBankModal: React.FC<AddBankModalProps> = ({
               onSelect={(selected: BankItem) => {
                 setBankName(selected.name);
                 setBankCode(selected.code || selected.bank_code || "");
+                setAccountName("");
               }}
               className="w-full"
               inputContClassName="w-full text-textBlack border border-primary/10 bg-secondary rounded-lg h-11 text-xs outline-0"
@@ -136,9 +152,13 @@ const AddBankModal: React.FC<AddBankModalProps> = ({
               type="text"
               maxLength={10}
               value={accountNumber}
-              onChange={(e) =>
-                setAccountNumber(e.target.value.replace(/\D/g, ""))
-              }
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, "");
+                setAccountNumber(val);
+                if (val.length !== 10) {
+                  setAccountName("");
+                }
+              }}
               placeholder="10-digit NUBAN account number"
               className={inputClass}
               required
@@ -151,7 +171,7 @@ const AddBankModal: React.FC<AddBankModalProps> = ({
               <label className="font-medium text-xs text-textBlack">
                 Account Name 
               </label>
-              {resolveAccountMutation.isPending ? (
+              {isResolvingAccount ? (
                 <span className="text-[10px] text-primary animate-pulse">
                   Resolving account name...
                 </span>

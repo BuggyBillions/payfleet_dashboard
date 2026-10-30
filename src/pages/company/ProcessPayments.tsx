@@ -3,11 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import ReusableTable from "../../utility/ReusableTable";
 import Modal from "../../components/modal/Modal";
 import PaymentFeeBreakdownModal from "../../components/modal/PaymentFeeBreakdownModal";
+import PayrollFeedbackModal from "../../components/modal/PayrollFeedbackModal";
 import PinInput from "../../components/ui/PinInput";
 import type {
   TableColumnProps,
   Employee,
   EmployeeListResponse,
+  PayEmployeesResponse,
 } from "../../lib/interfaces";
 import { formatterUtility } from "../../helpers/formatterUtility";
 import {
@@ -42,6 +44,7 @@ const ProcessPayments: React.FC = () => {
   const [isFeeBreakdownOpen, setIsFeeBreakdownOpen] = useState(false);
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [pin, setPin] = useState("");
+  const [payrollFeedback, setPayrollFeedback] = useState<PayEmployeesResponse | null>(null);
 
   const payAllMutation = usePayEmployees();
 
@@ -70,7 +73,7 @@ const ProcessPayments: React.FC = () => {
     placeholderData: (prev) => prev,
   });
 
-  const employees = data?.items ?? [];
+  const employees = useMemo(() => data?.items ?? [], [data?.items]);
   const totalItems = data?.totalItems ?? employees.length;
 
   // Calculate included employees for payout
@@ -86,9 +89,23 @@ const ProcessPayments: React.FC = () => {
   // Check for deducted_amount / deduction_amount and subtract from estimate_pay
   const totalEstimatePayout = useMemo(() => {
     return includedEmployees.reduce(
-      (sum, item) => sum + getEmployeeNetPay(item),
+      (sum, item) => {
+        const basePay = Number(item.estimate_pay) || 0;
+        const deduction = Number(item.deduction_amount) || 0;
+        const calculatedPay = basePay - deduction;
+        return sum + (calculatedPay > 0 ? calculatedPay : 0);
+      },
       0,
     );
+  }, [includedEmployees]);
+
+  const fgEligibleCount = useMemo(() => {
+    return includedEmployees.filter((item) => {
+      const basePay = Number(item.estimate_pay) || 0;
+      const deduction = Number(item.deduction_amount) || 0;
+      const calculatedPay = basePay - deduction;
+      return calculatedPay > 10000;
+    }).length;
   }, [includedEmployees]);
 
   // Step 1: Initiate payment -> Open Fee Breakdown Modal
@@ -126,9 +143,12 @@ const ProcessPayments: React.FC = () => {
     payAllMutation.mutate(
       { pin, company_id: companyId },
       {
-        onSuccess: () => {
+        onSuccess: (res) => {
           setIsPinModalOpen(false);
           setPin("");
+          if (res) {
+            setPayrollFeedback(res);
+          }
         },
       },
     );
@@ -151,7 +171,7 @@ const ProcessPayments: React.FC = () => {
     {
       label: "Employment Type",
       render: (item) => (
-        <span className="inline-flex items-center px-2 py-1 rounded-full bg-[#2A5D56]/10 text-[#2A5D56] text-[10px] font-medium capitalize">
+        <span className="inline-flex items-center px-2 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-medium capitalize">
           {item.employment_type}
         </span>
       ),
@@ -168,7 +188,7 @@ const ProcessPayments: React.FC = () => {
             </span>
             {deduction > 0 && (
               <span className="text-[10px] text-red-500 font-medium">
-                -{formatterUtility(deduction)} ded.
+                -{formatterUtility(deduction)} deduction.
               </span>
             )}
           </div>
@@ -183,7 +203,7 @@ const ProcessPayments: React.FC = () => {
           <span
             className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium ${
               included
-                ? "bg-[#2A5D56]/10 text-[#2A5D56]"
+                ? "bg-primary/10 text-primary"
                 : "bg-gray-200 text-gray-500"
             }`}
           >
@@ -203,7 +223,7 @@ const ProcessPayments: React.FC = () => {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div className="flex flex-col">
-          <h2 className="text-lg font-semibold">Process Payments</h2>
+          <h2 className="text-lg text-textBlack font-semibold">Process Payments</h2>
           <p className="text-sm text-gray-500">
             Select staff and process their salary payments
           </p>
@@ -259,10 +279,20 @@ const ProcessPayments: React.FC = () => {
         onClose={() => setIsFeeBreakdownOpen(false)}
         onConfirm={handleConfirmFeeBreakdown}
         employeeCount={payableCount}
+        fgEligibleCount={fgEligibleCount}
         totalPayoutAmount={
           totalEstimatePayout > 0 ? totalEstimatePayout : undefined
         }
       />
+
+      {/* Step 3: Payroll Results Feedback Modal */}
+      {payrollFeedback && (
+        <PayrollFeedbackModal
+          isOpen={Boolean(payrollFeedback)}
+          onClose={() => setPayrollFeedback(null)}
+          result={payrollFeedback}
+        />
+      )}
 
       {/* Step 2: Transaction PIN Modal with 4-Pin Box */}
       {isPinModalOpen && (

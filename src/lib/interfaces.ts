@@ -43,6 +43,34 @@ export interface EmployeeListResponse {
   currentPage: number;
 }
 
+export interface PayrollSummary {
+  total_employees?: number;
+  total_paid?: number;
+  total_skipped?: number;
+  total_failed?: number;
+  total_deductions?: number | string;
+  total_amount_paid?: number | string;
+  remaining_balance?: string | number;
+  payroll_month?: string;
+  total_processing_fees?: number | string;
+}
+
+export interface PayrollItemResult {
+  employee_id: number | string;
+  employee_name?: string;
+  status: "paid" | "skipped" | "failed" | "pending" | string;
+  reason: string;
+  reference?: string;
+  payment_id?: number | string;
+}
+
+export interface PayEmployeesResponse {
+  status: boolean;
+  message: string;
+  summary?: PayrollSummary;
+  data?: PayrollItemResult[];
+}
+
 export interface PaginationControlProps {
   currentPage: number;
   totalPages: number;
@@ -257,6 +285,8 @@ export interface CompanyDetailsProps {
   cac?: string | null;
   mermat?: string | null;
   status_report?: string | null;
+  proof_of_address?: string | null;
+  reg_no?: string;
   nin?: string;
   balance?: string | number;
   created_at?: string;
@@ -413,6 +443,8 @@ export interface CompanyProps {
   cac?: string | null;
   mermat?: string | null;
   status_report?: string | null;
+  proof_of_address?: string | null;
+  reg_no?: string;
   user_id?: number | string;
   verificationStatus?: VerificationStatus;
   documents?: {
@@ -706,6 +738,8 @@ export interface TierUpgradeRequest {
   cac?: string | null;
   mermat?: string | null;
   status_report?: string | null;
+  proof_of_address?: string | null;
+  reg_no?: string;
   directorName?: string;
   directorPhone?: string;
   documentUrl?: string;
@@ -927,6 +961,8 @@ export interface DepositItemProps {
     cac?: string | null;
     mermat?: string | null;
     status_report?: string | null;
+  proof_of_address?: string | null;
+  reg_no?: string;
     [key: string]: unknown;
   };
   transaction?: {

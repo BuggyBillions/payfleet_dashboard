@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useUser } from "../../hooks/useUser";
-import { decryptAuthToken } from "../../helpers/tokenHelper";
+import { decryptToken } from "../../helpers/tokenHelper";
 import { getUserService } from "../../services/authService";
 import { assets } from "../../assets/assets";
 
@@ -36,7 +36,7 @@ const AuthRedirect = () => {
     const verifyAndRedirect = async () => {
       let token;
       try {
-        token = await decryptAuthToken(encryptedToken);
+        token = await decryptToken(encryptedToken);
       } catch {
         console.log("Failed to decode or decrypt token");
         return;

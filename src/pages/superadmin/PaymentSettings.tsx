@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useUser } from "../../hooks/useUser";
 import {
   usePaymentSettings,
@@ -55,13 +55,15 @@ const PaymentSettings: React.FC = () => {
   );
 
   // Form input states
+  const [prevSettings, setPrevSettings] = useState(settings);
   const [vat, setVat] = useState("");
   const [federalGovernmentFee, setFederalGovernmentFee] = useState("");
   const [payfleetFee, setPayfleetFee] = useState("");
   const [touched, setTouched] = useState(false);
 
   // Sync inputs with fetched settings
-  useEffect(() => {
+  if (settings !== prevSettings) {
+    setPrevSettings(settings);
     if (settings) {
       setVat(settings.vat !== undefined && settings.vat !== null ? String(settings.vat) : "");
       setFederalGovernmentFee(
@@ -75,7 +77,7 @@ const PaymentSettings: React.FC = () => {
           : ""
       );
     }
-  }, [settings]);
+  }
 
   // Live calculation preview
   const livePreview = useMemo(() => {

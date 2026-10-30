@@ -1,14 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Modal from "./Modal";
-import { LuUser, LuFileText, LuUpload, LuX } from "react-icons/lu";
+import {
+  LuUser,
+  LuFileText,
+  LuUpload,
+  LuX,
+  LuCheck,
+  LuLoader,
+} from "react-icons/lu";
 import {
   DOCUMENT_FIELDS,
   type DocumentFiles,
   type DocumentKey,
 } from "../../lib/companyDocuments";
+import { useResolveCompanyRegNo } from "../../hooks/useCompany";
+import { toast } from "sonner";
+import { getErrorMessage } from "../../helpers/api";
+import { IoAlertCircleOutline, IoCheckmarkCircleOutline } from "react-icons/io5";
 
 export interface ProfileFormValues {
   name: string;
+  company_name?: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -18,12 +30,13 @@ export interface ProfileFormValues {
   about: string;
   bvn: string;
   nin: string;
+  bn_number: string;
 }
 
 interface EditProfileModalProps {
   values: ProfileFormValues;
   onChange: (key: keyof ProfileFormValues, value: string) => void;
-  onSubmit: (files: DocumentFiles) => void;
+  onSubmit: (files: DocumentFiles, extra?: { company_name?: string }) => void;
   onClose: () => void;
   saving: boolean;
   isDirty: boolean;
@@ -93,17 +106,116 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
   existingDocuments,
 }) => {
   const [files, setFiles] = useState<DocumentFiles>({});
+  const [regNoToVerify, setRegNoToVerify] = useState<string>("");
+  const [initialRegNo] = useState<string>(() => (values.bn_number || "").trim());
+  const lastToastedRef = useRef<string>("");
+
+  const {
+    data: resolvedData,
+    isLoading: isQueryLoading,
+    isFetching,
+    isError: isRegNoError,
+    error: regNoError,
+    isSuccess: isRegNoSuccess,
+    refetch: refetchRegNo,
+  } = useResolveCompanyRegNo(regNoToVerify);
+
+  const isChecking = isQueryLoading || isFetching;
+
+  const resolvedCompanyName = useMemo(() => {
+    if (!resolvedData) return "";
+    if (typeof resolvedData === "string") return resolvedData;
+    if (typeof resolvedData === "object") {
+      const obj = resolvedData as Record<string, unknown>;
+      return (
+        (typeof obj.company_name === "string" && obj.company_name) ||
+        (typeof obj.name === "string" && obj.name) ||
+        (typeof obj.data === "string" && obj.data) ||
+        (typeof obj.message === "string" && obj.message) ||
+        String(resolvedData)
+      );
+    }
+    return String(resolvedData);
+  }, [resolvedData]);
+
+  const currentRegNo = (values.bn_number || "").trim();
+  const isRegNoEligible = currentRegNo.length >= 6 && currentRegNo.length <= 8;
+  const isUnchangedExisting = Boolean(
+    initialRegNo && currentRegNo === initialRegNo
+  );
+
+  const isVerified = Boolean(
+    isRegNoSuccess &&
+      resolvedCompanyName &&
+      regNoToVerify === currentRegNo &&
+      !isRegNoError
+  );
+
+  // If bn_number is inputted/edited, verification with CAC is required before submission
+  const isRegNoValid = !currentRegNo || isUnchangedExisting || isVerified;
+
+  useEffect(() => {
+    if (
+      isRegNoSuccess &&
+      resolvedCompanyName &&
+      regNoToVerify === currentRegNo &&
+      lastToastedRef.current !== `success-${currentRegNo}`
+    ) {
+      lastToastedRef.current = `success-${currentRegNo}`;
+      toast.success(`Registration verified: ${resolvedCompanyName}`);
+      onChange("company_name", resolvedCompanyName);
+    }
+  }, [isRegNoSuccess, resolvedCompanyName, regNoToVerify, currentRegNo, onChange]);
+
+  useEffect(() => {
+    if (
+      isRegNoError &&
+      regNoError &&
+      regNoToVerify === currentRegNo &&
+      lastToastedRef.current !== `error-${currentRegNo}`
+    ) {
+      lastToastedRef.current = `error-${currentRegNo}`;
+      toast.error(
+        getErrorMessage(
+          regNoError,
+          "Failed to verify company registration number with CAC"
+        )
+      );
+    }
+  }, [isRegNoError, regNoError, regNoToVerify, currentRegNo]);
+
+  const handleCheckRegNo = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!isRegNoEligible || isChecking) return;
+    if (regNoToVerify === currentRegNo) {
+      refetchRegNo();
+    } else {
+      setRegNoToVerify(currentRegNo);
+    }
+  };
 
   const hasFiles = Object.values(files).some(Boolean);
-  const canSave = (isDirty || hasFiles) && !saving;
+  const canSave =
+    (isDirty || hasFiles) && !saving && isRegNoValid && !isChecking;
 
   return (
     <Modal onClose={saving ? () => undefined : onClose}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (!canSave) return;
-          onSubmit(files);
+          if (!canSave) {
+            if (currentRegNo && !isRegNoValid) {
+              toast.error(
+                "Please verify your company registration number with the Check button before saving."
+              );
+            }
+            return;
+          }
+          const verifiedName =
+            (isVerified && resolvedCompanyName) ||
+            values.company_name ||
+            undefined;
+          onSubmit(files, verifiedName ? { company_name: verifiedName } : undefined);
         }}
         className="flex flex-col gap-5"
       >
@@ -143,16 +255,86 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
               className={inputClass}
             />
           </label>
-          <label className="flex flex-col space-y-1.5">
-            <span className="font-medium text-xs text-textBlack">Company Address</span>
-            <input
-              type="text"
-              value={values.address}
-              onChange={(e) => onChange("address", e.target.value)}
-              placeholder="e.g. Tanke Estates Ilorin"
-              className={inputClass}
-            />
-          </label>
+
+          {/* Registration Number with Check button */}
+          <div className="flex flex-col space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-xs text-textBlack">
+                Company Reg No. (RC / BN Number)
+              </span>
+              <span className="text-[10px] text-textBlack/50">6-8 digits</span>
+            </div>
+            <div className="relative flex items-center">
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={8}
+                value={values.bn_number}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, "");
+                  onChange("bn_number", val);
+                }}
+                placeholder="e.g. 1234567"
+                className={`${inputClass} pr-24`}
+              />
+              <button
+                type="button"
+                onClick={handleCheckRegNo}
+                disabled={!isRegNoEligible || isChecking || isVerified}
+                className={`absolute right-1 px-3 py-1.5 text-xs font-semibold rounded-md transition flex items-center gap-1.5 ${
+                  isVerified
+                    ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 cursor-default"
+                    : isRegNoEligible && !isChecking
+                    ? "bg-primary text-textBlack hover:bg-primary/90 cursor-pointer shadow-xs"
+                    : "bg-gray-100 dark:bg-neutral-800 text-textBlack/40 border border-primary/10 cursor-not-allowed opacity-60"
+                }`}
+                title={
+                  !isRegNoEligible
+                    ? "Enter 6 to 8 digits to verify"
+                    : isVerified
+                    ? "Registration number verified"
+                    : "Click to check registration number"
+                }
+              >
+                {isChecking ? (
+                  <>
+                    <LuLoader size={13} className="animate-spin" />
+                    <span>Checking...</span>
+                  </>
+                ) : isVerified ? (
+                  <>
+                    <LuCheck size={13} />
+                    <span>Verified</span>
+                  </>
+                ) : (
+                  <span>Check</span>
+                )}
+              </button>
+            </div>
+            {isVerified && resolvedCompanyName && (
+              <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium">
+                <IoCheckmarkCircleOutline size={12} className="shrink-0" />
+                <span className="truncate">CAC Verified: {resolvedCompanyName}</span>
+              </div>
+            )}
+            {isRegNoError && regNoToVerify === currentRegNo && (
+              <div className="flex items-center gap-1 text-[11px] text-red-500 font-medium">
+                <IoAlertCircleOutline size={12} className="shrink-0" />
+                <span>Verification failed. Please ensure the RC number is valid.</span>
+              </div>
+            )}
+            {!isVerified && !isChecking && !isRegNoError && currentRegNo && !isRegNoEligible && (
+              <span className="text-[11px] text-textBlack/40">
+                Registration number must be between 6 and 8 digits to check.
+              </span>
+            )}
+            {!isVerified && isRegNoEligible && regNoToVerify !== currentRegNo && (
+              <span className="text-[11px] text-amber-600">
+                Click "Check" to verify your registration number before saving.
+              </span>
+            )}
+          </div>
+
           <label className="flex flex-col space-y-1.5">
             <span className="font-medium text-xs text-textBlack">BVN</span>
             <input
@@ -179,6 +361,38 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
           </label>
         </div>
 
+        {/* Address (textarea) and Proof of Address (file field) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <label className="flex flex-col space-y-1.5">
+            <span className="font-medium text-xs text-textBlack">Company Address</span>
+            <textarea
+              value={values.address}
+              onChange={(e) => onChange("address", e.target.value)}
+              placeholder="e.g. Tanke Estates Ilorin"
+              className={`${inputClass} h-24 resize-none pt-2.5`}
+            />
+          </label>
+          <div className="flex flex-col space-y-1.5">
+            <DocumentInput
+              label="Proof of Address"
+              file={files.proof_of_address}
+              existing={existingDocuments.proof_of_address}
+              disabled={saving}
+              onSelect={(file) =>
+                setFiles((prev) => {
+                  const next = { ...prev };
+                  if (file) next.proof_of_address = file;
+                  else delete next.proof_of_address;
+                  return next;
+                })
+              }
+            />
+            <span className="text-[11px] text-textBlack/50">
+              Upload utility bill, tenancy agreement, or bank statement (PDF, PNG, JPG).
+            </span>
+          </div>
+        </div>
+
         <label className="flex flex-col space-y-1.5">
           <span className="font-medium text-xs text-textBlack">
             About / Description
@@ -202,7 +416,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
             These are the documents checked when you request a plan upgrade.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {DOCUMENT_FIELDS.map((doc) => (
+            {DOCUMENT_FIELDS.filter((doc) => doc.key !== "proof_of_address").map((doc) => (
               <DocumentInput
                 key={doc.key}
                 label={doc.label}

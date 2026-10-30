@@ -6,6 +6,7 @@ import type {
   EmployeeDeduction,
   EmployeeDeductionListResponse,
   EmployeeListResponse,
+  PayEmployeesResponse,
   ResolvedAccount,
 } from "../lib/interfaces";
 
@@ -15,6 +16,7 @@ export type {
   EmployeeDeductionListResponse,
   EmployeeFormValues,
   EmployeeListResponse,
+  PayEmployeesResponse,
   ResolvedAccount,
 } from "../lib/interfaces";
 
@@ -240,11 +242,14 @@ export const resolveAccount = async (
 export const payEmployees = async (payload: {
   pin: string;
   company_id: number | string;
-}): Promise<unknown> => {
+}): Promise<PayEmployeesResponse> => {
   const res = await api.post("/pay-employee", {
     pin: String(payload.pin),
     company_id: payload.company_id,
   });
+  if (res.data?.summary || res.data?.status !== undefined) {
+    return res.data;
+  }
   return res.data?.data ?? res.data;
 };
 
@@ -256,6 +261,9 @@ export const paySingleEmployee = async (
   id: number | string,
 ): Promise<unknown> => {
   const res = await api.put(`/single-paying/${id}`);
+  if (res.data?.summary || res.data?.status !== undefined) {
+    return res.data;
+  }
   return res.data?.data ?? res.data;
 };
 
@@ -266,11 +274,14 @@ export const paySingleEmployee = async (
 export const markMultiplePaying = async (payload: {
   ids: Array<number | string>;
   paying: number;
-}): Promise<unknown> => {
+}): Promise<PayEmployeesResponse> => {
   const res = await api.put("/multiple-paying", {
 
     ids: payload.ids,
     paying: payload.paying,
   });
+  if (res.data?.summary || res.data?.status !== undefined) {
+    return res.data;
+  }
   return res.data?.data ?? res.data;
 };

@@ -63,6 +63,7 @@ const RetryPayrollModal: React.FC<{
           onClose={close}
           onConfirm={() => setStep("pin")}
           employeeCount={1}
+          fgEligibleCount={(Number(payment.amount) || 0) > 10000 ? 1 : 0}
           totalPayoutAmount={Number(payment.amount) || 0}
         />
       )}

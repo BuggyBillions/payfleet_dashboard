@@ -149,11 +149,20 @@ const Settings: React.FC = () => {
       user?.phone_number ||
       user?.company_details?.phone ||
       "",
+    company_name:
+      ((user?.company_details as Record<string, unknown> | undefined)?.company_name as string) ||
+      user?.company_name ||
+      user?.company_details?.name ||
+      "",
     department: currentRole.toUpperCase(),
     address: user?.company_details?.address ?? "",
     about: user?.company_details?.about ?? "",
     bvn: toDigitString(user?.company_details?.bvn) ?? "",
     nin: toDigitString(user?.company_details?.nin) ?? "",
+    bn_number:
+      ((user?.company_details as Record<string, unknown> | undefined)?.bn_number as string) ??
+      ((user?.company_details as Record<string, unknown> | undefined)?.rc_number as string) ??
+      "",
   });
 
   const profileValues = buildProfileFromUser();
@@ -174,6 +183,10 @@ const Settings: React.FC = () => {
     cac: user?.company_details?.cac ?? null,
     mermat: user?.company_details?.mermat ?? null,
     status_report: user?.company_details?.status_report ?? null,
+    proof_of_address:
+      ((user?.company_details as Record<string, unknown> | undefined)?.proof_of_address as string) ??
+      ((user?.company_details as Record<string, unknown> | undefined)?.proofOfAddress as string) ??
+      null,
   };
 
   const [savingProfile, setSavingProfile] = useState(false);
@@ -208,20 +221,34 @@ const Settings: React.FC = () => {
     setDraft(null);
   };
 
-  const handleSaveProfile = async (files: DocumentFiles = {}) => {
+  const handleSaveProfile = async (
+    files: DocumentFiles = {},
+    extra?: { company_name?: string },
+  ) => {
     if (!draft) return;
-    if (!isProfileDirty && Object.keys(files).length === 0) return;
+    if (
+      !isProfileDirty &&
+      Object.keys(files).length === 0 &&
+      !extra?.company_name
+    ) {
+      return;
+    }
 
     setSavingProfile(true);
     try {
       const textFields: Record<string, string | undefined> = {
         name: draft.name.trim() || undefined,
+        company_name:
+          extra?.company_name?.trim() ||
+          draft.company_name?.trim() ||
+          undefined,
         email: draft.email.trim() || undefined,
         phone: draft.phoneNumber.trim() || undefined,
         address: draft.address.trim() || undefined,
         about: draft.about.trim() || undefined,
         bvn: toDigitString(draft.bvn),
         nin: toDigitString(draft.nin),
+        bn_number: draft.bn_number?.trim() || undefined,
       };
 
       const hasFiles = Object.values(files).some(Boolean);
@@ -248,7 +275,7 @@ const Settings: React.FC = () => {
       setSavingProfile(false);
     }
   };
-
+  
   const handleUpdatePin = async () => {
     if (!/^\d{4}$/.test(pin.current_pin)) {
       toast.error("Current PIN must be exactly 4 digits");
@@ -368,6 +395,7 @@ const Settings: React.FC = () => {
               <DetailRow label="Company Name" value={profileValues.name} />
               <DetailRow label="Company Email" value={profileValues.email} />
               <DetailRow label="Phone Number" value={profileValues.phoneNumber} />
+              <DetailRow label="Registration No." value={profileValues.bn_number} />
               <DetailRow label="Company Address" value={profileValues.address} />
               <DetailRow label="BVN" value={profileValues.bvn} />
               <DetailRow label="NIN" value={profileValues.nin} />
@@ -407,7 +435,7 @@ const Settings: React.FC = () => {
               <button
                 type="button"
                 onClick={openEditProfile}
-                className={`${submitClass} flex items-center gap-1.5`}
+                className={`${submitClass} text-textWhite flex items-center gap-1.5`}
               >
                 <LuPencil size={13} />
                 Edit Profile
@@ -450,7 +478,7 @@ const Settings: React.FC = () => {
               type="button"
               onClick={handleUpdatePin}
               disabled={savingPin}
-              className={`${submitClass} text-textBlack self-start disabled:opacity-60 disabled:cursor-not-allowed`}
+              className={`${submitClass} text-textWhite self-start disabled:opacity-60 disabled:cursor-not-allowed`}
             >
               {savingPin ? "Updating..." : "Update Transaction PIN"}
             </button>
@@ -519,7 +547,7 @@ const Settings: React.FC = () => {
               type="button"
               onClick={handleUpdatePassword}
               disabled={savingPassword}
-              className={`${submitClass} text-textBlack self-start disabled:opacity-60 disabled:cursor-not-allowed`}
+              className={`${submitClass} text-textWhite self-start disabled:opacity-60 disabled:cursor-not-allowed`}
             >
               {savingPassword ? "Updating..." : "Update Password"}
             </button>

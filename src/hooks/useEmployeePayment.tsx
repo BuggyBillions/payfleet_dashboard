@@ -6,6 +6,7 @@ import {
   markMultiplePaying,
 } from "../services/employeeService";
 import { getErrorMessage } from "../helpers/api";
+import type { PayEmployeesResponse } from "../lib/interfaces";
 
 const EMPLOYEE_KEYS = ["employees"] as const;
 
@@ -20,12 +21,16 @@ const refreshEmployees = (queryClient: ReturnType<typeof useQueryClient>) => {
 export const usePayEmployees = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation<
+    PayEmployeesResponse,
+    Error,
+    { pin: string; company_id: number | string }
+  >({
     mutationFn: (payload: { pin: string; company_id: number | string }) =>
       payEmployees(payload),
     onSuccess: (res) => {
       refreshEmployees(queryClient);
-      const message = (res as { message?: string } | undefined)?.message;
+      const message = res?.message;
       toast.success(message || "Employee payments processed");
     },
     onError: (error) => {
