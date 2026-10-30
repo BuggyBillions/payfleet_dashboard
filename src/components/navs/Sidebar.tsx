@@ -32,9 +32,7 @@ const Sidebar = ({
   // Filter items matching the current user role/context
   const filteredLinks = useMemo(() => {
     return navItems.filter((navItem) =>
-      navItem.role
-        .map((r) => r.toLowerCase())
-        .includes(effectiveRole)
+      navItem.role.map((r) => r.toLowerCase()).includes(effectiveRole),
     );
   }, [effectiveRole]);
 
@@ -77,10 +75,11 @@ const Sidebar = ({
           <button
             type="button"
             onClick={() => toggleMenu(item.name)}
-            className={`flex w-full items-center justify-between gap-2.5 transition-all duration-200 px-4 py-2.5 rounded-lg cursor-pointer text-xs font-medium ${parentActive
+            className={`flex w-full items-center justify-between gap-2.5 transition-all duration-200 px-4 py-2.5 rounded-lg cursor-pointer text-xs font-medium ${
+              parentActive
                 ? "bg-primary/10 text-primary font-semibold"
                 : "text-textBlack/50 hover:bg-primary/10 hover:text-primary"
-              }`}
+            }`}
           >
             <span className="flex items-center gap-2.5">
               {item.icon && (
@@ -92,8 +91,9 @@ const Sidebar = ({
             </span>
             <HiChevronDown
               size={14}
-              className={`transition-transform duration-300 ${isOpen ? "rotate-180" : ""
-                }`}
+              className={`transition-transform duration-300 ${
+                isOpen ? "rotate-180" : ""
+              }`}
             />
           </button>
 
@@ -104,9 +104,10 @@ const Sidebar = ({
                   <NavLink
                     to={child.path}
                     className={({ isActive }) =>
-                      `flex items-center gap-2 transition-all duration-200 px-3 py-2 rounded-md cursor-pointer text-xs ${isActive
-                        ? "bg-primary text-white font-semibold shadow-xs"
-                        : "text-textBlack/50 hover:bg-primary/10 hover:text-primary"
+                      `flex items-center gap-2 transition-all duration-200 px-3 py-2 rounded-md cursor-pointer text-xs ${
+                        isActive
+                          ? "bg-primary text-white font-semibold shadow-xs"
+                          : "text-textBlack/50 hover:bg-primary/10 hover:text-primary"
                       }`
                     }
                     onClick={() => setIsOpen(false)}
@@ -133,14 +134,17 @@ const Sidebar = ({
           to={item.path!}
           end={isDashboard}
           className={({ isActive }) =>
-            `flex items-center gap-2.5 transition-all duration-200 px-4 py-2.5 rounded-lg cursor-pointer text-xs font-medium ${isActive
-              ? "bg-primary text-white font-semibold shadow-xs"
-              : "text-textBlack/50 hover:bg-primary/10 hover:text-primary"
+            `flex items-center gap-2.5 transition-all duration-200 px-4 py-2.5 rounded-lg cursor-pointer text-xs font-medium ${
+              isActive
+                ? "bg-primary text-white font-semibold shadow-xs"
+                : "text-textBlack/50 hover:bg-primary/10 hover:text-primary"
             }`
           }
           onClick={() => setIsOpen(false)}
         >
-          <span className="shrink-0">{item.icon && <item.icon size={16} />}</span>
+          <span className="shrink-0">
+            {item.icon && <item.icon size={16} />}
+          </span>
           <span>{item.name}</span>
         </NavLink>
       </li>
@@ -150,8 +154,6 @@ const Sidebar = ({
   return (
     <div className=" w-full h-full px-2 py-4 lg:pt-0 pt-3 flex flex-col justify-between">
       <div className="flex flex-col h-full overflow-hidden">
-        
-
         {/* Navigation list */}
         <ul className="px-3 lg:mt-4 flex flex-col gap-1.5 overflow-y-auto no-scrollbar  flex-1">
           {filteredLinks.map((item, index) => renderItem(item, index))}
@@ -164,9 +166,10 @@ const Sidebar = ({
           <NavLink
             to={settingsPath}
             className={({ isActive }) =>
-              `flex items-center gap-2.5  transition-all duration-200 px-4 py-2.5 rounded-lg cursor-pointer text-xs font-medium hover:bg-primary/10 hover:text-primary ${isActive
-                ? "bg-primary text-white font-semibold shadow-xs hover:bg-primary hover:text-white"
-                : "text-textBlack/50"
+              `flex items-center gap-2.5  transition-all duration-200 px-4 py-2.5 rounded-lg cursor-pointer text-xs font-medium hover:bg-primary/10 hover:text-primary ${
+                isActive
+                  ? "bg-primary text-white font-semibold shadow-xs hover:bg-primary hover:text-white"
+                  : "text-textBlack/50"
               }`
             }
             onClick={() => setIsOpen(false)}
