@@ -28,6 +28,7 @@ jobs:
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
           VITE_ENCRYPT_HELPER_SECRET_KEY: ${{ secrets.VITE_ENCRYPT_HELPER_SECRET_KEY }}
+          VITE_LANDING_URL: ${{ secrets.VITE_LANDING_URL }}
 
         run: npm run build
       - name: Deploy to Hostinger FTP
