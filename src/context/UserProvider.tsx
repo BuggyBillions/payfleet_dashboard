@@ -23,7 +23,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     setRole(null);
     setIsAuthenticated(false);
     toast.success("Logged out successfully");
-    window.location.href = LANDING_URL;
+    window.location.href = `${LANDING_URL}/auth/login`;
   }, []);
 
   const refreshUser = useCallback(async (token: string) => {
