@@ -12,6 +12,7 @@ import { useUser } from "../../hooks/useUser";
 import { useAuth } from "../../hooks/useAuth";
 import OtpModal from "../../components/modal/OtpModal";
 import type { LoginValues, UserProps } from "../../lib/interfaces";
+import { initPinInfo } from "../../helpers/pinStorage";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -37,6 +38,9 @@ const Login: React.FC = () => {
     message = "Login successful",
   ) => {
     login(token, user, user.role || "company");
+    if ((user.role || "company").toLowerCase() === "company") {
+      initPinInfo(false);
+    }
     toast.success(message);
 
     // Pull l atest profile details from /me
