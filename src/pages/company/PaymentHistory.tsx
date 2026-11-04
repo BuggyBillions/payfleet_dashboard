@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import ReusableTable from "../../utility/ReusableTable";
 import PaginationControls from "../../utility/PaginationControls";
 import OverviewCards from "../../components/cards/OverviewCards";
@@ -180,15 +180,51 @@ const MonthGroups: React.FC<{
 
 /**
  * The API paginates month groups, so the current page cannot supply the full
- * list of months. Offer the most recent 12 instead so any month can be
- * targeted, and mark the ones present in the loaded page.
+ * list of months. Builds month options starting from the current month back to
+ * the company's created_at date (falling back to the most recent 12 months if unavailable).
  */
-const buildMonthOptions = (count = 12): Array<{ value: string; label: string }> => {
+const buildMonthOptions = (
+  companyCreatedAt?: string | Date | null,
+  fallbackCount = 12,
+): Array<{ value: string; label: string }> => {
   const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+
+  if (!companyCreatedAt) {
+    const options: Array<{ value: string; label: string }> = [];
+    for (let i = 0; i < fallbackCount; i += 1) {
+      const date = new Date(currentYear, currentMonth - i, 1);
+      options.push({
+        value: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
+        label: date.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+      });
+    }
+    return options;
+  }
+
+  const createdDate = new Date(companyCreatedAt);
+  if (isNaN(createdDate.getTime())) {
+    const options: Array<{ value: string; label: string }> = [];
+    for (let i = 0; i < fallbackCount; i += 1) {
+      const date = new Date(currentYear, currentMonth - i, 1);
+      options.push({
+        value: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
+        label: date.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+      });
+    }
+    return options;
+  }
+
+  const targetYear = createdDate.getFullYear();
+  const targetMonth = createdDate.getMonth();
+  const totalMonths =
+    (currentYear - targetYear) * 12 + (currentMonth - targetMonth);
+  const count = Math.max(0, totalMonths) + 1;
   const options: Array<{ value: string; label: string }> = [];
 
   for (let i = 0; i < count; i += 1) {
-    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const date = new Date(currentYear, currentMonth - i, 1);
     options.push({
       value: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
       label: date.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
@@ -235,7 +271,15 @@ const PaymentHistory: React.FC = () => {
 
   const months = data?.months ?? [];
   const pagination = data?.pagination;
-  const monthOptions = buildMonthOptions();
+  const companyCreatedAt =
+    user?.company_details?.created_at ||
+    (user as unknown as { company?: { created_at?: string } })?.company?.created_at ||
+    (data?.company as unknown as { created_at?: string })?.created_at ||
+    user?.created_at;
+  const monthOptions = useMemo(
+    () => buildMonthOptions(companyCreatedAt),
+    [companyCreatedAt],
+  );
   const loadedMonthKeys = new Set(months.map((m) => m.month_key));
 
   const totalPaid = months.reduce((sum, m) => sum + m.successful_amount, 0);
