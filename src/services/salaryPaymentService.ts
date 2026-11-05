@@ -134,3 +134,107 @@ export const retryPayrollPayment = async (
 
   return (res.data?.data ?? res.data) as { message?: string };
 };
+
+/**
+ * Normalizes a month string (e.g. "September 2026" or "2026-09") into "YYYY-MM" format.
+ */
+export const normalizeMonthKey = (monthStr: string): string => {
+  if (!monthStr) return "";
+  const trimmed = monthStr.trim();
+  if (/^\d{4}-\d{2}$/.test(trimmed)) {
+    return trimmed;
+  }
+  const parsed = new Date(`${trimmed} 1`);
+  if (!isNaN(parsed.getTime())) {
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, "0");
+    return `${year}-${month}`;
+  }
+  return trimmed;
+};
+
+export interface DownloadMonthlyPaymentsParams {
+  month: string;
+  company_id?: number | string;
+}
+
+/**
+ * GET /payments/download?month=2026-09
+ * Downloads salary payments records for a given month as a CSV/export file.
+ */
+export const downloadMonthlyPaymentsService = async ({
+  month,
+  company_id,
+}: DownloadMonthlyPaymentsParams): Promise<void> => {
+  const cleanMonth = normalizeMonthKey(month);
+
+  const res = await api.get("/payments/download", {
+    params: {
+      month: cleanMonth,
+      company_id: company_id || undefined,
+    },
+    responseType: "blob",
+  });
+
+  // Handle case where backend returns JSON (e.g. { download_url: "..." } or error object)
+  if (res.data instanceof Blob && res.data.type?.includes("application/json")) {
+    const text = await res.data.text();
+    try {
+      const json = JSON.parse(text);
+      const url =
+        json.download_url ||
+        json.url ||
+        json.data?.url ||
+        json.data?.download_url;
+      if (url) {
+        window.open(url, "_blank");
+        return;
+      }
+      if (json.message) {
+        throw new Error(json.message);
+      }
+      if (json.error) {
+        throw new Error(json.error);
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message) throw err;
+    }
+  }
+
+  // Determine file name from Content-Disposition or fallback
+  const contentDisposition =
+    res.headers["content-disposition"] || res.headers["Content-Disposition"];
+  let filename = `payments-${cleanMonth}.csv`;
+
+  if (contentDisposition) {
+    const utf8Match = contentDisposition.match(
+      /filename\*=UTF-8''([^;\r\n]*)/i,
+    );
+    if (utf8Match && utf8Match[1]) {
+      filename = decodeURIComponent(utf8Match[1]);
+    } else {
+      const regularMatch = contentDisposition.match(
+        /filename=["']?([^;"'\r\n]+)["']?/i,
+      );
+      if (regularMatch && regularMatch[1]) {
+        filename = regularMatch[1].trim();
+      }
+    }
+  }
+
+  // Trigger browser download via object URL
+  const blob = new Blob([res.data], {
+    type:
+      res.headers["content-type"] ||
+      res.data.type ||
+      "application/octet-stream",
+  });
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = downloadUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000);
+};

@@ -15,6 +15,7 @@ import type { AxiosError } from "axios";
 import type { ApiErrorResponse } from "../../lib/interfaces";
 import type { RegisterFormValues } from "../../lib/formTypes";
 import { createCompanyService } from "../../services/authService";
+import { initPinInfo } from "../../helpers/pinStorage";
 
 const lineVariants = {
   hidden: { opacity: 0, y: 10 },
@@ -78,6 +79,7 @@ const Register: React.FC = () => {
       return await createCompanyService(values);
     },
     onSuccess: () => {
+      initPinInfo(false);
       toast.success("Company profile created successfully.");
       setTimeout(() => {
         navigate("/");

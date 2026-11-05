@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  type RefObject,
+} from "react";
 import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { copyToClipboard } from "../../helpers/clipboardHelper";
@@ -92,7 +98,9 @@ const getCurrentFormattedTime = (): string => {
   });
 };
 
-const FloatingContactWidget: React.FC = () => {
+const FloatingContactWidget: React.FC<{
+  constraintsRef: RefObject<HTMLDivElement | null>;
+}> = ({ constraintsRef }) => {
   const { user, role } = useUser();
   const location = useLocation();
 
@@ -149,8 +157,8 @@ const FloatingContactWidget: React.FC = () => {
       (pending) =>
         Boolean(pending.text?.trim()) &&
         !serverFormattedMessages.some(
-          (srv) => srv.text.trim() === pending.text.trim()
-        )
+          (srv) => srv.text.trim() === pending.text.trim(),
+        ),
     );
 
     const raw = [
@@ -205,7 +213,7 @@ const FloatingContactWidget: React.FC = () => {
             messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
           }, 50);
         },
-      }
+      },
     );
   };
 
@@ -245,18 +253,36 @@ const FloatingContactWidget: React.FC = () => {
   const renderWidgetStatusTick = (status?: "sent" | "delivered" | "read") => {
     const norm = (status || "sent").toLowerCase();
     if (norm === "read" || norm === "seen") {
-      return <LuCheckCheck size={12} className="text-primary shrink-0" title="Read" />;
+      return (
+        <LuCheckCheck
+          size={12}
+          className="text-primary shrink-0"
+          title="Read"
+        />
+      );
     }
     if (norm === "delivered" || norm === "received") {
-      return <LuCheckCheck size={12} className="text-textBlack/40 shrink-0" title="Delivered" />;
+      return (
+        <LuCheckCheck
+          size={12}
+          className="text-textBlack/40 shrink-0"
+          title="Delivered"
+        />
+      );
     }
-    return <LuCheck size={11} className="text-textBlack/40 shrink-0" title="Sent" />;
+    return (
+      <LuCheck size={11} className="text-textBlack/40 shrink-0" title="Sent" />
+    );
   };
 
   if (isStaff) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+    <motion.div
+      drag
+      dragConstraints={constraintsRef}
+      className="fixed bottom-6 right-6 flex flex-col items-end z-9999"
+    >
       {/* Expanded Chat Drawer / Widget */}
       <AnimatePresence>
         {isOpen && (
@@ -300,20 +326,22 @@ const FloatingContactWidget: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveTab("chat")}
-                className={`py-2.5 text-center transition border-b cursor-pointer ${activeTab === "chat"
-                  ? "border-primary border-b-2 text-primary bg-black/20 font-bold"
-                  : "border-b border-textBlack text-textBlack/50 hover:text-textBlack/80"
-                  }`}
+                className={`py-2.5 text-center transition border-b cursor-pointer ${
+                  activeTab === "chat"
+                    ? "border-primary border-b-2 text-primary bg-black/20 font-bold"
+                    : "border-b border-textBlack text-textBlack/50 hover:text-textBlack/80"
+                }`}
               >
                 Live Chat
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab("contact")}
-                className={`py-2.5 text-center transition border-b cursor-pointer ${activeTab === "contact"
-                   ? "border-primary border-b-2 text-primary bg-black/20 font-bold"
-                  : "border-b border-textBlack text-textBlack/50 hover:text-textBlack/80"
-                  }`}
+                className={`py-2.5 text-center transition border-b cursor-pointer ${
+                  activeTab === "contact"
+                    ? "border-primary border-b-2 text-primary bg-black/20 font-bold"
+                    : "border-b border-textBlack text-textBlack/50 hover:text-textBlack/80"
+                }`}
               >
                 Contact Channels
               </button>
@@ -325,8 +353,8 @@ const FloatingContactWidget: React.FC = () => {
                 {/* Messages List */}
                 <div className="flex-1 p-4 overflow-y-auto space-y-3 styled-scrollbar">
                   {loadingMessages &&
-                    serverFormattedMessages.length === 0 &&
-                    pendingUserMessages.length === 0 ? (
+                  serverFormattedMessages.length === 0 &&
+                  pendingUserMessages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center p-6 text-textBlack space-y-2">
                       <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                       <p className="text-xs">Loading support messages...</p>
@@ -336,14 +364,16 @@ const FloatingContactWidget: React.FC = () => {
                       {displayedMessages.map((msg) => (
                         <div
                           key={msg.id}
-                          className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"
-                            }`}
+                          className={`flex flex-col ${
+                            msg.sender === "user" ? "items-end" : "items-start"
+                          }`}
                         >
                           <div
-                            className={`max-w-[84%] px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed ${msg.sender === "user"
-                              ? "bg-primary text-white rounded-br-xs shadow-xs"
-                              : "bg-textWhite text-textBlack/80 rounded-bl-xs shadow-2xs"
-                              }`}
+                            className={`max-w-[84%] px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed ${
+                              msg.sender === "user"
+                                ? "bg-primary text-white rounded-br-xs shadow-xs"
+                                : "bg-textWhite text-textBlack/80 rounded-bl-xs shadow-2xs"
+                            }`}
                           >
                             <p>{msg.text}</p>
                           </div>
@@ -373,14 +403,20 @@ const FloatingContactWidget: React.FC = () => {
                             key={preset.id}
                             type="button"
                             onClick={() => handleSelectPreset(preset)}
-                            className={`text-left p-2.5 rounded-xl text-xs font-medium border transition cursor-pointer flex items-center justify-between group ${preset.action === "live_agent"
-                              ? "bg-primary/10 hover:bg-primary/15 border-primary/30 text-primary font-semibold"
-                              : "bg-textWhite  text-textBlack/50 shadow-2xs"
-                              }`}
+                            className={`text-left p-2.5 rounded-xl text-xs font-medium border transition cursor-pointer flex items-center justify-between group ${
+                              preset.action === "live_agent"
+                                ? "bg-primary/10 hover:bg-primary/15 border-primary/30 text-primary font-semibold"
+                                : "bg-textWhite  text-textBlack/50 shadow-2xs"
+                            }`}
                           >
-                            <span className="truncate pr-1">{preset.label}</span>
+                            <span className="truncate pr-1">
+                              {preset.label}
+                            </span>
                             {preset.action === "live_agent" && (
-                              <LuHeadphones size={13} className="text-primary shrink-0" />
+                              <LuHeadphones
+                                size={13}
+                                className="text-primary shrink-0"
+                              />
                             )}
                           </button>
                         ))}
@@ -434,7 +470,8 @@ const FloatingContactWidget: React.FC = () => {
                     Direct Support Lines
                   </h4>
                   <p className="text-[11px] text-textBlack/50">
-                    Get in touch directly with our business operations and support team.
+                    Get in touch directly with our business operations and
+                    support team.
                   </p>
                 </div>
 
@@ -448,7 +485,9 @@ const FloatingContactWidget: React.FC = () => {
                     <button
                       type="button"
                       onClick={() =>
-                        copyToClipboard("support@payfleet.ng", { message: "Support email copied!" })
+                        copyToClipboard("support@payfleet.ng", {
+                          message: "Support email copied!",
+                        })
                       }
                       className="text-[10px] text-primary hover:underline font-semibold cursor-pointer"
                     >
@@ -473,7 +512,9 @@ const FloatingContactWidget: React.FC = () => {
                     <button
                       type="button"
                       onClick={() =>
-                        copyToClipboard("+234 800 72935338", { message: "Phone number copied!" })
+                        copyToClipboard("+234 800 72935338", {
+                          message: "Phone number copied!",
+                        })
                       }
                       className="text-[10px] text-primary hover:underline font-semibold cursor-pointer"
                     >
@@ -491,7 +532,8 @@ const FloatingContactWidget: React.FC = () => {
                 {/* SLA Notice */}
                 <div className="p-3 bg-primary/5 border border-primary/10 rounded-xl text-[11px] text-gray-600 leading-relaxed">
                   <strong>Dedicated Business Support:</strong> Priority routing
-                  is enabled for all salary disbursements and deposit verifications.
+                  is enabled for all salary disbursements and deposit
+                  verifications.
                 </div>
               </div>
             )}
@@ -516,12 +558,16 @@ const FloatingContactWidget: React.FC = () => {
         {isOpen ? (
           <>
             <LuX size={20} className="text-white" />
-            <span className="text-xs font-bold pr-1 hidden group-hover:flex">Close</span>
+            <span className="text-xs font-bold pr-1 hidden group-hover:flex">
+              Close
+            </span>
           </>
         ) : (
           <>
             <BsChatDotsFill size={18} className="text-white" />
-            <span className="text-xs font-bold pr-1 hidden group-hover:flex">Support Chat</span>
+            <span className="text-xs font-bold pr-1 hidden group-hover:flex">
+              Support Chat
+            </span>
             {unreadCount > 0 && (
               <span className="px-1.5 py-0.5 text-[10px] font-bold bg-amber-400 text-white rounded-full animate-bounce">
                 {unreadCount}
@@ -537,7 +583,7 @@ const FloatingContactWidget: React.FC = () => {
           </span>
         )}
       </motion.button>
-    </div>
+    </motion.div>
   );
 };
 
