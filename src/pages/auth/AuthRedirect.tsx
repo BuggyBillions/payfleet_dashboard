@@ -42,9 +42,7 @@ const AuthRedirect = () => {
         return;
       }
       try {
-        console.log(token);
         if (!token) return;
-        console.log("verification started");
         const data = await getUserService(token);
         if (data) {
           setToken(token);
