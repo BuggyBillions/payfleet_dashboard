@@ -51,9 +51,7 @@ export const setupInterceptors = (logout: () => void) => {
         // Only log out if token is actually rejected on core requests
         const token = localStorage.getItem("token");
         if (!token) {
-          setTimeout(() => {
-            logout();
-          }, 10000);
+          logout();
         } else {
           // Check if error message explicitly indicates unauthenticated session
           const msg = String(error.response?.data?.message || "").toLowerCase();
@@ -63,9 +61,8 @@ export const setupInterceptors = (logout: () => void) => {
             msg.includes("invalid token")
           ) {
             toast.error("Session expired. Please log in again.");
-            setTimeout(() => {
-              logout();
-            }, 10000);
+
+            logout();
           }
         }
       }
