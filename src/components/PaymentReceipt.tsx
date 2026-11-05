@@ -203,7 +203,7 @@ export const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
 
   return (
     <div
-      className={`relative w-full max-w-xl mx-auto rounded-[26px] overflow-hidden  bg-white transition-colors ${className}`}
+      className={`relative w-full mx-auto rounded-[26px] overflow-hidden  bg-white transition-colors ${className}`}
       style={{
         color: "#111827",
         boxShadow: "0 15px 45px -15px rgba(0,0,0,0.16)",
@@ -256,7 +256,7 @@ export const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
             </div>
           ) : isPending ? (
             <div className="w-11 h-11 rounded-full bg-[#FFF5E6] flex items-center justify-center text-amber-200/50">
-              <RxCountdownTimer size={22} strokeWidth={1} />
+              <RxCountdownTimer size={22} strokeWidth={0} />
             </div>
           ) : (
             <div className="w-11 h-11 rounded-full bg-red-500 flex items-center justify-center text-red-200">
@@ -273,7 +273,7 @@ export const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
           </h2>
 
           <span
-            className={`mt-4 px-4 py-1.5 rounded-full ${resolvedStatus === "successful" ? "bg-white/10 text-white" : resolvedStatus === "pending" ? "bg-amber-400/10 text-amber-600" : "bg-red-500/10 text-red-600"} text-xs font-medium`}
+            className={`mt-4 px-4 py-1.5 capitalize rounded-full ${resolvedStatus === "successful" ? "bg-white/10 text-white" : resolvedStatus === "pending" ? "bg-amber-400/10 text-amber-600" : "bg-red-500/10 text-red-600"} text-xs font-medium`}
           >
             {resolvedStatus === "successful"
               ? "Completed"
@@ -282,7 +282,6 @@ export const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
         </div>
       </div>
 
-     
       <div className="relative z-10 px-5 sm:px-10 pb-8 bg-white">
         <div className="-mt-5 relative z-20 rounded-2xl bg-white shadow-[0_12px_30px_rgba(0,0,0,0.08)] border border-[#f1f3f5] p-5 sm:p-6 -translate-y-3">
           <p className="text-[11px] font-semibold tracking-[0.16em] uppercase text-[#8ba0c0] mb-4">
@@ -365,13 +364,12 @@ export const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
           </p>
         </div>
 
-      
         {showActions && (
           <div className="no-capture print:hidden mt-12 flex flex-col sm:flex-row gap-3">
             <button
               type="button"
               onClick={handleShare}
-              className="flex-1 h-13 rounded-xl border border-[#dce2eb] bg-white text-[#293b59] text-sm font-semibold hover:bg-[#f8fafc] transition flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+              className="flex-1 py-3 rounded-xl border border-[#dce2eb] bg-white text-[#293b59] text-sm font-semibold hover:bg-[#f8fafc] transition flex items-center justify-center gap-2 shadow-sm cursor-pointer"
               title="Share receipt"
             >
               <LuShare2 size={18} />
@@ -382,7 +380,7 @@ export const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
               type="button"
               onClick={onDownload}
               disabled={isDownloading}
-              className="flex-1 h-13 rounded-xl bg-[#006747] text-white text-sm font-semibold hover:bg-[#00563c] active:scale-[0.99] transition flex items-center justify-center gap-2 shadow-[0_5px_12px_rgba(0,103,71,0.2)] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+              className="flex-1 py-3 rounded-xl bg-[#006747] text-white text-sm font-semibold hover:bg-[#00563c] active:scale-[0.99] transition flex items-center justify-center gap-2 shadow-[0_5px_12px_rgba(0,103,71,0.2)] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
               title="Download receipt"
             >
               {isDownloading ? (

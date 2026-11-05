@@ -77,10 +77,10 @@ const PaymentReceiptModal: React.FC<PaymentReceiptModalProps> = ({
         allowTaint: false,
         backgroundColor: "#ffffff",
         logging: false,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: target.scrollWidth,
-        windowHeight: target.scrollHeight,
+        // scrollX: 0,
+        // scrollY: 0,
+        // windowWidth: target.scrollWidth,
+        // windowHeight: target.scrollHeight,
         ignoreElements: (element) =>
           element.classList?.contains("no-capture") ||
           element.classList?.contains("print:hidden"),
@@ -130,6 +130,8 @@ const PaymentReceiptModal: React.FC<PaymentReceiptModalProps> = ({
             "textDecorationColor",
             "fill",
             "stroke",
+            "rotate",
+            "-rotate",
           ] as const;
 
           const getComputed = (el: Element) =>
@@ -223,6 +225,7 @@ const PaymentReceiptModal: React.FC<PaymentReceiptModalProps> = ({
       toast.error("Could not generate receipt image. Please try again.", {
         id: toastId,
       });
+      alert(err);
     } finally {
       setIsDownloading(false);
     }
@@ -230,7 +233,9 @@ const PaymentReceiptModal: React.FC<PaymentReceiptModalProps> = ({
 
   return (
     <Modal onClose={onClose} customMode={true}>
-      <div className="relative max-w-lg w-full max-h-[92vh] overflow-y-auto styled-scrollbar p-1">
+      <div
+        className={`relative ${isDownloading ? "min-w-xl" : "max-w-lg"} w-full max-h-[92vh] overflow-y-auto styled-scrollbar p-1`}
+      >
         <div ref={receiptRef}>
           <PaymentReceipt
             payment={payment}
