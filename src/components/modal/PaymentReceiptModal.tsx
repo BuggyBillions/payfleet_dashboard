@@ -160,12 +160,12 @@ const PaymentReceiptModal: React.FC<PaymentReceiptModalProps> = ({
                     !srgb.includes("oklab") &&
                     !srgb.includes("oklch")
                   ) {
-                    el.style[prop as any] = srgb;
+                    el.style.setProperty(prop, srgb);
                   } else {
-                    el.style[prop as any] = "#2a5d56";
+                    el.style.setProperty(prop, "#2a5d56");
                   }
                 } catch {
-                  el.style[prop as any] = "#2a5d56";
+                  el.style.setProperty(prop, "#2a5d56");
                 }
               }
             });
