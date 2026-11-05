@@ -112,10 +112,8 @@ const Deposit: React.FC<DepositModalProps> = ({
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const inputId = useId();
 
-  // Expiry countdown for transfer details (starts at 29:19 = 1759 seconds)
-  const [expirySeconds, setExpirySeconds] = useState(1759);
+  const [expirySeconds, setExpirySeconds] = useState(299);
 
-  // Countdown timer for waiting screen (starts at 10:00 = 600 seconds)
   const [waitingSeconds, setWaitingSeconds] = useState(TOTAL_WAITING_SECONDS);
 
   // Simulation verification state in waiting screen
@@ -432,7 +430,7 @@ const Deposit: React.FC<DepositModalProps> = ({
     }
 
     setView("transfer_details");
-    setExpirySeconds(1759);
+    setExpirySeconds(299);
   };
 
   const handleSentMoney = () => {

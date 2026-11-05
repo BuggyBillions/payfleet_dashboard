@@ -4,14 +4,21 @@ import PaginationControls from "../../utility/PaginationControls";
 import OverviewCards from "../../components/cards/OverviewCards";
 import ActionCell from "../../components/ui/ActionCell";
 import RetryPayrollModal from "../../components/modal/RetryPayrollModal";
+import PaymentReceiptModal from "../../components/modal/PaymentReceiptModal";
 import type {
   TableColumnProps,
   SalaryPayment,
   SalaryPaymentMonth,
 } from "../../lib/interfaces";
-import { LuHistory, LuRefreshCw, LuX } from "react-icons/lu";
+import {
+  LuHistory,
+  LuRefreshCw,
+  LuX,
+  LuReceipt,
+  LuDownload,
+  LuTriangleAlert,
+} from "react-icons/lu";
 import { FaMoneyBillWave } from "react-icons/fa6";
-import { LuTriangleAlert } from "react-icons/lu";
 import { IoSearchOutline } from "react-icons/io5";
 import {
   formatterUtility,
@@ -19,11 +26,13 @@ import {
 } from "../../helpers/formatterUtility";
 import { useUser } from "../../hooks/useUser";
 import { useSalaryPayments } from "../../hooks/useSalaryPayments";
+import { useDownloadMonthlyPayments } from "../../hooks/useDownloadPayments";
 import { getErrorMessage } from "../../helpers/api";
 import StatusBadge from "../../components/ui/StatusBadge";
 import { FiChevronDown } from "react-icons/fi";
 
 const buildColumns = (
+  onViewReceipt?: (payment: SalaryPayment) => void,
   onRetry?: (payment: SalaryPayment) => void,
 ): TableColumnProps<SalaryPayment>[] => {
   const columns: TableColumnProps<SalaryPayment>[] = [
@@ -71,28 +80,35 @@ const buildColumns = (
       label: "Date",
       render: (item) => <span>{formatShortDate(item.payment_date)}</span>,
     },
-  ];
-
-  if (onRetry) {
-    columns.push({
+    {
       label: "Action",
-      render: (item) =>
-        item.status === "failed" ? (
-          <ActionCell
-            rowId={item.id}
-            otherActions={[
-              {
-                name: "Retry",
-                icon: <LuRefreshCw size={12} />,
-                action: () => onRetry(item),
-              },
-            ]}
-          />
-        ) : (
-          <span className="text-textBlack/40">—</span>
-        ),
-    });
-  }
+      render: (item) => {
+        const otherActions = [];
+
+        if (onViewReceipt) {
+          otherActions.push({
+            name: "View Receipt",
+            icon: <LuReceipt size={13} className="text-primary" />,
+            action: () => onViewReceipt(item),
+          });
+        }
+
+        if (onRetry && item.status === "failed") {
+          otherActions.push({
+            name: "Retry",
+            icon: <LuRefreshCw size={12} />,
+            action: () => onRetry(item),
+          });
+        }
+
+        if (otherActions.length === 0) {
+          return <span className="text-textBlack/40">—</span>;
+        }
+
+        return <ActionCell rowId={item.id} otherActions={otherActions} />;
+      },
+    },
+  ];
 
   return columns;
 };
@@ -105,9 +121,10 @@ const buildColumns = (
 const MonthPaymentsTable: React.FC<{
   payments: SalaryPayment[];
   onRetry?: (payment: SalaryPayment) => void;
-}> = ({ payments, onRetry }) => (
+  onViewReceipt?: (payment: SalaryPayment) => void;
+}> = ({ payments, onRetry, onViewReceipt }) => (
   <ReusableTable
-    columns={buildColumns(onRetry)}
+    columns={buildColumns(onViewReceipt, onRetry)}
     data={payments}
     isLoading={false}
     error={null}
@@ -123,29 +140,43 @@ const MonthPaymentsTable: React.FC<{
 /**
  * The month accordion shared by the Payments and Failed Transactions tabs.
  * Both tabs read the same grouped shape, so both render it identically.
+ * Includes monthly download option calling GET /payments/download?month=YYYY-MM.
  */
 const MonthGroups: React.FC<{
   months: SalaryPaymentMonth[];
   expandedMonths: string[];
   onToggleMonth: (monthKey: string) => void;
   onRetry?: (payment: SalaryPayment) => void;
-}> = ({ months, expandedMonths, onToggleMonth, onRetry }) => (
+  onViewReceipt?: (payment: SalaryPayment) => void;
+  onDownloadMonth?: (monthKey: string, monthLabel: string) => void;
+  downloadingMonth?: string | null;
+}> = ({
+  months,
+  expandedMonths,
+  onToggleMonth,
+  onRetry,
+  onViewReceipt,
+  onDownloadMonth,
+  downloadingMonth,
+}) => (
   <div className="flex flex-col gap-3">
     {months.map((group) => {
       const isOpen = expandedMonths.includes(group.month_key);
+      const isDownloading =
+        downloadingMonth === (group.month_key || group.month);
 
       return (
         <div
           key={group.month_key}
           className="bg-tertiary rounded-xl border border-primary/10 overflow-hidden"
         >
-          <button
-            type="button"
-            onClick={() => onToggleMonth(group.month_key)}
-            aria-expanded={isOpen}
-            className="w-full flex items-center justify-between gap-3 px-4 py-3.5 hover:bg-secondary transition cursor-pointer"
-          >
-            <div className="flex flex-col items-start">
+          <div className="w-full flex items-center justify-between gap-3 px-4 py-3.5 hover:bg-secondary/40 transition">
+            <button
+              type="button"
+              onClick={() => onToggleMonth(group.month_key)}
+              aria-expanded={isOpen}
+              className="flex-1 flex flex-col items-start text-left cursor-pointer focus:outline-none"
+            >
               <span className="text-sm font-semibold text-textBlack">
                 {group.month}
               </span>
@@ -158,18 +189,62 @@ const MonthGroups: React.FC<{
                 {group.failed_amount > 0 &&
                   ` • ${formatterUtility(group.failed_amount)} failed`}
               </span>
+            </button>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {onDownloadMonth && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDownloadMonth(group.month_key, group.month);
+                  }}
+                  disabled={isDownloading}
+                  className="px-2.5 py-1.5 rounded-lg border border-primary/15 bg-primary/5 hover:bg-primary/10 text-primary text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={`Download payments for ${group.month}`}
+                  aria-label={`Download ${group.month} payments`}
+                >
+                  {isDownloading ? (
+                    <>
+                      <span className="size-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      <span className="hidden sm:inline text-[11px]">
+                        Downloading...
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <LuDownload size={13} />
+                      <span className="hidden sm:inline text-[11px]">
+                        Download
+                      </span>
+                    </>
+                  )}
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => onToggleMonth(group.month_key)}
+                aria-label={isOpen ? "Collapse month" : "Expand month"}
+                className="p-1 text-textBlack/50 hover:text-textBlack transition cursor-pointer"
+              >
+                <FiChevronDown
+                  size={16}
+                  className={`text-textBlack/50 shrink-0 transition-transform duration-200 ${
+                    isOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
             </div>
-            <FiChevronDown
-              size={16}
-              className={`text-textBlack/50 shrink-0 transition-transform ${
-                isOpen ? "rotate-180" : ""
-              }`}
-            />
-          </button>
+          </div>
 
           {isOpen && (
             <div className="border-t border-primary/10 p-3">
-              <MonthPaymentsTable payments={group.payments} onRetry={onRetry} />
+              <MonthPaymentsTable
+                payments={group.payments}
+                onRetry={onRetry}
+                onViewReceipt={onViewReceipt}
+              />
             </div>
           )}
         </div>
@@ -197,7 +272,10 @@ const buildMonthOptions = (
       const date = new Date(currentYear, currentMonth - i, 1);
       options.push({
         value: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
-        label: date.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+        label: date.toLocaleDateString("en-US", {
+          month: "long",
+          year: "numeric",
+        }),
       });
     }
     return options;
@@ -210,14 +288,17 @@ const buildMonthOptions = (
       const date = new Date(currentYear, currentMonth - i, 1);
       options.push({
         value: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
-        label: date.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+        label: date.toLocaleDateString("en-US", {
+          month: "long",
+          year: "numeric",
+        }),
       });
     }
     return options;
   }
 
   const targetYear = createdDate.getFullYear();
-  const targetMonth = createdDate.getMonth();
+  const targetMonth = createdDate.getMonth() - 1;
   const totalMonths =
     (currentYear - targetYear) * 12 + (currentMonth - targetMonth);
   const count = Math.max(0, totalMonths) + 1;
@@ -227,7 +308,10 @@ const buildMonthOptions = (
     const date = new Date(currentYear, currentMonth - i, 1);
     options.push({
       value: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
-      label: date.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+      label: date.toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+      }),
     });
   }
 
@@ -247,6 +331,11 @@ const PaymentHistory: React.FC = () => {
   const [dateTo, setDateTo] = useState("");
   const [expandedMonths, setExpandedMonths] = useState<string[]>([]);
   const [retryTarget, setRetryTarget] = useState<SalaryPayment | null>(null);
+  const [receiptTarget, setReceiptTarget] = useState<SalaryPayment | null>(null);
+
+  const { downloadMonth, downloadingMonth } = useDownloadMonthlyPayments({
+    company_id: companyId,
+  });
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 500);
@@ -271,16 +360,33 @@ const PaymentHistory: React.FC = () => {
 
   const months = data?.months ?? [];
   const pagination = data?.pagination;
-  const companyCreatedAt =
-    user?.company_details?.created_at ||
-    (user as unknown as { company?: { created_at?: string } })?.company?.created_at ||
-    (data?.company as unknown as { created_at?: string })?.created_at ||
-    user?.created_at;
+  const companyCreatedAt = user?.company_details?.created_at;
   const monthOptions = useMemo(
     () => buildMonthOptions(companyCreatedAt),
     [companyCreatedAt],
   );
-  const loadedMonthKeys = new Set(months.map((m) => m.month_key));
+
+  const resolvedCompanyName = useMemo(() => {
+    const clean = (val: unknown) => (typeof val === "string" ? val.trim() : "");
+    return (
+      clean(data?.company?.name) ||
+      clean(user?.company_name) ||
+      clean(
+        (user?.company_details as Record<string, unknown> | undefined)
+          ?.company_name,
+      ) ||
+      clean(user?.company_details?.name) ||
+      clean(
+        (user?.company_details as Record<string, unknown> | undefined)
+          ?.business_name,
+      ) ||
+      clean(
+        (user as unknown as { company?: { name?: string } })?.company?.name,
+      ) ||
+      clean(user?.name) ||
+      "Company"
+    );
+  }, [data?.company, user]);
 
   const totalPaid = months.reduce((sum, m) => sum + m.successful_amount, 0);
   const totalPayments = months.reduce((sum, m) => sum + m.count, 0);
@@ -328,7 +434,9 @@ const PaymentHistory: React.FC = () => {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-3">
         <div className="flex flex-col">
-          <h2 className="text-lg font-semibold text-textBlack">Payment History</h2>
+          <h2 className="text-lg font-semibold text-textBlack">
+            Payment History
+          </h2>
           <p className="text-sm text-textBlack/50">
             {data?.company?.name
               ? `All money paid out to staff of ${data.company.name}`
@@ -336,16 +444,35 @@ const PaymentHistory: React.FC = () => {
           </p>
         </div>
 
-        {hasActiveFilters && (
-          <button
-            type="button"
-            onClick={clearFilters}
-            className="flex items-center gap-1.5 px-3 h-10 rounded-md text-xs font-medium border border-black/10 bg-secondary text-textBlack/70 hover:text-textBlack cursor-pointer"
-          >
-            <LuX size={12} />
-            Clear filters
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {month && (
+            <button
+              type="button"
+              onClick={() => downloadMonth(month)}
+              disabled={downloadingMonth === month}
+              className="flex items-center gap-1.5 px-3 h-10 rounded-md text-xs font-semibold border border-primary/20 bg-primary/10 text-primary hover:bg-primary/15 transition cursor-pointer disabled:opacity-50"
+              title={`Download payments for ${month}`}
+            >
+              {downloadingMonth === month ? (
+                <span className="size-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <LuDownload size={13} />
+              )}
+              <span>Download {month}</span>
+            </button>
+          )}
+
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="flex items-center gap-1.5 px-3 h-10 rounded-md text-xs font-medium border border-black/10 bg-secondary text-textBlack/70 hover:text-textBlack cursor-pointer"
+            >
+              <LuX size={12} />
+              Clear filters
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="bg-tertiary rounded-xl p-4 flex flex-col gap-3">
@@ -389,7 +516,6 @@ const PaymentHistory: React.FC = () => {
                   className="capitalize"
                 >
                   {option.label}
-                  {loadedMonthKeys.has(option.value) ? " •" : ""}
                 </option>
               ))}
             </select>
@@ -534,7 +660,10 @@ const PaymentHistory: React.FC = () => {
             months={months}
             expandedMonths={expandedMonths}
             onToggleMonth={toggleMonth}
+            onViewReceipt={setReceiptTarget}
             onRetry={isFailedTab ? setRetryTarget : undefined}
+            onDownloadMonth={(monthKey) => downloadMonth(monthKey)}
+            downloadingMonth={downloadingMonth}
           />
         )}
 
@@ -552,6 +681,17 @@ const PaymentHistory: React.FC = () => {
         <RetryPayrollModal
           payment={retryTarget}
           onClose={() => setRetryTarget(null)}
+        />
+      )}
+
+      {receiptTarget && (
+        <PaymentReceiptModal
+          isOpen={Boolean(receiptTarget)}
+          onClose={() => setReceiptTarget(null)}
+          payment={receiptTarget}
+          companyName={resolvedCompanyName}
+          companyLogo={user?.company_details?.logo || user?.avatar}
+          senderEmail={user?.company_details?.email || user?.email}
         />
       )}
     </div>
