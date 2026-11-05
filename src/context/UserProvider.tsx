@@ -4,7 +4,7 @@ import { setupInterceptors } from "../helpers/api";
 import type { UserProps, UserProviderProps } from "../lib/interfaces";
 import { UserContext } from "./UserContext";
 import { getUserService } from "../services/authService";
-import { clearPinInfo } from "../helpers/pinStorage";
+// import { clearPinInfo } from "../helpers/pinStorage";
 
 const LANDING_URL = import.meta.env.VITE_LANDING_URL;
 
@@ -19,7 +19,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("role");
-    clearPinInfo();
+    // clearPinInfo();
     try {
       sessionStorage.removeItem("pin_warning_dismissed_session");
     } catch {
