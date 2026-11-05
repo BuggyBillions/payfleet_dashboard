@@ -7,8 +7,8 @@ const API_URL = import.meta.env.VITE_API_BASE_URL;
 const api = axios.create({
   baseURL: API_URL,
   headers: {
-    Accept: "application/json"
-  }
+    Accept: "application/json",
+  },
 });
 
 export const setupInterceptors = (logout: () => void) => {
@@ -51,7 +51,9 @@ export const setupInterceptors = (logout: () => void) => {
         // Only log out if token is actually rejected on core requests
         const token = localStorage.getItem("token");
         if (!token) {
-          logout();
+          setTimeout(() => {
+            logout();
+          }, 10000);
         } else {
           // Check if error message explicitly indicates unauthenticated session
           const msg = String(error.response?.data?.message || "").toLowerCase();
@@ -61,19 +63,20 @@ export const setupInterceptors = (logout: () => void) => {
             msg.includes("invalid token")
           ) {
             toast.error("Session expired. Please log in again.");
-            logout();
+            setTimeout(() => {
+              logout();
+            }, 10000);
           }
         }
       }
       return Promise.reject(error);
-    }
+    },
   );
 };
 
-
 export function getErrorMessage(
   error: unknown,
-  fallback = "Something went wrong"
+  fallback = "Something went wrong",
 ): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data;
@@ -101,7 +104,6 @@ export function getErrorMessage(
   return fallback;
 }
 
-
 export const searchApi = async (query: string): Promise<SearchResult[]> => {
   if (!query.trim()) return [];
 
@@ -110,14 +112,28 @@ export const searchApi = async (query: string): Promise<SearchResult[]> => {
     return res.data.results || res.data;
   } catch (err) {
     console.warn("Search not available, using dummy");
-    console.error("Error on search", err)
+    console.error("Error on search", err);
     const dummy: SearchResult[] = [
-      { title: "Manage Invoices", url: "/dashboard/sales/invoices", snippet: "View all invoices" },
-      { title: "Create Receipt", url: "/dashboard/sales/receipts/new", snippet: "Generate new receipt" },
-      { title: "Properties", url: "/dashboard/properties", snippet: "Manage estate properties" },
+      {
+        title: "Manage Invoices",
+        url: "/dashboard/sales/invoices",
+        snippet: "View all invoices",
+      },
+      {
+        title: "Create Receipt",
+        url: "/dashboard/sales/receipts/new",
+        snippet: "Generate new receipt",
+      },
+      {
+        title: "Properties",
+        url: "/dashboard/properties",
+        snippet: "Manage estate properties",
+      },
     ];
-    await new Promise(r => setTimeout(r, 300));
-    return dummy.filter(i => i.title.toLowerCase().includes(query.toLowerCase()));
+    await new Promise((r) => setTimeout(r, 300));
+    return dummy.filter((i) =>
+      i.title.toLowerCase().includes(query.toLowerCase()),
+    );
   }
 };
 
