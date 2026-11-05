@@ -11,7 +11,7 @@ import Modal from "../../components/modal/Modal";
 import OverviewCards from "../../components/cards/OverviewCards";
 import ReusableTable from "../../utility/ReusableTable";
 import ActionCell from "../../components/ui/ActionCell";
-import ConfirmDialog from "../../components/modal/ConfirmDialog";
+import ConfirmTierUpgradeModal from "../../components/modal/tier/ConfirmTierUpgradeModal";
 import type { TableColumnProps } from "../../lib/interfaces";
 import { getErrorMessage } from "../../helpers/api";
 import { useUser } from "../../hooks/useUser";
@@ -30,13 +30,6 @@ import {
 import { useTheme } from "../../hooks/useTheme";
 
 const getRequirements = getTierRequirements;
-
-const humanize = (value: string): string =>
-  value
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/\b\w/g, (c) => c.toUpperCase());
 
 const getTierName = (t: Partial<Tier>): string => String(t.name ?? "");
 const getTierLevel = (t: Partial<Tier>): string => String(t.level ?? "—");
@@ -196,7 +189,7 @@ const TierSettings: React.FC<{ onGoToProfile?: () => void }> = ({
     id: number | string;
     fallback: Tier | null;
   } | null>(null);
-  const [pendingUpgrade, setPendingUpgrade] = useState<{
+  const [upgradeToReview, setUpgradeToReview] = useState<{
     tier: Tier;
     missing: string[];
   } | null>(null);
@@ -287,7 +280,7 @@ const TierSettings: React.FC<{ onGoToProfile?: () => void }> = ({
       {
         onSettled: () => setUpgradingId(null),
         onSuccess: async () => {
-          setPendingUpgrade(null);
+          setUpgradeToReview(null);
           await Promise.all([loadTiers(), refetchRequests()]);
           if (token) await refreshUser(token);
         },
@@ -301,12 +294,7 @@ const TierSettings: React.FC<{ onGoToProfile?: () => void }> = ({
       user?.company_details as Record<string, unknown> | undefined,
     );
 
-    if (missing.length > 0) {
-      setPendingUpgrade({ tier, missing });
-      return;
-    }
-
-    submitUpgrade(tier);
+    setUpgradeToReview({ tier, missing });
   };
 
   const columns: TableColumnProps<Tier>[] = [
@@ -512,21 +500,21 @@ const TierSettings: React.FC<{ onGoToProfile?: () => void }> = ({
         />
       )}
 
-      {pendingUpgrade && (
-        <ConfirmDialog
-          isOpen
-          title="Documents required"
-          cancelText="Cancel"
-          confirmText="Go to Profile"
-          isLoading={upgradeMutation.isPending}
-          message={`Before upgrading to ${getTierName(
-            pendingUpgrade.tier,
-          )}, please upload the following on your company profile: ${pendingUpgrade.missing
-            .map(humanize)
-            .join(", ")}.`}
-          onCancel={() => setPendingUpgrade(null)}
-          onConfirm={() => {
-            setPendingUpgrade(null);
+      {upgradeToReview && (
+        <ConfirmTierUpgradeModal
+          isOpen={Boolean(upgradeToReview)}
+          targetTier={upgradeToReview.tier}
+          currentTier={currentTier}
+          currentLevel={currentLevel}
+          missingRequirements={upgradeToReview.missing}
+          isLoading={
+            upgradeMutation.isPending &&
+            upgradingId === (upgradeToReview.tier.id ?? null)
+          }
+          onClose={() => setUpgradeToReview(null)}
+          onConfirm={() => submitUpgrade(upgradeToReview.tier)}
+          onGoToProfile={() => {
+            setUpgradeToReview(null);
             onGoToProfile?.();
           }}
         />
