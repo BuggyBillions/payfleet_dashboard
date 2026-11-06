@@ -58,4 +58,3 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: dist/
           server-dir: ${{ secrets.FTP_TARGET_DIR }}
-          # server-dir: demo/
