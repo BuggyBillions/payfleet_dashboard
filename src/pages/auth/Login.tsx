@@ -4,7 +4,6 @@ import { FaEyeSlash } from "react-icons/fa";
 import { FaEye } from "react-icons/fa6";
 import { LuLoader } from "react-icons/lu";
 import * as Yup from "yup";
-import { assets } from "../../assets/assets";
 import { toast } from "sonner";
 import { getErrorMessage } from "../../helpers/api";
 import { useFormik } from "formik";
@@ -12,6 +11,7 @@ import { useUser } from "../../hooks/useUser";
 import { useAuth } from "../../hooks/useAuth";
 import OtpModal from "../../components/modal/OtpModal";
 import type { LoginValues, UserProps } from "../../lib/interfaces";
+import { initPinInfo } from "../../helpers/pinStorage";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -37,6 +37,9 @@ const Login: React.FC = () => {
     message = "Login successful",
   ) => {
     login(token, user, user.role || "company");
+    if ((user.role || "company").toLowerCase() === "company") {
+      initPinInfo(false);
+    }
     toast.success(message);
 
     // Pull l atest profile details from /me
@@ -149,8 +152,8 @@ const Login: React.FC = () => {
   const isLoggingIn = loginMutation.isPending || formik.isSubmitting;
 
   return (
-    <div className="w-screen h-screen flex md:flex-row flex-col items-start bg-primary">
-      <div className="md:h-full h-[35vh] overflow-hidden bg-primary md:w-1/2 w-full flex flex-col gap-4 items-start justify-center lg:px-8 md:px-6 px-0 pb-8 md:pt-0 pt-15 relative">
+    <div className="w-screen h-screen flex md:flex-row flex-col items-center">
+      {/* <div className="md:h-full h-[35vh] overflow-hidden bg-primary md:w-1/2 w-full flex flex-col gap-4 items-start justify-center lg:px-8 md:px-6 px-0 pb-8 md:pt-0 pt-15 relative">
         <h1 className="text-white text-xl px-10 lg:px-0 lg:text-4xl lg:leading-12 lg:max-w-100 font-semibold">
           Welcome Back! Securely access your dashboard.
         </h1>
@@ -164,9 +167,9 @@ const Login: React.FC = () => {
             className="md:w-full w-1/3 mx-auto object-cover h-full"
           />
         </Link>
-      </div>
+      </div> */}
 
-      <div className="md:w-1/2 w-full md:h-full h-[65vh] overflow-y-auto lg:p-12 p-8 flex flex-col md:justify-center bg-white md:rounded-none rounded-t-4xl">
+      <div className=" w-full md:h-full h-[65vh] overflow-y-auto lg:p-12 p-8 flex flex-col md:justify-center bg-white md:rounded-none rounded-t-4xl">
         <div className="w-full max-w-md mx-auto">
           <h2 className="text-3xl font-bold mb-2 text-gray-800">
             Login to your account

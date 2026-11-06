@@ -1,11 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { LuCrown, LuLayers, LuLoader, LuFileText, LuUsersRound } from "react-icons/lu";
+import {
+  LuCrown,
+  LuLayers,
+  LuLoader,
+  LuFileText,
+  LuUsersRound,
+} from "react-icons/lu";
 import Modal from "../../components/modal/Modal";
 import OverviewCards from "../../components/cards/OverviewCards";
 import ReusableTable from "../../utility/ReusableTable";
 import ActionCell from "../../components/ui/ActionCell";
-import ConfirmDialog from "../../components/modal/ConfirmDialog";
+import ConfirmTierUpgradeModal from "../../components/modal/tier/ConfirmTierUpgradeModal";
 import type { TableColumnProps } from "../../lib/interfaces";
 import { getErrorMessage } from "../../helpers/api";
 import { useUser } from "../../hooks/useUser";
@@ -21,15 +27,9 @@ import {
   getMissingTierRequirements,
   normalizeTierRequest,
 } from "../../services/tierService";
+import { useTheme } from "../../hooks/useTheme";
 
 const getRequirements = getTierRequirements;
-
-const humanize = (value: string): string =>
-  value
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/\b\w/g, (c) => c.toUpperCase());
 
 const getTierName = (t: Partial<Tier>): string => String(t.name ?? "");
 const getTierLevel = (t: Partial<Tier>): string => String(t.level ?? "—");
@@ -45,13 +45,15 @@ const formatDate = (value?: string): string => {
     year: "numeric",
   });
 };
-const displayedFields = (tier: Partial<Tier>): Array<{ label: string; value: string }> => [
+const displayedFields = (
+  tier: Partial<Tier>,
+): Array<{ label: string; value: string }> => [
   { label: "Level", value: getTierLevel(tier) },
   { label: "No. of Staff", value: getTierStaff(tier) },
-  {
-    label: "Created",
-    value: formatDate(tier.created_at),
-  },
+  // {
+  //   label: "Created",
+  //   value: formatDate(tier.created_at),
+  // },
 ];
 
 const TierDetailModal: React.FC<{
@@ -173,23 +175,35 @@ const TierDetailModal: React.FC<{
   );
 };
 
-const TierSettings: React.FC<{ onGoToProfile?: () => void }> = ({ onGoToProfile }) => {
+const TierSettings: React.FC<{ onGoToProfile?: () => void }> = ({
+  onGoToProfile,
+}) => {
   const { user, token, refreshUser } = useUser();
+  const { theme } = useTheme();
 
   const [tiers, setTiers] = useState<Tier[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [detail, setDetail] = useState<{ id: number | string; fallback: Tier | null } | null>(null);
-  const [pendingUpgrade, setPendingUpgrade] = useState<{ tier: Tier; missing: string[] } | null>(null);
+  const [detail, setDetail] = useState<{
+    id: number | string;
+    fallback: Tier | null;
+  } | null>(null);
+  const [upgradeToReview, setUpgradeToReview] = useState<{
+    tier: Tier;
+    missing: string[];
+  } | null>(null);
   const [upgradingId, setUpgradingId] = useState<number | string | null>(null);
 
   const upgradeMutation = useRequestTierUpgrade();
 
   // The company's own pending tier requests, so an upgrade that is awaiting
   // review is visible on the page as well as right after submitting.
-  const { data: myRequests = [], isLoading: loadingRequests, refetch: refetchRequests } =
-    useMyTierRequests("pending");
+  const {
+    data: myRequests = [],
+    isLoading: loadingRequests,
+    refetch: refetchRequests,
+  } = useMyTierRequests("pending");
 
   const loadTiers = useCallback(() => {
     setLoading(true);
@@ -266,30 +280,29 @@ const TierSettings: React.FC<{ onGoToProfile?: () => void }> = ({ onGoToProfile 
       {
         onSettled: () => setUpgradingId(null),
         onSuccess: async () => {
-          setPendingUpgrade(null);
+          setUpgradeToReview(null);
           await Promise.all([loadTiers(), refetchRequests()]);
           if (token) await refreshUser(token);
         },
-      }
+      },
     );
   };
 
   const handleUpgrade = (tier: Tier) => {
-    const missing = getMissingTierRequirements(tier, user?.company_details as Record<string, unknown> | undefined);
+    const missing = getMissingTierRequirements(
+      tier,
+      user?.company_details as Record<string, unknown> | undefined,
+    );
 
-    if (missing.length > 0) {
-      setPendingUpgrade({ tier, missing });
-      return;
-    }
-
-    submitUpgrade(tier);
+    setUpgradeToReview({ tier, missing });
   };
 
   const columns: TableColumnProps<Tier>[] = [
     {
       label: "Plan",
       render: (t) => {
-        const isCurrent = currentTierId !== null && Number(t.id) === currentTierId;
+        const isCurrent =
+          currentTierId !== null && Number(t.id) === currentTierId;
         return (
           <span className="flex items-center gap-2 font-semibold text-textBlack capitalize">
             <LuCrown size={15} className="text-primary shrink-0" />
@@ -331,14 +344,17 @@ const TierSettings: React.FC<{ onGoToProfile?: () => void }> = ({ onGoToProfile 
       label: "Action",
       render: (t) => {
         const tierLevel = Number(t.level ?? 0);
-        const isCurrent = currentTierId !== null && Number(t.id) === currentTierId;
+        const isCurrent =
+          currentTierId !== null && Number(t.id) === currentTierId;
         // The API rejects a second upgrade with 422 "You already have a pending
         // tier upgrade request", so the action is withheld while one is open.
         const isPending = t.id != null && pendingTierIds.has(Number(t.id));
         const canUpgrade =
           !isCurrent &&
           !isPending &&
-          (currentLevel === null || !Number.isFinite(tierLevel) || tierLevel > currentLevel);
+          (currentLevel === null ||
+            !Number.isFinite(tierLevel) ||
+            tierLevel > currentLevel);
 
         return (
           <div className="flex items-center gap-2">
@@ -355,7 +371,10 @@ const TierSettings: React.FC<{ onGoToProfile?: () => void }> = ({ onGoToProfile 
                 canUpgrade
                   ? [
                       {
-                        name: upgradingId === (t.id ?? null) ? "Upgrading..." : "Upgrade",
+                        name:
+                          upgradingId === (t.id ?? null)
+                            ? "Upgrading..."
+                            : "Upgrade",
                         icon: <LuCrown size={13} />,
                         action: () => handleUpgrade(t),
                       },
@@ -423,9 +442,16 @@ const TierSettings: React.FC<{ onGoToProfile?: () => void }> = ({ onGoToProfile 
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <LuLoader size={14} className="text-primary shrink-0" />
-                  <span className="text-xs font-semibold text-textBlack">
+                  <span
+                    className={`text-xs font-semibold ${theme === "dark" ? "text-textWhite" : "text-textBlack"}`}
+                  >
                     {request.currentTierName}
-                    <span className="font-normal text-textBlack/50"> → </span>
+                    <span
+                      className={`font-normal ${theme === "dark" ? "text-textWhite/50" : "text-textBlack/50"}`}
+                    >
+                      {" "}
+                      →{" "}
+                    </span>
                     {request.requestedTierName}
                   </span>
                 </div>
@@ -433,7 +459,9 @@ const TierSettings: React.FC<{ onGoToProfile?: () => void }> = ({ onGoToProfile 
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-semibold uppercase">
                     {request.status}
                   </span>
-                  <span className="text-[11px] text-textBlack/50">
+                  <span
+                    className={`text-[11px] ${theme === "dark" ? "text-textWhite/50" : "text-textBlack/50"}`}
+                  >
                     {formatDate(request.createdAt)}
                   </span>
                 </div>
@@ -472,21 +500,21 @@ const TierSettings: React.FC<{ onGoToProfile?: () => void }> = ({ onGoToProfile 
         />
       )}
 
-      {pendingUpgrade && (
-        <ConfirmDialog
-          isOpen
-          title="Documents required"
-          cancelText="Cancel"
-          confirmText="Go to Profile"
-          isLoading={upgradeMutation.isPending}
-          message={`Before upgrading to ${getTierName(
-            pendingUpgrade.tier
-          )}, please upload the following on your company profile: ${pendingUpgrade.missing
-            .map(humanize)
-            .join(", ")}.`}
-          onCancel={() => setPendingUpgrade(null)}
-          onConfirm={() => {
-            setPendingUpgrade(null);
+      {upgradeToReview && (
+        <ConfirmTierUpgradeModal
+          isOpen={Boolean(upgradeToReview)}
+          targetTier={upgradeToReview.tier}
+          currentTier={currentTier}
+          currentLevel={currentLevel}
+          missingRequirements={upgradeToReview.missing}
+          isLoading={
+            upgradeMutation.isPending &&
+            upgradingId === (upgradeToReview.tier.id ?? null)
+          }
+          onClose={() => setUpgradeToReview(null)}
+          onConfirm={() => submitUpgrade(upgradeToReview.tier)}
+          onGoToProfile={() => {
+            setUpgradeToReview(null);
             onGoToProfile?.();
           }}
         />

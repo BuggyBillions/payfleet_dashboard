@@ -18,7 +18,7 @@ import {
   LuClock,
   LuPlus,
   LuPencil,
-  LuTrash2,
+  // LuTrash2,
   LuLayers,
   LuEye,
 } from "react-icons/lu";
@@ -144,13 +144,13 @@ const ManageTier: React.FC = () => {
           >
             <LuPencil size={15} />
           </button>
-          <button
+          {/* <button
             onClick={() => setTierToDelete(item)}
             title="Delete Tier"
             className="p-1.5 rounded-lg text-textBlack/60 hover:text-red-500 hover:bg-red-500/10 transition cursor-pointer"
           >
             <LuTrash2 size={15} />
-          </button>
+          </button> */}
         </div>
       ),
     },

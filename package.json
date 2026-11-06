@@ -22,6 +22,7 @@
     "dotenv": "^17.2.3",
     "formik": "^2.4.9",
     "framer-motion": "^12.23.26",
+    "html2canvas": "^1.4.1",
     "jose": "^6.2.12",
     "motion": "^13.4.2",
     "react": "^19.2.0",

@@ -7,6 +7,7 @@ import type {
   EmployeeDeductionListResponse,
   EmployeeListResponse,
   PayEmployeesResponse,
+  PayrollPreviewResponse,
   ResolvedAccount,
 } from "../lib/interfaces";
 
@@ -17,6 +18,10 @@ export type {
   EmployeeFormValues,
   EmployeeListResponse,
   PayEmployeesResponse,
+  PayrollPreviewEmployee,
+  PayrollPreviewResponse,
+  PayrollPreviewSkipped,
+  PayrollPreviewSummary,
   ResolvedAccount,
 } from "../lib/interfaces";
 
@@ -281,6 +286,22 @@ export const markMultiplePaying = async (payload: {
     paying: payload.paying,
   });
   if (res.data?.summary || res.data?.status !== undefined) {
+    return res.data;
+  }
+  return res.data?.data ?? res.data;
+};
+
+/**
+ * GET /payroll/preview?company_id={id}
+ * Retrieves payroll breakdown preview before payout execution.
+ */
+export const getPayrollPreview = async (
+  company_id: number | string,
+): Promise<PayrollPreviewResponse> => {
+  const res = await api.get("/payroll/preview", {
+    params: { company_id },
+  });
+  if (res.data?.summary) {
     return res.data;
   }
   return res.data?.data ?? res.data;

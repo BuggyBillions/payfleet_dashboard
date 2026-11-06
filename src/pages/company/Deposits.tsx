@@ -25,6 +25,11 @@ import {
 import { FiSearch } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { encryptToken } from "../../helpers/tokenHelper";
+import { toast } from "sonner";
+import {
+  isDepositOperatingHours,
+  DEPOSIT_OPERATING_HOURS_MESSAGE,
+} from "../../helpers/depositHours";
 
 interface DepositRow extends Omit<DemoDeposit, "id"> {
   id: number | string;
@@ -81,7 +86,13 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
   );
   const [copiedRef, setCopiedRef] = useState<string | null>(null);
 
+  const isDepositAvailable = isDepositOperatingHours();
+
   const handleNavigate = async () => {
+    if (!isDepositOperatingHours()) {
+      toast.error(DEPOSIT_OPERATING_HOURS_MESSAGE);
+      return;
+    }
     const encryptedToken = await encryptToken(token!);
     navigate(`/payment/${encryptedToken}`);
   };
@@ -269,9 +280,20 @@ const Deposits: React.FC<DepositsProps> = ({ defaultFilter = "all" }) => {
             text="Deposit Funds"
             icon={<FaPlus />}
             onClick={handleNavigate}
+            disabled={!isDepositAvailable}
+            title={
+              !isDepositAvailable ? DEPOSIT_OPERATING_HOURS_MESSAGE : undefined
+            }
           />
         </div>
       </div>
+
+      {!isDepositAvailable && (
+        <div className="flex items-center gap-2.5 p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300 text-xs font-medium">
+          <LuClock className="size-4 shrink-0 text-amber-500" />
+          <span>{DEPOSIT_OPERATING_HOURS_MESSAGE}</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-6">
         <OverviewCards
