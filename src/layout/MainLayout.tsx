@@ -6,6 +6,9 @@ import TopNav from "../components/navs/TopNav";
 import { HiBars3 } from "react-icons/hi2";
 import Sidebar from "../components/navs/Sidebar";
 import FloatingContactWidget from "../components/ui/FloatingContactWidget";
+import DefaultPinWarningModal from "../components/modal/DefaultPinWarningModal";
+import { usePinInfo } from "../hooks/usePinInfo";
+import { initPinInfo } from "../helpers/pinStorage";
 import type { LayoutProps } from "../lib/interfaces";
 import { assets } from "../assets/assets";
 import { FaXmark } from "react-icons/fa6";
@@ -97,6 +100,61 @@ const MainLayout = ({ children, pageName }: LayoutProps) => {
 
   const [isOpen, setIsOpen] = useState(false);
 
+  const isCompanyRoute =
+    !location.pathname.startsWith("/superadmin") &&
+    !location.pathname.startsWith("/admin") &&
+    !location.pathname.startsWith("/support") &&
+    !location.pathname.startsWith("/financial");
+
+  const { pinInfo } = usePinInfo();
+
+  useEffect(() => {
+    if (isCompanyRoute) {
+      // By default in Payfleet, newly created companies start with default PIN 1234
+      initPinInfo(false);
+    }
+  }, [isCompanyRoute]);
+
+  const [sessionDismissed, setSessionDismissed] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem("pin_warning_dismissed_session") === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  // Re-open if storage changes to false from another tab or devtools
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "pin_info" && e.newValue === "false") {
+        setSessionDismissed(false);
+        try {
+          sessionStorage.removeItem("pin_warning_dismissed_session");
+        } catch {
+          // Ignore
+        }
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
+  const isOnPinTab =
+    location.pathname === "/dashboard/settings" &&
+    new URLSearchParams(location.search).get("tab") === "pin";
+
+  const showPinModal =
+    isCompanyRoute && !pinInfo && !sessionDismissed && !isOnPinTab;
+
+  const handleDismissModal = () => {
+    try {
+      sessionStorage.setItem("pin_warning_dismissed_session", "true");
+    } catch {
+      // Ignore
+    }
+    setSessionDismissed(true);
+  };
+
   return (
     <div className="flex flex-col gap-3 w-full relative! bg-secondary h-dvh overflow-hidden px-4 py-3">
       <div className="md:px-6 px-4 flex gap-2 sticky top-0 z-10 items-center bg-tertiary rounded-xl">
@@ -169,8 +227,14 @@ const MainLayout = ({ children, pageName }: LayoutProps) => {
           !location.pathname.startsWith("/admin") &&
           !location.pathname.startsWith("/support") &&
           !location.pathname.startsWith("/financial") && (
-            <FloatingContactWidget />
+            <FloatingContactWidget constraintsRef={mainContentRef} />
           )}
+        {isCompanyRoute && (
+          <DefaultPinWarningModal
+            isOpen={showPinModal}
+            onClose={handleDismissModal}
+          />
+        )}
       </div>
     </div>
   );

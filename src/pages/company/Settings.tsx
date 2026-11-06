@@ -1,15 +1,17 @@
 import React, { useState, useMemo } from "react";
+import { useSearchParams, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { LuPencil } from "react-icons/lu";
-import {
-  LuUser,
-  LuShieldCheck,
-  LuCrown,
-} from "react-icons/lu";
+import { LuUser, LuShieldCheck, LuCrown } from "react-icons/lu";
 import { useUser } from "../../hooks/useUser";
-import { updateCompanyDetails, updateCompanyPassword, updateCompanyPin } from "../../services/companyService";
+import {
+  updateCompanyDetails,
+  updateCompanyPassword,
+  updateCompanyPin,
+} from "../../services/companyService";
 import { getErrorMessage } from "../../helpers/api";
+import { setPinInfo } from "../../helpers/pinStorage";
 import TierSettings from "./TierSettings";
 import EditProfileModal, {
   type ProfileFormValues,
@@ -119,6 +121,8 @@ const PasswordField: React.FC<PasswordFieldProps> = ({
 const Settings: React.FC = () => {
   const { user, role, token, refreshUser } = useUser();
   const currentRole = (role || user?.role || "company").toLowerCase().trim();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
 
   const allowedTabs = useMemo(() => {
     return TABS.filter((tab) => {
@@ -127,45 +131,99 @@ const Settings: React.FC = () => {
     });
   }, [currentRole]);
 
-  const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
+  const tabParam = (searchParams.get("tab") ||
+    (location.state as Record<string, unknown> | null)
+      ?.tab) as SettingsTab | null;
 
-  const effectiveTab = allowedTabs.some((t) => t.key === activeTab)
-    ? activeTab
-    : (allowedTabs[0]?.key ?? "profile");
+  const [userTab, setUserTab] = useState<SettingsTab | null>(null);
+
+  const activeTab = useMemo<SettingsTab>(() => {
+    if (userTab && allowedTabs.some((t) => t.key === userTab)) {
+      return userTab;
+    }
+    if (tabParam && allowedTabs.some((t) => t.key === tabParam)) {
+      return tabParam;
+    }
+    return allowedTabs[0]?.key ?? "profile";
+  }, [userTab, tabParam, allowedTabs]);
+
+  const handleTabChange = (newTab: SettingsTab) => {
+    setUserTab(newTab);
+    setSearchParams({ tab: newTab }, { replace: true });
+  };
+
+  const effectiveTab = activeTab;
 
   const [hiddenFields, setHiddenFields] = useState<Record<string, boolean>>({});
 
-  const buildProfileFromUser = (): ProfileFormValues => ({
-    name:
+  const buildProfileFromUser = (): ProfileFormValues => {
+    const rawComp =
       user?.company_name ||
+      ((user?.company_details as Record<string, unknown> | undefined)
+        ?.company_name as string) ||
       user?.company_details?.name ||
+      ((user?.company_details as Record<string, unknown> | undefined)
+        ?.business_name as string) ||
       user?.name ||
-      "",
-    firstName: user?.first_name || "",
-    lastName: user?.last_name || "",
-    email: user?.company_details?.email || user?.email || "",
-    phoneNumber:
-      user?.phone ||
-      user?.phone_number ||
-      user?.company_details?.phone ||
-      "",
-    company_name:
-      ((user?.company_details as Record<string, unknown> | undefined)?.company_name as string) ||
-      user?.company_name ||
-      user?.company_details?.name ||
-      "",
-    department: currentRole.toUpperCase(),
-    address: user?.company_details?.address ?? "",
-    about: user?.company_details?.about ?? "",
-    bvn: toDigitString(user?.company_details?.bvn) ?? "",
-    nin: toDigitString(user?.company_details?.nin) ?? "",
-    bn_number:
-      ((user?.company_details as Record<string, unknown> | undefined)?.bn_number as string) ??
-      ((user?.company_details as Record<string, unknown> | undefined)?.rc_number as string) ??
-      "",
-  });
+      "";
+
+    return {
+      name: rawComp,
+      firstName: user?.first_name || "",
+      lastName: user?.last_name || "",
+      email: user?.company_details?.email || user?.email || "",
+      phoneNumber:
+        user?.phone || user?.phone_number || user?.company_details?.phone || "",
+      company_name: rawComp,
+      department: currentRole.toUpperCase(),
+      address: user?.company_details?.address ?? "",
+      about: user?.company_details?.about ?? "",
+      bvn: toDigitString(user?.company_details?.bvn) ?? "",
+      nin: toDigitString(user?.company_details?.nin) ?? "",
+      bn_number:
+        ((user?.company_details as Record<string, unknown> | undefined)
+          ?.bn_number as string) ??
+        ((user?.company_details as Record<string, unknown> | undefined)
+          ?.rc_number as string) ??
+        "",
+    };
+  };
 
   const profileValues = buildProfileFromUser();
+
+  const resolvedCompanyName = useMemo(() => {
+    const clean = (val: unknown) => (typeof val === "string" ? val.trim() : "");
+    return (
+      clean(user?.company_name) ||
+      clean(
+        (user?.company_details as Record<string, unknown> | undefined)
+          ?.company_name,
+      ) ||
+      clean(user?.company_details?.name) ||
+      clean(
+        (user?.company_details as Record<string, unknown> | undefined)
+          ?.business_name,
+      ) ||
+      clean(profileValues.company_name) ||
+      (currentRole === "company"
+        ? clean(profileValues.name || user?.name)
+        : "") ||
+      clean(profileValues.name) ||
+      ""
+    );
+  }, [user, profileValues, currentRole]);
+
+  const contactPersonName = useMemo(() => {
+    const parts = [user?.first_name, user?.last_name]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+    if (parts) return parts;
+    if (user?.name && user.name.trim() !== resolvedCompanyName) {
+      return user.name.trim();
+    }
+    return "";
+  }, [user, resolvedCompanyName]);
 
   const [draft, setDraft] = useState<ProfileFormValues | null>(null);
 
@@ -184,8 +242,10 @@ const Settings: React.FC = () => {
     mermat: user?.company_details?.mermat ?? null,
     status_report: user?.company_details?.status_report ?? null,
     proof_of_address:
-      ((user?.company_details as Record<string, unknown> | undefined)?.proof_of_address as string) ??
-      ((user?.company_details as Record<string, unknown> | undefined)?.proofOfAddress as string) ??
+      ((user?.company_details as Record<string, unknown> | undefined)
+        ?.proof_of_address as string) ??
+      ((user?.company_details as Record<string, unknown> | undefined)
+        ?.proofOfAddress as string) ??
       null,
   };
 
@@ -275,7 +335,7 @@ const Settings: React.FC = () => {
       setSavingProfile(false);
     }
   };
-  
+
   const handleUpdatePin = async () => {
     if (!/^\d{4}$/.test(pin.current_pin)) {
       toast.error("Current PIN must be exactly 4 digits");
@@ -296,6 +356,7 @@ const Settings: React.FC = () => {
         new_pin: pin.new_pin,
       });
       toast.success(res?.message || "Transaction PIN updated successfully");
+      setPinInfo(true);
       setPin({ current_pin: "", new_pin: "" });
       ["pin_current", "pin_new"].forEach((key) =>
         setHiddenFields((prev) => ({ ...prev, [key]: true })),
@@ -318,7 +379,9 @@ const Settings: React.FC = () => {
     }
     const validation = validatePasswordRequirements(passwordState.new_password);
     if (!validation.isValid) {
-      toast.error(validation.error || "Password does not meet the security requirements");
+      toast.error(
+        validation.error || "Password does not meet the security requirements",
+      );
       return;
     }
     if (passwordState.new_password !== passwordState.confirm_password) {
@@ -353,7 +416,8 @@ const Settings: React.FC = () => {
     if (!allowedTabs.some((t) => t.key === effectiveTab)) {
       return (
         <div className="p-8 text-center text-xs text-textBlack/60">
-          You do not have administrative permission to view or configure this section.
+          You do not have administrative permission to view or configure this
+          section.
         </div>
       );
     }
@@ -363,44 +427,80 @@ const Settings: React.FC = () => {
         return (
           <div className="flex flex-col gap-6 max-w-2xl">
             <div className="flex flex-col">
-              <h3 className="font-semibold text-base text-textBlack">Account Profile</h3>
+              <h3 className="font-semibold text-base text-textBlack">
+                Account Profile
+              </h3>
               <p className="text-xs text-textBlack/60">
                 Personal details and administrative account information
               </p>
             </div>
 
+            {/* Profile Header Card with Company Name & Verification */}
             <div className="flex items-center gap-4 p-4 rounded-xl bg-secondary border border-primary/10">
               {existingDocuments.logo ? (
                 <img
                   src={existingDocuments.logo}
-                  alt={profileValues.name || "Company logo"}
-                  className="w-14 h-14 rounded-full object-cover shrink-0"
+                  alt={resolvedCompanyName || "Company logo"}
+                  className="w-14 h-14 rounded-full object-cover shrink-0 border-2 border-primary/20 shadow-xs"
                 />
               ) : (
-                <div className="w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center font-bold text-lg shrink-0">
-                  {profileValues.name?.[0] || profileValues.firstName?.[0] || "U"}
-                  {!profileValues.name ? (profileValues.lastName?.[0] || "") : ""}
+                <div className="w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-sm uppercase">
+                  {resolvedCompanyName?.[0] ||
+                    profileValues.firstName?.[0] ||
+                    "C"}
                 </div>
               )}
-              <div className="flex flex-col">
-                <span className="font-semibold text-sm text-textBlack">
-                  {profileValues.name ||
-                    (profileValues.firstName || "") + " " + (profileValues.lastName || "")}
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="font-bold text-base text-textBlack truncate">
+                    {resolvedCompanyName || "Company Account"}
+                  </h4>
+                </div>
+                {contactPersonName &&
+                  contactPersonName !== resolvedCompanyName && (
+                    <span className="text-xs text-textBlack/70 font-medium truncate">
+                      Admin Contact: {contactPersonName}
+                    </span>
+                  )}
+                <span className="text-xs text-textBlack/60 truncate">
+                  {profileValues.email}
                 </span>
-                <span className="text-xs text-textBlack/60">{profileValues.email}</span>
               </div>
             </div>
 
+            {/* Profile Information Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <DetailRow label="Company Name" value={profileValues.name} />
+              <DetailRow
+                label="Company Name"
+                value={resolvedCompanyName || profileValues.name}
+              />
+              {contactPersonName &&
+                contactPersonName !== resolvedCompanyName && (
+                  <DetailRow
+                    label="Administrator / Contact Person"
+                    value={contactPersonName}
+                  />
+                )}
               <DetailRow label="Company Email" value={profileValues.email} />
-              <DetailRow label="Phone Number" value={profileValues.phoneNumber} />
-              <DetailRow label="Registration No." value={profileValues.bn_number} />
-              <DetailRow label="Company Address" value={profileValues.address} />
+              <DetailRow
+                label="Phone Number"
+                value={profileValues.phoneNumber}
+              />
+              <DetailRow
+                label="Registration No."
+                value={profileValues.bn_number}
+              />
+              <DetailRow
+                label="Company Address"
+                value={profileValues.address}
+              />
               <DetailRow label="BVN" value={profileValues.bvn} />
               <DetailRow label="NIN" value={profileValues.nin} />
               <div className="sm:col-span-2">
-                <DetailRow label="About / Description" value={profileValues.about} />
+                <DetailRow
+                  label="About / Description"
+                  value={profileValues.about}
+                />
               </div>
             </div>
 
@@ -448,9 +548,12 @@ const Settings: React.FC = () => {
         return (
           <div className="flex flex-col gap-6 max-w-xl">
             <div className="flex flex-col">
-              <h3 className="font-semibold text-base text-textBlack">Transaction PIN</h3>
+              <h3 className="font-semibold text-base text-textBlack">
+                Transaction PIN
+              </h3>
               <p className="text-xs text-textBlack/60">
-                Update your 4-digit numerical PIN used to authorize employee payouts and wallet debits
+                Update your 4-digit numerical PIN used to authorize employee
+                payouts and wallet debits
               </p>
             </div>
 
@@ -489,12 +592,14 @@ const Settings: React.FC = () => {
         return (
           <div className="flex flex-col gap-6">
             <div className="flex flex-col">
-              <h3 className="font-semibold text-base text-textBlack">Tier & Plan</h3>
+              <h3 className="font-semibold text-base text-textBlack">
+                Tier & Plan
+              </h3>
               <p className="text-xs text-textBlack/60">
                 Check your current subscription tier and request an upgrade
               </p>
             </div>
-            <TierSettings onGoToProfile={() => setActiveTab("profile")} />
+            <TierSettings onGoToProfile={() => handleTabChange("profile")} />
           </div>
         );
 
@@ -502,9 +607,12 @@ const Settings: React.FC = () => {
         return (
           <div className="flex flex-col gap-6 max-w-xl">
             <div className="flex flex-col">
-              <h3 className="font-semibold text-base text-textBlack">Change Password</h3>
+              <h3 className="font-semibold text-base text-textBlack">
+                Change Password
+              </h3>
               <p className="text-xs text-textBlack/60">
-                Update your account password to keep your account secure. Make sure to choose a strong and unique password.
+                Update your account password to keep your account secure. Make
+                sure to choose a strong and unique password.
               </p>
             </div>
 
@@ -513,7 +621,10 @@ const Settings: React.FC = () => {
                 label="Current Password"
                 value={passwordState.current_password}
                 onChange={(value) =>
-                  setPasswordState((prev) => ({ ...prev, current_password: value }))
+                  setPasswordState((prev) => ({
+                    ...prev,
+                    current_password: value,
+                  }))
                 }
                 visible={isFieldVisible("pwd_current")}
                 onToggle={() => toggleField("pwd_current")}
@@ -524,19 +635,27 @@ const Settings: React.FC = () => {
                   label="New Password"
                   value={passwordState.new_password}
                   onChange={(value) =>
-                    setPasswordState((prev) => ({ ...prev, new_password: value }))
+                    setPasswordState((prev) => ({
+                      ...prev,
+                      new_password: value,
+                    }))
                   }
                   visible={isFieldVisible("pwd_new")}
                   onToggle={() => toggleField("pwd_new")}
                   placeholder="Enter new password"
                 />
-                <PasswordStrengthIndicator password={passwordState.new_password} />
+                <PasswordStrengthIndicator
+                  password={passwordState.new_password}
+                />
               </div>
               <PasswordField
                 label="Confirm New Password"
                 value={passwordState.confirm_password}
                 onChange={(value) =>
-                  setPasswordState((prev) => ({ ...prev, confirm_password: value }))
+                  setPasswordState((prev) => ({
+                    ...prev,
+                    confirm_password: value,
+                  }))
                 }
                 visible={isFieldVisible("pwd_confirm")}
                 onToggle={() => toggleField("pwd_confirm")}
@@ -553,7 +672,6 @@ const Settings: React.FC = () => {
             </button>
           </div>
         );
-
 
       default:
         return null;
@@ -576,11 +694,12 @@ const Settings: React.FC = () => {
             <button
               key={tab.key}
               type="button"
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 h-9 rounded-lg text-xs font-medium transition cursor-pointer ${effectiveTab === tab.key
-                ? "bg-primary text-white shadow-xs"
-                : "border border-textBlack/10 text-textBlack/70 hover:bg-secondary hover:text-textBlack"
-                }`}
+              onClick={() => handleTabChange(tab.key)}
+              className={`flex items-center gap-2 px-4 h-9 rounded-lg text-xs font-medium transition cursor-pointer ${
+                effectiveTab === tab.key
+                  ? "bg-primary text-white shadow-xs"
+                  : "border border-textBlack/10 text-textBlack/70 hover:bg-secondary hover:text-textBlack"
+              }`}
             >
               <TabIcon size={14} />
               <span>{tab.label}</span>

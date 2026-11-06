@@ -71,6 +71,53 @@ export interface PayEmployeesResponse {
   data?: PayrollItemResult[];
 }
 
+export interface PayrollPreviewEmployee {
+  employee_id: number | string;
+  employee_name: string;
+  estimate_pay: number;
+  deduction: number;
+  net_salary: number;
+  payfleet_fee: number;
+  vat: number;
+  federal_government: number;
+  total_charges: number;
+  total_to_pay: number;
+}
+
+export interface PayrollPreviewSkipped {
+  employee_id?: number | string;
+  employee_name?: string;
+  reason?: string;
+  [key: string]: unknown;
+}
+
+export interface PayrollPreviewSummary {
+  payroll_month: string;
+  total_employees: number;
+  employees_to_pay: number;
+  employees_skipped: number;
+  total_estimate_pay: number;
+  total_deductions: number;
+  total_net_salary: number;
+  total_payfleet_fee: number;
+  total_vat: number;
+  total_federal_government: number;
+  total_charges: number;
+  total_to_pay: number;
+  company_balance: number;
+  balance_after_payroll: number;
+  can_cover: boolean;
+  shortfall: number;
+}
+
+export interface PayrollPreviewResponse {
+  status: boolean;
+  message: string;
+  summary: PayrollPreviewSummary;
+  employees: PayrollPreviewEmployee[];
+  skipped?: PayrollPreviewSkipped[];
+}
+
 export interface PaginationControlProps {
   currentPage: number;
   totalPages: number;

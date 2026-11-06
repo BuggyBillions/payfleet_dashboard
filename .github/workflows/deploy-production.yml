@@ -57,5 +57,4 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: dist/
-          server-dir: ${{ secrets.FTP_TARGET }}
-          # server-dir: dashboards/
+          server-dir: ${{ secrets.FTP_TARGET_DIR }}

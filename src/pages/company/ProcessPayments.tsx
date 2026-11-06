@@ -278,6 +278,7 @@ const ProcessPayments: React.FC = () => {
         isOpen={isFeeBreakdownOpen}
         onClose={() => setIsFeeBreakdownOpen(false)}
         onConfirm={handleConfirmFeeBreakdown}
+        companyId={companyId}
         employeeCount={payableCount}
         fgEligibleCount={fgEligibleCount}
         totalPayoutAmount={

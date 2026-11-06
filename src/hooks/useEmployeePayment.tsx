@@ -1,17 +1,19 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   payEmployees,
   paySingleEmployee,
   markMultiplePaying,
+  getPayrollPreview,
 } from "../services/employeeService";
 import { getErrorMessage } from "../helpers/api";
-import type { PayEmployeesResponse } from "../lib/interfaces";
+import type { PayEmployeesResponse, PayrollPreviewResponse } from "../lib/interfaces";
 
 const EMPLOYEE_KEYS = ["employees"] as const;
 
 const refreshEmployees = (queryClient: ReturnType<typeof useQueryClient>) => {
   EMPLOYEE_KEYS.forEach((key) => queryClient.invalidateQueries({ queryKey: [key] }));
+  queryClient.invalidateQueries({ queryKey: ["payroll-preview"] });
 };
 
 /**
@@ -77,5 +79,20 @@ export const useMarkMultiplePaying = () => {
     onError: (error) => {
       toast.error(getErrorMessage(error, "Failed to update employee payouts"));
     },
+  });
+};
+
+/**
+ * Query hook for payroll breakdown preview.
+ * GET /payroll/preview?company_id={id}
+ */
+export const usePayrollPreview = (
+  companyId?: number | string,
+  options?: { enabled?: boolean },
+) => {
+  return useQuery<PayrollPreviewResponse>({
+    queryKey: ["payroll-preview", companyId],
+    queryFn: () => getPayrollPreview(companyId!),
+    enabled: Boolean(companyId) && (options?.enabled ?? true),
   });
 };
