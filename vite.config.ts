@@ -15,8 +15,7 @@ export default defineConfig({
       manifest: {
         name: "Payfleet Dashboard",
         short_name: "PayFleet",
-        description:
-          "Automate payroll for your business with Payfleet — fast, secure, and affordable bulk payments for small and growing teams.",
+        description: "Automate payroll for your business with Payfleet — fast, secure, and affordable bulk payments for small and growing teams.",
         theme_color: "#2a5d56",
         background_color: "#f8faf8",
         display: "standalone",
